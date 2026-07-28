@@ -22,12 +22,13 @@ describe("Senpi comment-checker runner", () => {
           "--format=esm",
           `--outfile=${runnerBundlePath}`,
         ],
-        { cwd: process.cwd(), encoding: "utf8" },
+        { cwd: process.cwd(), encoding: "utf8", timeout: 10_000 },
       )
       expect(build.status).toBe(0)
 
       const runAdapter = [
         `import { defaultRunCommentChecker } from ${JSON.stringify(pathToFileURL(runnerBundlePath).href)}`,
+        'if (typeof globalThis.Bun !== "undefined") throw new Error("adapter host must be Node")',
         "await defaultRunCommentChecker({",
         "  binaryPath: process.execPath,",
         "  hookInput: {",
@@ -45,9 +46,10 @@ describe("Senpi comment-checker runner", () => {
       ].join("\n")
 
       // when
-      const run = spawnSync(process.execPath, ["--input-type=module", "--eval", runAdapter], {
+      const run = spawnSync("node", ["--input-type=module", "--eval", runAdapter], {
         cwd: process.cwd(),
         encoding: "utf8",
+        timeout: 10_000,
       })
 
       // then
@@ -78,12 +80,13 @@ describe("Senpi comment-checker runner", () => {
           "--format=esm",
           `--outfile=${runnerBundlePath}`,
         ],
-        { cwd: process.cwd(), encoding: "utf8" },
+        { cwd: process.cwd(), encoding: "utf8", timeout: 10_000 },
       )
       expect(build.status).toBe(0)
 
       const runAdapter = [
         `import { defaultRunCommentChecker } from ${JSON.stringify(pathToFileURL(runnerBundlePath).href)}`,
+        'if (typeof globalThis.Bun !== "undefined") throw new Error("adapter host must be Node")',
         "const result = await defaultRunCommentChecker({",
         "  binaryPath: process.execPath,",
         "  hookInput: {",
@@ -102,9 +105,10 @@ describe("Senpi comment-checker runner", () => {
       ].join("\n")
 
       // when
-      const run = spawnSync(process.execPath, ["--input-type=module", "--eval", runAdapter], {
+      const run = spawnSync("node", ["--input-type=module", "--eval", runAdapter], {
         cwd: outputDirectory,
         encoding: "utf8",
+        timeout: 10_000,
       })
 
       // then

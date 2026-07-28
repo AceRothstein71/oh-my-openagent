@@ -78,9 +78,11 @@ export async function runCommentChecker(
 
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let graceId: ReturnType<typeof setTimeout> | null = null
+  let timedOut = false
 
   const timeoutPromise = new Promise<"timeout">((resolve) => {
     timeoutId = setTimer(() => {
+      timedOut = true
       killProcessSafely(process, "SIGTERM")
 
       graceId = setTimer(() => {
@@ -100,7 +102,7 @@ export async function runCommentChecker(
     const completed = Promise.all([stdoutPromise, stderrPromise, exitCodePromise] as const)
     const race = await Promise.race([completed, timeoutPromise] as const)
 
-    if (race === "timeout") {
+    if (race === "timeout" || timedOut) {
       return EMPTY_RESULT
     }
 

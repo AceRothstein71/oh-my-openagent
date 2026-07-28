@@ -174,6 +174,51 @@ describe("comment checker runner", () => {
     })
   })
 
+  test("#given checker exits 2 after the timeout deadline #when SIGTERM closes it during grace #then it returns the empty result", async () => {
+    // given
+    const exit = Promise.withResolvers<number>()
+    const signals: string[] = []
+
+    // when
+    const result = await runCommentChecker(
+      {
+        binaryPath: "/tmp/comment-checker",
+        hookInput: {
+          session_id: "session-1",
+          tool_name: "write",
+          transcript_path: "/tmp/transcript.json",
+          cwd: "/tmp",
+          hook_event_name: "tool.execute.after",
+          tool_input: {},
+        },
+      },
+      {
+        existsSync: () => true,
+        spawn: () => ({
+          stdin: {
+            write: () => {},
+            end: () => {},
+          },
+          stdout: createStream(),
+          stderr: createStream("late feedback"),
+          exited: exit.promise,
+          kill: (signal) => {
+            signals.push(signal)
+            if (signal === "SIGTERM") {
+              exit.resolve(2)
+            }
+          },
+        }),
+        timeoutMs: 1,
+        killGraceMs: 60_000,
+      },
+    )
+
+    // then
+    expect(result).toEqual({ hasComments: false, message: "" })
+    expect(signals).toEqual(["SIGTERM"])
+  })
+
   test("#given a checker ignores SIGTERM #when the timeout grace expires #then it receives SIGKILL", async () => {
     // given
     const signals: string[] = []

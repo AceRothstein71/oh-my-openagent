@@ -1,0 +1,91 @@
+Live Senpi QA
+=============
+Driver self-test:
+`node packages/omo-senpi/scripts/qa/drive.mjs --self-test`
+Observed: `SELF-TEST OK`.
+
+Real isolated harness:
+`node packages/omo-senpi/scripts/qa/drive.mjs`
+
+Observed:
+{
+  "result": "PASS",
+  "ultraworkInjected": true,
+  "commentChecker": "PASS",
+  "realSenpiUntouched": true,
+  "providedSenpiCodingAgentDir": "unset"
+}
+
+The driver used an isolated `SENPI_CODING_AGENT_DIR` and deleted its sandbox
+in `finally`.
+
+Live OpenCode QA
+================
+Surface:
+OpenCode 1.18.5, local `dist/index.js`, isolated HOME/XDG tree, local
+Chat-Completions mock model, and the real installed comment-checker binary.
+
+Successful tool scenario:
+Session `ses_056747a8cffe4DbE8NM6J1jMHv` issued an `edit` tool call that added:
+`// this function adds two numbers`
+
+Observed tool output:
+- Tool status: completed.
+- Base output: `Edit applied successfully.`
+- Hook output appended: `COMMENT/DOCSTRING DETECTED - IMMEDIATE ACTION REQUIRED`.
+- Final assistant text: `PR6397_OPENCODE_HOOK_OK`.
+
+Hook trace:
+- `tool.execute.before` registered the edit and exact file path.
+- `tool.execute.after` recovered the pending call.
+- The hook selected the real comment-checker CLI.
+- `CLI detected comments, appending message`.
+
+Plugin-load proof from `opencode debug config`:
+- OMO agent marker present.
+- `goal` command present.
+- Runtime skill source present.
+
+Isolation:
+- Real DB count changed from 6917 to 6922 because other concurrent agent
+  sessions were created in the shared host environment.
+- All six QA session IDs were absent from the real DB.
+- All six QA session IDs were present in the isolated DB under
+  `/tmp/omo-pr-6397-opencode-qa/data/opencode/opencode.db`.
+- Recent real DB rows named unrelated concurrent subagents, confirming the
+  count change did not come from this QA.
+
+One discarded setup attempt:
+The first custom provider used Chat Completions against the QA skill's
+Responses-only fake server and received HTTP 404. The faithful retry used a
+protocol-matching local Chat Completions server; no production code changed.
+
+Live Codex QA
+=============
+Driver self-test:
+`app-server-drive.sh --self-test`
+Observed: real app-server turn completed using the local mock model.
+
+Local plugin run:
+`app-server-drive.sh --plugin`
+
+Observed:
+- Turn status: completed.
+- `missingHooks`: empty.
+- `failedHooks`: empty.
+- First-party `hook/started` and `hook/completed` notifications observed for
+  `sessionStart` and `userPromptSubmit` (plus stop hooks).
+- Real `~/.codex/config.toml` SHA remained
+  `907108940894bd7714821383300fa79df65fbd13`.
+
+Why this is enough
+==================
+The exact EPIPE/timeout behavior is pinned at the child-process seam, while
+each connected harness was driven through its real executable with the local
+build and strict isolation. OpenCode additionally exercised the real
+comment-checker hook and external binary end to end.
+
+Omissions
+=========
+Raw model request bodies, complete prompt/config dumps, authentication
+headers, environment dumps, and private logs were not copied.

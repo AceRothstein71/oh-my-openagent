@@ -1,0 +1,47 @@
+Reviewer finding
+================
+The Senpi adapter tests claimed to run under Node but used `process.execPath`.
+Because the suite runs under Bun, the adapter host was Bun and could miss a
+Node-specific child-process EPIPE regression.
+
+RED
+===
+Temporary/final guard added inside both adapter-host scripts:
+`if (typeof globalThis.Bun !== "undefined") throw new Error("adapter host must be Node")`
+
+Command:
+bun test --cwd <worktree> packages/omo-senpi/src/components/comment-checker/runner.test.ts
+
+Observed:
+0 pass
+2 fail
+4 expect() calls
+Both child processes exited 1 under `process.execPath`, proving they were Bun.
+
+GREEN
+=====
+Minimum fix:
+- Spawn `node` for the adapter host.
+- Keep `binaryPath: process.execPath` inside the child script so the checker
+  process is also the Node executable.
+- Add a 10-second timeout to all four `spawnSync` calls.
+- Keep the runtime guard permanently.
+
+Command:
+bun test --cwd <worktree> packages/omo-senpi/src/components/comment-checker/runner.test.ts
+
+Observed:
+2 pass
+0 fail
+7 expect() calls
+
+Post-fix focused gate:
+8 pass
+0 fail
+17 expect() calls
+
+Post-fix Senpi gate:
+433 pass
+0 fail
+1241 expect() calls
+76 files

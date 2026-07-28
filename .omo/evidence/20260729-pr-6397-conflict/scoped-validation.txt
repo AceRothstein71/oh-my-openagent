@@ -1,0 +1,25 @@
+Commands:
+1. bun test --cwd <worktree> packages/comment-checker-core/src/runner.test.ts packages/omo-senpi/src/components/comment-checker/runner.test.ts
+2. node_modules/.bin/tsgo --noEmit -p packages/comment-checker-core/tsconfig.json
+3. node_modules/.bin/tsgo --noEmit -p packages/omo-senpi/tsconfig.json
+4. node packages/omo-senpi/plugin/scripts/build-extension.mjs --check
+5. git diff --check
+6. git diff --name-only --diff-filter=U
+
+Observed:
+- Focused tests: 8 pass, 0 fail, 17 expect() calls.
+- Comment-checker core typecheck: exit 0, no diagnostics.
+- Senpi adapter typecheck: exit 0, no diagnostics.
+- Generated bundle check: current; both main and member bundles rebuilt.
+- Diff check: exit 0, no whitespace errors or conflict markers.
+- Unmerged path list: empty.
+
+LSP note:
+The session LSP service is rooted at the user's original worktree and rejected
+absolute paths in the isolated PR worktree. The package-scoped `tsgo --noEmit`
+commands are the next-best full TypeScript diagnostics for the exact files.
+
+Why sufficient for this gate:
+The checks cover the handwritten timeout/EPIPE logic, the real Node child
+process adapter tests, TypeScript contracts in both affected packages, and the
+deterministic generated artifacts that originally conflicted.

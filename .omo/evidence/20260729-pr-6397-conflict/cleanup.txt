@@ -1,0 +1,58 @@
+Cleanup receipts
+================
+
+Postinstall timeout
+-------------------
+- Orphan observed: PID 17128, `bun run build:materialize-frontend`.
+- Action: sent SIGTERM.
+- Verification: `kill -0 17128` failed; reported `stopped`.
+
+OpenCode mock providers
+-----------------------
+- Background sessions used: `bash_79`, `bash_82`, `bash_97`, `bash_102`.
+- Each session was terminated before replacement or after final use.
+- Port 52232 verification after final termination: `free`.
+
+OpenCode sandbox
+----------------
+- Path: `/tmp/omo-pr-6397-opencode-qa`.
+- Action: recursively removed after evidence extraction.
+- Verification: path does not exist.
+
+Senpi sandbox
+-------------
+- Path: `/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-senpi-qa-wEj28m`.
+- Verification: path does not exist; driver also reported
+  `realSenpiUntouched=true`.
+
+Codex sandboxes
+---------------
+- Self-test: `/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/cqa-home.XXXXXX.6Lf92MrCpQ`.
+- Plugin run: `/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/cqa-home.XXXXXX.T6jJV8qSmk`.
+- Verification: both paths do not exist.
+- Driver proof: real `~/.codex/config.toml` SHA unchanged.
+
+Process sweep
+-------------
+No process matched:
+`omo-senpi-qa|cqa-home|chat-mock|fake-openai|script/build.ts|build:materialize-frontend`.
+
+Intentional survivors before delivery
+-------------------------------------
+- The isolated Git worktree and its ignored `node_modules/` remain until the
+  conflict resolution is reviewed, committed, pushed, and GitHub confirms
+  mergeability.
+- `.debug-journal.md` remains untracked until final review is complete, then
+  will be removed before commit.
+
+Pre-review state
+----------------
+- `.debug-journal.md`: removed.
+- Untracked paths: none.
+- Unstaged paths: none.
+- Unmerged paths: none.
+- Scoped `git diff --check origin/dev -- <delivery paths>`: exit 0.
+- Global staged `git diff --cached --check` reports one blank line at EOF in
+  `.omo/evidence/20260728-beui-interaction-skill/index-discoverability.txt`,
+  which arrived unchanged from `origin/dev` in the merge and is outside this
+  delivery's scoped diff. It was not modified.

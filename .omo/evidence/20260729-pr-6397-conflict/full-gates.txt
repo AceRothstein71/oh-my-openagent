@@ -1,0 +1,50 @@
+Senpi package gate
+==================
+Command:
+bun run --cwd <worktree> test:senpi
+
+First attempt:
+Environment setup failed before tests because shared-skill submodules were not
+initialized in the isolated worktree.
+
+Corrective action:
+The exact pinned submodules were initialized by the repository's materializer.
+
+Final result:
+433 pass
+0 fail
+1241 expect() calls
+76 files
+
+Post-review rerun:
+The same gate was rerun after switching the adapter regression tests from
+Bun's `process.execPath` to a guarded real Node host with bounded timeouts.
+Result remained 433 pass, 0 fail, 1241 expect() calls.
+
+Root build
+==========
+Command:
+bun run --cwd <worktree> build
+
+Result:
+All materialize, MCP, TUI, CLI, schema, main plugin, Senpi extension, Codex
+plugin, and bootstrap build steps completed successfully.
+
+Codex compatibility gate
+========================
+Command:
+bun run --cwd <worktree> test:codex
+
+Result:
+514 pass
+0 fail
+0 skipped
+0 todo
+
+Generated Senpi bundle gate
+===========================
+Command:
+node packages/omo-senpi/plugin/scripts/build-extension.mjs --check
+
+Result:
+`omo.js` and `omo-member.js` are current.

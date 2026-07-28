@@ -1,0 +1,43 @@
+Scenario:
+A checker crosses the timeout deadline, receives SIGTERM, writes feedback, and
+exits with code 2 during the kill grace period.
+
+RED command:
+bun test --cwd /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/pr-6397-conflict packages/comment-checker-core/src/runner.test.ts
+
+RED result:
+5 pass
+1 fail
+9 expect() calls
+
+Failure:
+Expected:
+  { "hasComments": false, "message": "" }
+Received:
+  { "hasComments": true, "message": "late feedback" }
+
+Failing test:
+#given checker exits 2 after the timeout deadline
+#when SIGTERM closes it during grace
+#then it returns the empty result
+
+Interpretation:
+The deadline callback sends SIGTERM but does not latch the timeout outcome.
+Because the timeout promise resolves only after the grace-period SIGKILL, the
+child's code-2 completion wins Promise.race and violates the documented
+timeout contract.
+
+GREEN result:
+Command:
+bun test --cwd /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/pr-6397-conflict packages/comment-checker-core/src/runner.test.ts
+
+Observed:
+6 pass
+0 fail
+10 expect() calls
+
+Minimum fix:
+The deadline callback now latches `timedOut = true` before SIGTERM. A completed
+checker result is accepted only when the deadline has not passed. Children
+that ignore SIGTERM still wait for the grace callback's SIGKILL before the
+timeout promise settles.

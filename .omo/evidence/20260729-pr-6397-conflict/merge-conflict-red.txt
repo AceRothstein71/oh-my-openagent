@@ -1,0 +1,20 @@
+PR: https://github.com/code-yeongyu/oh-my-openagent/pull/6397
+PR head: 18688779215fcee5242a661996b52333ec53b3db
+Base: bb06bdbcc8ca2d7f3cc1f83b774d6b1c47bcdd4e
+Merge base: 94c5823b87686d21c7ec42ead3a7a8051bb5696e
+
+Command:
+git merge --no-commit --no-ff origin/dev
+
+Observed RED:
+Auto-merging packages/omo-senpi/plugin/extensions/omo-member.js
+CONFLICT (content): Merge conflict in packages/omo-senpi/plugin/extensions/omo-member.js
+Auto-merging packages/omo-senpi/plugin/extensions/omo.js
+CONFLICT (content): Merge conflict in packages/omo-senpi/plugin/extensions/omo.js
+Automatic merge failed; fix conflicts and then commit the result.
+
+Exit code: 1
+
+Why this is the correct RED:
+Git reproduced GitHub's reported conflict at the exact fetched PR head and base.
+Both conflicts are generated Senpi bundles; no handwritten source file conflicted.
