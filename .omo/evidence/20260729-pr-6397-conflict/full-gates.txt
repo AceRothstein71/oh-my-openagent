@@ -48,3 +48,28 @@ node packages/omo-senpi/plugin/scripts/build-extension.mjs --check
 
 Result:
 `omo.js` and `omo-member.js` are current.
+
+Latest-base synchronization
+===========================
+During final refresh, `origin/dev` advanced from
+`bb06bdbcc8ca2d7f3cc1f83b774d6b1c47bcdd4e` to
+`614cc5358dc393153fc39acae74dc5bd9fb9fffc`.
+
+Analysis:
+- PR head remained `18688779215fcee5242a661996b52333ec53b3db`.
+- The eight new base commits touched none of the 13 delivery paths.
+- Merging the latest base after the reviewed conflict-resolution commit was
+  conflict-free.
+
+Post-sync verification:
+- Focused runner tests: 8 pass, 0 fail, 17 expect() calls.
+- Core typecheck: exit 0.
+- Senpi typecheck: exit 0.
+- Generated Senpi bundle check: current.
+- Scoped diff check: exit 0.
+- Root build: all steps completed at release source version 4.19.3.
+
+The root build exposed unrelated base drift in generated Codex
+`install-local.mjs` (`4.19.2` versus source `4.19.3`). That generated file is
+outside this delivery and was restored to the latest-base index content rather
+than included.
