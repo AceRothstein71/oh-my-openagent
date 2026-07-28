@@ -19,10 +19,8 @@ function normalizeMessage(message: string): string {
 function killProcessSafely(process: SpawnProcess, signal: SpawnSignal): void {
   try {
     process.kill(signal)
-  } catch (error) {
-    if (!(error instanceof Error)) {
-      throw error
-    }
+  } catch {
+    // Cleanup failures must not replace the checker outcome.
   }
 }
 
@@ -68,9 +66,15 @@ export async function runCommentChecker(
   const setTimer = options.setTimeoutFn ?? setTimeout
   const clearTimer = options.clearTimeoutFn ?? clearTimeout
 
-  const process = options.spawn(args)
-  process.stdin.write(JSON.stringify(input.hookInput))
-  process.stdin.end()
+  let process: SpawnProcess
+  try {
+    process = options.spawn(args)
+  } catch (error) {
+    if (error instanceof Error) {
+      return EMPTY_RESULT
+    }
+    throw error
+  }
 
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let graceId: ReturnType<typeof setTimeout> | null = null
@@ -81,13 +85,15 @@ export async function runCommentChecker(
 
       graceId = setTimer(() => {
         killProcessSafely(process, "SIGKILL")
+        resolve("timeout")
       }, killGraceMs)
-
-      resolve("timeout")
     }, timeoutMs)
   })
 
   try {
+    process.stdin.write(JSON.stringify(input.hookInput))
+    process.stdin.end()
+
     const stdoutPromise = new Response(process.stdout).text()
     const stderrPromise = new Response(process.stderr).text()
     const exitCodePromise = process.exited
@@ -108,6 +114,7 @@ export async function runCommentChecker(
 
     return EMPTY_RESULT
   } catch (error) {
+    killProcessSafely(process, "SIGKILL")
     if (error instanceof Error) {
       return EMPTY_RESULT
     }
