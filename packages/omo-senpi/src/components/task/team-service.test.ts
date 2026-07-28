@@ -2,8 +2,6 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, test } from "bun:test"
-import { AuthStorage, ModelRegistry } from "@code-yeongyu/senpi"
-
 import { loadOmoConfig } from "@oh-my-opencode/omo-config-core"
 import { createRuntimeState, transitionRuntimeState } from "@oh-my-opencode/team-core/team-state-store"
 import {
@@ -21,6 +19,7 @@ import {
 } from "@oh-my-opencode/senpi-task"
 
 import { FakeExtensionAPI } from "../../../test-support/fake-extension-api"
+import { TEAM_SERVICE_TEST_MODEL_REGISTRY } from "./__fixtures__/team-service-model-registry"
 import { composeTaskEngine } from "./engine"
 import { createTeamService } from "./team-service"
 
@@ -94,23 +93,8 @@ function extensionOrderHarness() {
     sharedParentTools: () => [],
     runnerFactories: { inProcess: () => runner, process: () => runner },
   })
-  const modelRegistry = ModelRegistry.inMemory(AuthStorage.inMemory())
-  modelRegistry.registerProvider("omo-mock", {
-    api: "openai-completions",
-    baseUrl: "https://example.test",
-    apiKey: "test-key",
-    models: [{
-      id: "mock-1",
-      name: "Mock model",
-      reasoning: false,
-      input: ["text"],
-      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      contextWindow: 1,
-      maxTokens: 1,
-    }],
-  })
   engine.runtime.captureFrom({
-    modelRegistry,
+    modelRegistry: TEAM_SERVICE_TEST_MODEL_REGISTRY,
     sessionManager: { getSessionId: () => "lead-session" },
   })
   const service = createTeamService({

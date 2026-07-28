@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test"
 
-import { AuthStorage, ModelRegistry } from "@code-yeongyu/senpi"
-
-import { createParentRegistrySessionContext, findModelReference } from "./parent-registry-context"
+import type { CreateAgentSessionOptions } from "@code-yeongyu/senpi"
+import {
+  createParentRegistrySessionContext,
+  findModelReference,
+  type ChildModelRegistry,
+} from "./parent-registry-context"
 import type { ManagedStartSpec } from "./types"
 
 function baseSpec(overrides: Partial<ManagedStartSpec> = {}): ManagedStartSpec {
@@ -18,26 +21,15 @@ function baseSpec(overrides: Partial<ManagedStartSpec> = {}): ManagedStartSpec {
   }
 }
 
-function registryWithMockProvider(): ModelRegistry {
-  const registry = ModelRegistry.inMemory(AuthStorage.inMemory())
-  registry.registerProvider("omo-mock", {
-    name: "omo mock provider",
-    baseUrl: "file://mock-provider",
-    apiKey: "mock",
-    api: "openai-completions",
-    models: [
-      {
-        id: "mock-1",
-        name: "Mock 1",
-        reasoning: false,
-        input: ["text"],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: 16_000,
-        maxTokens: 4096,
-      },
-    ],
-  })
-  return registry
+function registryWithMockProvider(): ChildModelRegistry {
+  const model = { provider: "omo-mock", id: "mock-1" }
+  const registry = {
+    authStorage: { kind: "test-auth-storage" },
+    find(provider: string, modelId: string) {
+      return provider === model.provider && modelId === model.id ? model : undefined
+    },
+  }
+  return registry as unknown as ChildModelRegistry
 }
 
 describe("findModelReference", () => {
@@ -109,6 +101,10 @@ describe("createParentRegistrySessionContext", () => {
   test("#given a parent registry with a dynamically-registered provider #when a child spec names that model #then the registry, its auth storage, and the resolved Model are threaded", () => {
     // given
     const registry = registryWithMockProvider()
+    const modelRuntime = { kind: "native-provider-runtime" } as unknown as NonNullable<
+      CreateAgentSessionOptions["modelRuntime"]
+    >
+    Object.defineProperty(registry, "modelRuntime", { value: modelRuntime })
     const provide = createParentRegistrySessionContext(() => registry)
 
     // when
@@ -116,6 +112,7 @@ describe("createParentRegistrySessionContext", () => {
 
     // then
     expect(context.modelRegistry).toBe(registry)
+    expect(context.modelRuntime).toBe(modelRuntime)
     expect(context.authStorage).toBe(registry.authStorage)
     expect(context.model?.provider).toBe("omo-mock")
     expect(context.model?.id).toBe("mock-1")
