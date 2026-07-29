@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { builtinModules } from "node:module"
 import { dirname, join, relative, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { minify } from "terser"
 
 // Keep this list byte-for-byte aligned with senpi loader.ts lines 145-165.
 export const SENPI_LOADER_ALIASES = [
@@ -50,6 +51,7 @@ const BUILD_SETTINGS = JSON.stringify({
   minifySyntax: true,
   minifyWhitespace: true,
   minifyIdentifiers: false,
+  identifierMinifier: "terser@5.44.0",
   externalSpecifiers,
 })
 
@@ -73,6 +75,7 @@ async function buildEntry(entry, output) {
       ...externalSpecifiers.flatMap((specifier) => ["--external", specifier]),
     ])
     await normalizeBuiltinImports(output)
+    await minifyIdentifiersDeterministically(output)
     return await attachBuildMarker(output, entry, metafile)
   } finally {
     await rm(metafile, { force: true })
@@ -114,6 +117,20 @@ function run(command, args) {
   })
   if (result.error !== undefined) throw result.error
   if (result.status !== 0) process.exit(result.status ?? 1)
+}
+
+async function minifyIdentifiersDeterministically(output) {
+  const bundled = await readFile(output, "utf8")
+  const result = await minify(bundled, {
+    module: true,
+    compress: true,
+    mangle: true,
+    format: { comments: false },
+  })
+  if (result.code === undefined) {
+    throw new Error(`Terser produced no output for ${output}`)
+  }
+  await writeFile(output, `${result.code}\n`)
 }
 
 async function normalizeBuiltinImports(output) {

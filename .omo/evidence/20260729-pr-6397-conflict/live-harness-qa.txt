@@ -115,3 +115,13 @@ was absent immediately after the driver returned.
 OpenCode and Codex runtime inputs in this PR did not change during the
 latest-base/bundle-only continuation, so the prior real-harness evidence
 remains the applicable connected-surface proof.
+
+Final deterministic bundle
+--------------------------
+After the clean-archive and provenance fixes:
+- Live driver result: PASS.
+- Ultrawork injection: true.
+- Comment checker: PASS.
+- Real Senpi directory untouched: true.
+- Sandbox `/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-senpi-qa-4L86Ub`
+  was absent after the driver returned.

@@ -33,6 +33,7 @@ Final correction
 - Keep syntax minification.
 - Keep whitespace minification.
 - Disable identifier minification.
+- Run deterministic identifier compression/mangling with pinned Terser 5.44.0.
 - Require current body digest to equal the regenerated expected digest.
 - Require current body bytes to equal the regenerated expected body.
 
@@ -46,6 +47,12 @@ Same test command:
 Linux canonical generation:
 - Node 24.
 - Bun 1.3.12.
-- `omo.js`: 0.94 MB.
-- `omo-member.js`: 166.51 KB.
+- Clean tracked archive with no pre-existing `dist/`.
+- `omo.js`: 626,413 bytes.
+- `omo-member.js`: 108,613 bytes.
 - Immediate Linux `--check`: current.
+
+Budget and regression gates:
+- Bundle-size budget under 700,000 bytes: PASS.
+- Generator tests: 6 pass, 0 fail.
+- Full Senpi tests: 456 pass, 0 fail.

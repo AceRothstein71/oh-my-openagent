@@ -38,6 +38,12 @@ Continuation Senpi sandbox
 - Driver result: PASS.
 - Verification: path absent immediately after the driver returned.
 
+Final Senpi sandbox
+-------------------
+- Path: `/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-senpi-qa-4L86Ub`.
+- Driver result: PASS.
+- Verification: path absent immediately after the driver returned.
+
 Process sweep
 -------------
 No process matched:

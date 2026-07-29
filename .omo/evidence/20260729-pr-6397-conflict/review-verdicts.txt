@@ -42,3 +42,38 @@ Verdict: APPROVED
 Final gate
 ----------
 All five required lanes approved unconditionally.
+
+CI continuation final review
+============================
+
+Round 1 blockers:
+- Base advanced to `106bf0da`.
+- Generated artifact check did not compare against regenerated body bytes.
+- Hands-on QA found mounted-worktree `dist/` contaminated the claimed clean
+  Linux check.
+
+Corrections:
+- Final `MERGE_HEAD` and `origin/dev` both `106bf0da`.
+- Clean `git write-tree` / `git archive` Linux CI reproduction.
+- Deterministic pinned Terser identifier minification.
+- Recomputed-marker tamper regression.
+- Exact regenerated digest/body comparison.
+- Main bundle under 700,000 bytes.
+- Final Senpi tests and live harness rerun.
+
+Final verdicts:
+- Goal/constraint: APPROVED.
+- Code quality: APPROVED.
+- Security/reliability: APPROVED.
+- PR/history context: APPROVED.
+- Hands-on QA evidence: APPROVED.
+
+Reviewer availability note:
+The original hands-on/context residents hit Anthropic 429 twice without a
+verdict. New OpenAI-backed reviewers replaced those two unavailable lanes.
+The QA evidence reviewer first rejected an ambiguous intermediate-base label;
+after `ace13396a` was marked superseded and final base `106bf0da` was explicit,
+the same reviewer returned APPROVED.
+
+Final gate:
+All five required continuation lanes approved unconditionally.

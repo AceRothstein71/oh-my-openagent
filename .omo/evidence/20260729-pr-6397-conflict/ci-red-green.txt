@@ -38,9 +38,9 @@ The committed bundle must be regenerated from the latest merged source graph
 on the Linux CI surface. No handwritten runtime behavior change is required
 for this failure.
 
-GREEN
------
-Latest base:
+INTERMEDIATE GREEN (SUPERSEDED)
+-------------------------------
+Intermediate base:
 `origin/dev` at `ace13396a`.
 
 Merge:
@@ -82,6 +82,40 @@ stopped in `build:materialize-frontend` because the task worktree's enormous
 share this local worktree metadata. The remaining staging commands were run
 directly before the exact pack/type/test gates above.
 
-Final canonical hashes:
+Intermediate canonical hashes:
 - `omo.js`: `600268c2af50042a39db0060551fec099dde54b05a48e06fda8a2a6103a3aa53`
 - `omo-member.js`: `2db4681e8836b3262e40f1419e5c093fe105d72321171a64197b0b15bd4ceaa1`
+
+Final clean-check correction
+----------------------------
+The first Linux GREEN used a mounted worktree containing `dist/`. GitHub CI
+uses a clean tracked checkout and `--ignore-scripts`, so module resolution
+differs.
+
+Faithful final procedure:
+1. `git write-tree`
+2. `git archive <tree>`
+3. Extract into an empty Linux amd64 container.
+4. Node 24 and Bun 1.3.12.
+5. `bun install --frozen-lockfile --ignore-scripts`
+6. Generate bundles, stage them, recreate the clean archive.
+7. Run `build-extension.mjs --check`.
+
+Final base:
+- `origin/dev`: `106bf0da14077e42e5e95cdd0ca0c27a86730bda`
+- `MERGE_HEAD`: `106bf0da14077e42e5e95cdd0ca0c27a86730bda`
+- No history rewrite.
+- Generated `omo.js` conflict resolved by the clean Linux generator.
+
+Final result:
+- Clean archive freshness check: PASS.
+- Generator provenance tests: 6 pass, 0 fail.
+- Senpi typecheck: PASS.
+- Senpi package tests: 456 pass, 0 fail, 1304 expectations.
+- Live Senpi: PASS.
+- `omo.js`: 626,413 bytes.
+- `omo-member.js`: 108,613 bytes.
+
+Final hashes:
+- `omo.js`: `b59ca68391c43d4d831d6059b7549d0037b9cae04d0abebe95546698ccf6c80d`
+- `omo-member.js`: `3fd1728855e0f366ae0230ec82f3d34ef68bfaece808e971e3d1bb7ad36b9336`

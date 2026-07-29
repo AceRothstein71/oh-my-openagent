@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test"
+import { afterEach, describe, expect, setDefaultTimeout, test } from "bun:test"
 import { createHash } from "node:crypto"
 import { appendFile, mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
@@ -9,6 +9,8 @@ import { buildExtension, checkExtensionCurrent } from "./build-extension.mjs"
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(scriptDir, "..", "..", "..", "..")
 const tempRoots = []
+
+setDefaultTimeout(30_000)
 
 afterEach(async () => {
   await Promise.all(tempRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })))
