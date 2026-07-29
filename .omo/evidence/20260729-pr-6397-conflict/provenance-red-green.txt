@@ -1,0 +1,51 @@
+Generated bundle provenance RED→GREEN
+=====================================
+
+Security finding
+----------------
+`artifactsMatch()` accepted any body whose marker reused the current source
+digest and recomputed the current body digest. It did not compare the current
+body with the freshly regenerated expected body.
+
+RED
+---
+Regression:
+Modify the generated body, recompute the marker body hash, preserve the source
+digest, then call `checkExtensionCurrent()`.
+
+Command:
+`bun test packages/omo-senpi/plugin/scripts/build-extension.test.mjs`
+
+Observed:
+- 5 pass, 1 fail.
+- Expected `stale-output`.
+- Received `{ ok: true }`.
+
+Failed first correction
+-----------------------
+Direct body comparison initially made the normal fresh-build test fail because
+Bun's identifier minifier is nondeterministic. Two sequential builds had the
+same 431 metafile inputs but different bytes and names such as `t2/U2` versus
+`Y2/X2`.
+
+Final correction
+----------------
+- Keep syntax minification.
+- Keep whitespace minification.
+- Disable identifier minification.
+- Require current body digest to equal the regenerated expected digest.
+- Require current body bytes to equal the regenerated expected body.
+
+GREEN
+-----
+Same test command:
+- 6 pass, 0 fail.
+- Recomputed-marker tampering is rejected.
+- Unchanged generated output is accepted.
+
+Linux canonical generation:
+- Node 24.
+- Bun 1.3.12.
+- `omo.js`: 0.94 MB.
+- `omo-member.js`: 166.51 KB.
+- Immediate Linux `--check`: current.

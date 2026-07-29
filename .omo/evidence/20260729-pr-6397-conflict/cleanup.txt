@@ -32,6 +32,12 @@ Codex sandboxes
 - Verification: both paths do not exist.
 - Driver proof: real `~/.codex/config.toml` SHA unchanged.
 
+Continuation Senpi sandbox
+--------------------------
+- Path: `/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-senpi-qa-EakWBB`.
+- Driver result: PASS.
+- Verification: path absent immediately after the driver returned.
+
 Process sweep
 -------------
 No process matched:

@@ -1,0 +1,87 @@
+PR #6397 CI continuation
+========================
+
+GitHub RED
+----------
+Workflow job:
+`senpi-compatibility (ubuntu-latest)`
+
+Run/job:
+- Run: `30382328569`
+- Job: `90352960032`
+
+Observed:
+`omo-senpi extension build is not current: stale-output`
+`output=.../packages/omo-senpi/plugin/extensions/omo.js`
+Exit code: 1
+
+Pinned-runtime hypothesis split
+-------------------------------
+CI runtime: Node 24, Bun 1.3.12.
+
+macOS with Bun 1.3.12:
+`node packages/omo-senpi/plugin/scripts/build-extension.mjs --check`
+Result: current.
+
+Linux with Node 24 and Bun 1.3.12:
+`node packages/omo-senpi/plugin/scripts/build-extension.mjs --check`
+Result: `stale-output`, exit 1.
+
+Interpretation:
+- H1, Bun-version mismatch: refuted. Pinned Bun 1.3.12 passes on macOS.
+- H2, platform-dependent generated output: confirmed by Linux RED.
+- H3, latest-base overlap: confirmed. Current `origin/dev` modifies
+  `packages/omo-senpi/plugin/extensions/omo.js` and several Senpi bundle input
+  scripts/skills after the previously merged base.
+
+The committed bundle must be regenerated from the latest merged source graph
+on the Linux CI surface. No handwritten runtime behavior change is required
+for this failure.
+
+GREEN
+-----
+Latest base:
+`origin/dev` at `ace13396a`.
+
+Merge:
+- Contributor history was not rewritten.
+- Only generated `packages/omo-senpi/plugin/extensions/omo.js` conflicted.
+- No minified conflict hunk was hand-edited.
+
+Canonical generation:
+Linux amd64, Node 24, Bun 1.3.12:
+`node packages/omo-senpi/plugin/scripts/build-extension.mjs`
+
+Verification:
+Linux amd64, Node 24, Bun 1.3.12:
+`node packages/omo-senpi/plugin/scripts/build-extension.mjs --check`
+
+Observed:
+`omo-senpi extension build is current`
+Exit code: 0
+
+The generator also rebuilt `omo-member.js` from the same fully merged source
+graph, even though only the main bundle conflicted.
+
+Ubuntu Senpi job verification
+-----------------------------
+Exact previously failing step:
+- Linux amd64, Node 24, Bun 1.3.12.
+- `build-extension.mjs --check`: PASS.
+
+Remaining job gates:
+- `npm pack packages/omo-senpi/plugin`: PASS.
+- `packages/lsp-daemon` daemon roundtrip test: PASS.
+- `tsgo --noEmit -p packages/omo-senpi/tsconfig.json`: PASS.
+- `bun test packages/omo-senpi`: 444 pass, 0 fail, 1275 expectations.
+
+Local full-build qualification:
+The first local exact-job attempt passed the original bundle check, then
+stopped in `build:materialize-frontend` because the task worktree's enormous
+`open-design` submodule clone was incomplete. The GitHub checkout does not
+share this local worktree metadata. The remaining staging commands were run
+directly before the exact pack/type/test gates above.
+
+Final canonical hashes:
+- `omo.js`: `600268c2af50042a39db0060551fec099dde54b05a48e06fda8a2a6103a3aa53`
+- `omo-member.js`: `2db4681e8836b3262e40f1419e5c093fe105d72321171a64197b0b15bd4ceaa1`

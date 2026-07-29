@@ -18,6 +18,8 @@ comment-checker stdin `EPIPE` containment or newer Senpi bundle behavior from
 - `live-harness-qa.txt`: Senpi, OpenCode, and Codex real-harness proof.
 - `cleanup.txt`: process, port, sandbox, and eventual worktree cleanup receipts.
 - `review-verdicts.txt`: five-lane HEAVY review and conditional-fix loop.
+- `ci-red-green.txt`: Ubuntu stale-bundle RED→GREEN and latest-base sync.
+- `provenance-red-green.txt`: tamper-proof deterministic bundle checking.
 
 ## Evidence policy
 

@@ -44,7 +44,14 @@ const externalSpecifiers = [
   ...builtinModuleNames.map((moduleName) => `node:${moduleName}`),
 ]
 const BUILD_MARKER_PREFIX = "// omo-senpi-build:"
-const BUILD_SETTINGS = JSON.stringify({ target: "node", format: "esm", minify: true, externalSpecifiers })
+const BUILD_SETTINGS = JSON.stringify({
+  target: "node",
+  format: "esm",
+  minifySyntax: true,
+  minifyWhitespace: true,
+  minifyIdentifiers: false,
+  externalSpecifiers,
+})
 
 export async function buildExtension(options = {}) {
   const output = options.outputPath ?? outputPath
@@ -62,7 +69,7 @@ async function buildEntry(entry, output) {
   try {
     run("bun", [
       "build", entry, "--target", "node", "--format", "esm", "--outfile", output,
-      "--minify", `--metafile=${metafile}`,
+      "--minify-syntax", "--minify-whitespace", `--metafile=${metafile}`,
       ...externalSpecifiers.flatMap((specifier) => ["--external", specifier]),
     ])
     await normalizeBuiltinImports(output)
@@ -152,6 +159,8 @@ function artifactsMatch(currentText, expectedText) {
   return current !== undefined && expected !== undefined
     && current.sourceDigest === expected.sourceDigest
     && current.bodyDigest === digest(current.body)
+    && current.bodyDigest === expected.bodyDigest
+    && current.body === expected.body
 }
 
 function parseBuildArtifact(text) {
