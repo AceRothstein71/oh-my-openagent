@@ -139,6 +139,7 @@ describe("buildTaskExecute spawn", () => {
             max_depth: 1,
             residency_max_children: 8,
             ttl_ms: 86400000,
+            warnings: { unavailable_categories: true },
             wait: { min_ms: 5000, default_ms: 60000, max_ms: 600000 },
             team: { max_members: 8, max_parallel_members: 4, max_wall_clock_minutes: 120 },
           },
