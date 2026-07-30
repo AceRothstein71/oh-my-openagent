@@ -1,0 +1,130 @@
+OpenCode live QA: immediate checker exit containment
+====================================================
+
+Date: 2026-07-30
+OpenCode: 1.18.9
+Local plugin:
+  /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/pr-6397-latest-dev/dist/index.js
+
+What was tested
+---------------
+1. The bundled OpenCode QA common helper self-check.
+2. The bundled SSE hook probe self-test.
+3. A real isolated `opencode serve` plus `opencode run --format json` turn,
+   attached over HTTP to the real server and driven by a local Responses API
+   mock.
+4. A native OpenCode `apply_patch` tool call that changed a real project file.
+5. The local OMO comment-checker hook with its isolated cached checker path
+   linked to `/usr/bin/false`, forcing the external child to exit without
+   consuming stdin.
+
+Helper checks
+-------------
+Commands:
+  bash .agents/skills/opencode-qa/scripts/lib/common.sh --self-check
+  bash .agents/skills/opencode-qa/scripts/sse-hook-probe.sh --self-test
+
+Observed:
+  common helper checks: all PASS
+  SSE probe: PASS; `/event` opened and delivered `server.connected`
+
+Real surface
+------------
+The QA driver started the real OpenCode server on an ephemeral loopback port,
+subscribed to its SSE stream before triggering the action, then ran:
+
+  opencode run "QA_CHILD_EXIT_EXIT1 perform the deterministic patch" \
+    --attach http://127.0.0.1:<ephemeral-port> \
+    --password <redacted-local-placeholder> \
+    --dir <isolated-project> \
+    --model openai/gpt-fake \
+    --format json \
+    --auto
+
+The local mock emitted a valid `apply_patch` call whose payload updated
+`epipe-probe.ts` and added `QA_CHILD_EXIT_COMMENT_MARKER`. It emitted the final
+model response only after receiving the tool result.
+
+Observed result:
+  serverReady: true
+  sseConnected: true
+  sseSawMessagePartUpdated: true
+  sseSawWriteLikePatch: true
+  ssePartTypes: step-finish, step-start, text, tool
+  runExitCode: 0
+  runExitSignal: null
+  jsonEventTypes: step_start, tool_use, step_finish
+  runSawWriteLikePatch: true
+  resultFileHasCommentMarker: true
+  outputHasFeedback: false
+  noEpipeOrUnhandled: true
+
+The crash assertion rejected only concrete host-failure signatures:
+  `Error: write EPIPE`
+  `Unhandled 'error' event`
+  `ERR_UNHANDLED_ERROR`
+  `host crash`
+
+The first draft of the driver searched for the bare word `EPIPE`, while its
+own prompt contained that word. That produced a false failure despite a
+successful tool call. The final run used a neutral prompt and the concrete
+crash signatures above; no implementation or production behavior changed
+between those runs.
+
+Hook and checker proof
+----------------------
+Sanitized comment-checker debug output observed:
+  resolved binary path:
+    <isolated-cache>/oh-my-opencode/bin/comment-checker
+  cached checker target:
+    /usr/bin/false
+  tool.execute.before:
+    tool=apply_patch
+  tool.execute.after:
+    tool=apply_patch
+  using CLI for apply_patch:
+    <isolated-cache>/oh-my-opencode/bin/comment-checker
+  processing apply_patch edits:
+    1
+
+The SSE stream independently observed `message.part.updated` with a `tool`
+part containing `apply_patch`. The resulting project file contained:
+
+  // QA_CHILD_EXIT_COMMENT_MARKER
+  export const epipeValue = 1
+
+Isolation proof
+---------------
+Real host OpenCode session count:
+  before: 6967
+  after:  6967
+
+Isolated sandbox OpenCode session count:
+  before: 1
+  after:  2
+
+The single-session increase occurred only in the isolated XDG database. The
+real `~/.local/share/opencode/opencode.db` was not changed by QA.
+
+Cleanup
+-------
+- The mock provider received SIGINT and exited 0.
+- The real OpenCode server was terminated by the bounded driver.
+- No QA-owned process remained.
+- The mock provider port had no listener after shutdown.
+- Both task-owned QA roots were removed.
+- No real OpenCode or Senpi configuration was modified.
+
+Why this is enough
+------------------
+This drove the affected shared runner through the real OpenCode plugin hook,
+not a direct module import. The real tool event, hook debug trace, cached
+immediate-exit checker, project mutation, zero process status, explicit crash
+signature check, SSE event, database isolation, and cleanup receipt cover the
+observable regression and its adjacent harness boundary.
+
+What was omitted
+----------------
+Raw environment dumps, authentication headers, the local placeholder password,
+private host configuration, provider request bodies, and full logs were not
+copied. Only behavior-relevant sanitized fields are recorded.

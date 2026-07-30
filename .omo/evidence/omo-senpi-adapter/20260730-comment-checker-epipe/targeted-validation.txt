@@ -1,0 +1,138 @@
+Targeted validation
+===================
+
+Failing-first provenance
+------------------------
+Tests were added before production changes and run on latest dev.
+
+Observed RED:
+- 8 focused tests executed.
+- 2 passed.
+- 6 failed for the intended defects:
+  - synchronous spawn/stdin failures escaped containment;
+  - failed stdin cleanup did not kill the child;
+  - the real Node adapter host exited on an unhandled EPIPE;
+  - exit-code-2 feedback was lost in the EPIPE/close race;
+  - a late code-2 result could win after the timeout deadline;
+  - a stubborn timed-out child did not receive SIGKILL.
+
+Focused GREEN
+-------------
+Command:
+  bun test packages/comment-checker-core/src/runner.test.ts \
+    packages/omo-senpi/src/components/comment-checker/runner.test.ts
+
+Observed:
+  8 pass
+  0 fail
+  17 expect() calls
+  Ran 8 tests across 2 files.
+
+The adapter regressions build the TypeScript runner and execute it with the
+real `node` binary. The child script permanently rejects a Bun-hosted adapter,
+and every spawn has a 10-second deadlock guard.
+
+Affected package suites
+-----------------------
+Command:
+  bun test packages/comment-checker-core packages/omo-senpi
+
+Observed:
+  505 pass
+  0 fail
+  1416 expect() calls
+  Ran 505 tests across 82 files.
+
+Full repository tests
+---------------------
+Command:
+  bun test
+
+Observed:
+  12554 pass
+  3 skip
+  0 fail
+  76074 expect() calls
+  Ran 12557 tests across 1654 files.
+
+Typechecks
+----------
+Commands:
+  bunx tsgo --noEmit -p packages/comment-checker-core/tsconfig.json
+  bunx tsgo --noEmit -p packages/omo-senpi/tsconfig.json
+
+Observed:
+  both exited 0 with no diagnostics.
+
+Repository typecheck
+--------------------
+Command:
+  bun run typecheck
+
+Observed:
+  root tsgo, script tsgo, and every registered package typecheck exited 0.
+
+Repository build
+----------------
+Command:
+  bun run build
+
+Observed:
+  materialization, MCPs, TUI, CLI, schemas, OpenCode plugin, Senpi extension,
+  Codex plugin, bootstrap, and component builds completed successfully.
+
+Post-build scope cleanup:
+  Two unrelated Codex generated outputs changed because current dev source is
+  ahead of those committed bundles. They were restored to current dev content
+  and executable modes. The delivered diff contains no Codex path.
+
+Generated Senpi extension
+-------------------------
+Commands:
+  node packages/omo-senpi/plugin/scripts/build-extension.mjs
+  node packages/omo-senpi/plugin/scripts/build-extension.mjs --check
+
+Observed:
+  omo.js and omo-member.js regenerated.
+  "omo-senpi extension build is current".
+
+ELF ABI inspection
+-------------------
+Installed package:
+  @code-yeongyu/comment-checker@0.8.0
+
+Linux x64 identity:
+  ELF 64-bit LSB PIE executable, x86-64, dynamically linked,
+  interpreter /lib64/ld-linux-x86-64.so.2, stripped.
+
+Highest imported version found in both Linux artifacts:
+  linux-x64: GLIBC_2.34
+  linux-arm64: GLIBC_2.34
+
+Representative undefined imports from linux-x64:
+  GLIBC_2.32 pthread_getattr_np
+  GLIBC_2.33 fstat64
+  GLIBC_2.33 stat64
+  GLIBC_2.34 __libc_start_main
+  GLIBC_2.34 pthread_attr_getstack
+  GLIBC_2.34 pthread_key_create
+
+Conclusion:
+  Ubuntu 20.04 is one confirmed glibc 2.31 reproduction. Debian 11 and other
+  Linux systems below the binary's glibc 2.34 requirement are also ABI-risk
+  environments. The EPIPE containment is intentionally platform-independent
+  because an early child exit can have causes other than glibc.
+
+Cleanup
+-------
+The tests remove their temporary runner bundles and child scripts in finally
+blocks. A post-run process scan found no matching comment-checker test child.
+
+Omitted
+-------
+Docker cross-distribution execution was attempted but the installed Docker
+Desktop daemon returned HTTP 500 on its socket before any container started.
+No container or Docker-side artifact was created. The ABI conclusion therefore
+uses direct ELF import inspection plus official distribution package versions;
+the real-host containment is proven separately by the real Node regressions and
+the Senpi/OpenCode harness evidence.

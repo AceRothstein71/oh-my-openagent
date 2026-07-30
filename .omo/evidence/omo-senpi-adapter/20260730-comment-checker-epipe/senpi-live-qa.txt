@@ -1,0 +1,121 @@
+Senpi live QA: comment-checker early-stdin-exit / EPIPE containment
+=====================================================================
+
+Date: 2026-07-30
+Worktree: /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/pr-6397-latest-dev
+Scope: hands-on QA only. No production code, tests, tracked QA drivers, commits, or pushes were changed.
+
+What was tested
+----------------
+1. The exported sandbox helpers' self-test.
+2. The normal isolated real-Senpi driver using the local worktree plugin and its
+   mock provider, including its normal comment-checker feedback flow.
+3. A separate real installed-Senpi turn with the same isolated sandbox helpers,
+   local worktree plugin, and mock provider. Its mock provider executed a `write`
+   tool call; `OMO_COMMENT_CHECKER_BIN=/usr/bin/false` made the checker child
+   exit immediately without consuming stdin. This is the affected child-stream
+   failure shape rather than a unit-test-only import.
+
+Exact commands and observed completion
+--------------------------------------
+Self-test:
+  cd /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/pr-6397-latest-dev && node packages/omo-senpi/scripts/qa/drive.mjs --self-test; status=$?; printf 'EXIT_STATUS=%s\n' "$status"; exit "$status"
+
+Observed:
+  SELF-TEST OK
+  EXIT_STATUS=0
+
+Normal real-Senpi driver:
+  cd /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/pr-6397-latest-dev && node packages/omo-senpi/scripts/qa/drive.mjs; status=$?; printf 'EXIT_STATUS=%s\n' "$status"; exit "$status"
+
+Final driver JSON (verbatim; it contains no credentials):
+  {"result":"PASS","ultraworkInjected":true,"commentChecker":"PASS","realSenpiUntouched":false,"providedSenpiCodingAgentDir":"unset","sandboxAgentDir":"/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-senpi-qa-s1pC0I/agent","sandboxCwd":"/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-senpi-qa-s1pC0I/project"}
+  EXIT_STATUS=0
+
+The normal driver PASS proves the ordinary comment-checker feedback path ran
+(`commentChecker:"PASS"`) and the caller supplied no agent directory
+(`providedSenpiCodingAgentDir:"unset"`). Its full-directory informational
+field was false while unrelated pre-existing Senpi sessions were active. This
+does not indicate that the isolated driver used the real agent directory: the
+driver source explicitly documents whole-directory digest volatility from live
+session JSONL/log/cache activity. The focused early-exit run below measured an
+unchanged full real-directory digest around its own turn.
+
+Early-exit real-Senpi scenario:
+  node /tmp/omo-senpi-comment-checker-epipe-live-qa.mjs; status=$?; printf 'EXIT_STATUS=%s\n' "$status"; exit "$status"
+
+The temporary /tmp driver imported `createSandbox`, `seedSandbox`,
+`credentialDigest`, and `digestDirectory` from
+`packages/omo-senpi/scripts/qa/drive.mjs`. It seeded the returned isolated
+`SENPI_CODING_AGENT_DIR` and `XDG_CONFIG_HOME`, wrote a local mock script with
+a `write` call for `qa-epipe.ts`, then invoked this installed executable:
+  /Users/sungsoopark/.local/bin/senpi -e /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/pr-6397-latest-dev/packages/omo-senpi/scripts/qa/mock-provider/index.ts -p --provider omo-mock --model mock-1 "write through the mock provider"
+
+It used a single bounded 60,000 ms spawn timeout only as a deadlock guard; no
+sleeping or polling was used. It captured the actual stdout and stderr strings
+and asserted exact completion, a written `qa-epipe.ts` containing
+`epipeQa = true`, and absence of EPIPE, Unhandled, uncaught, and host-crash
+markers. Output content is intentionally not retained: only deterministic
+lengths and SHA-256 receipts are recorded, so no host/private log material is
+placed in evidence.
+
+Sanitized final PASS JSON:
+  {"result":"PASS","scenario":"real-senpi local-plugin mock-provider write flow with OMO_COMMENT_CHECKER_BIN=/usr/bin/false","checker":{"path":"/usr/bin/false","behavior":"immediate exit without reading stdin"},"process":{"status":0,"signal":null,"timedOut":false,"errorCode":null},"writeFlow":{"wroteExpectedFile":true},"stdout":{"bytes":37,"sha256":"0ed9a118e63a7697c3e867ca5c183231707c0c29d5979a30c4c6b7978fa636c5","containsCheckingComments":false,"containsEPIPE":false,"containsUnhandled":false},"stderr":{"bytes":277,"sha256":"d5b1f2e79a3d8be3aefb84b91ddb756e5a4dde24550a8031ee173d6d2755385d","containsCheckingComments":false,"containsEPIPE":false,"containsUnhandled":false},"realSenpiDirectory":{"fullDigestBefore":"9b0cc670693c6bef6726bc7c0997fab3958404b6a68da1aa5a8d694b32c2c105","fullDigestAfter":"9b0cc670693c6bef6726bc7c0997fab3958404b6a68da1aa5a8d694b32c2c105","fullDigestUnchanged":true,"credentialDigestBefore":"cb7992741ddc99f1643d26b64b50b0e32c7ff40e7ca3fb58d3d9cf274a5f4b5b","credentialDigestAfter":"cb7992741ddc99f1643d26b64b50b0e32c7ff40e7ca3fb58d3d9cf274a5f4b5b","credentialDigestUnchanged":true},"cleanup":{"sandboxRemoved":true,"sandboxProcessReferences":0}}
+  EXIT_STATUS=0
+
+What was observed
+-----------------
+- The installed Senpi process returned exactly status 0, with no signal and no
+  timeout, after the mock-provider write flow while the configured checker was
+  `/usr/bin/false`.
+- The expected file was written, proving the write-like tool-result surface was
+  exercised. The immediate child exit produced no EPIPE, Unhandled, uncaught,
+  or host-crash marker in either captured stream. `containsCheckingComments` is
+  false because this noninteractive turn emits no spinner; it is not used as
+  evidence of checker feedback. The normal driver separately proved feedback
+  with `commentChecker:"PASS"`.
+- The real `~/.senpi/agent` full SHA-256 directory digest was exactly unchanged
+  before and after the early-exit turn. Its isolation credential-file digest was
+  also exactly unchanged. Only digest values, never config contents, were read.
+- The early-exit driver removed its sandbox in `finally`; its post-run process
+  scan found zero references to that sandbox.
+
+Cleanup receipt
+---------------
+The temporary driver existed only at:
+  /tmp/omo-senpi-comment-checker-epipe-live-qa.mjs
+
+It was deleted after the run with a unified deletion patch. Final cleanup
+command and receipt:
+  p=/tmp/omo-senpi-comment-checker-epipe-live-qa.
+  p+=mjs
+  test ! -e "$p"
+  ps -axo pid=,ppid=,command= | rg '[o]mo-senpi-comment-checker-epipe-live-qa\.[m]js|[o]mo-senpi-qa-' || true
+
+Observed:
+  TEMP_DRIVER_REMOVED=true
+  PROCESS_CLEANUP_SCAN_COMPLETE=true
+
+The normal driver's reported sandbox root was independently absent after its
+run (`NORMAL_DRIVER_SANDBOX_REMOVED=true`). No process was killed during QA;
+the final scan only checked for processes belonging to this QA scenario.
+
+Why this is enough
+------------------
+This covers the real host boundary that matters for the fix: Senpi loaded the
+local extension, the mock provider triggered the affected write hook, and an
+actual child process exited without reading stdin. The host completed with
+status 0 and no EPIPE or unhandled-error marker. The normal real-checker path
+also preserved comment feedback.
+
+The normal driver's broad real-directory digest changed while unrelated live
+Senpi activity was present. It is therefore recorded as informational rather
+than isolation proof. The focused immediate-exit run took its own full
+real-directory digest immediately before and after the bounded run and observed
+equality; that is the isolation assertion used for this scenario.
+
+What was omitted
+----------------
+Raw environment dumps, provider payloads, private agent configuration,
+credentials, authentication headers, and full host logs were not copied.
+Only behavior-relevant sanitized output and digest equality are recorded.
