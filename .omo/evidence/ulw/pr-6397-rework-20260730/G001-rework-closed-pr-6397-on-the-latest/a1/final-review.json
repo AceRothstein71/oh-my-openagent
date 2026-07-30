@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "gate": "final_review",
+  "passed": true,
+  "reviewedHead": "707a7d3bf",
+  "lanes": [
+    {
+      "name": "goal_and_constraints",
+      "reviewer": "oracle",
+      "initialVerdict": "FAIL",
+      "initialBlockers": [
+        "full test, typecheck, and build receipts missing from targeted evidence",
+        "new tests and mandatory evidence not committed"
+      ],
+      "resolution": "added full gate receipts and committed tests/evidence",
+      "finalVerdict": "PASS",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "code_quality",
+      "reviewer": "oracle",
+      "initialVerdict": "FAIL",
+      "initialBlockers": [
+        "first real-Node EPIPE test relied on ambient process cwd"
+      ],
+      "resolution": "added a temp check script and ran the adapter from its temp cwd",
+      "finalVerdict": "PASS",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "security_and_reliability",
+      "reviewer": "oracle",
+      "initialVerdict": "PASS",
+      "finalVerdict": "PASS",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "hands_on_qa",
+      "reviewer": "unspecified-high",
+      "initialVerdict": "PASS",
+      "finalVerdict": "PASS",
+      "confidence": "HIGH"
+    },
+    {
+      "name": "pr_and_history_context",
+      "reviewer": "unspecified-high",
+      "initialVerdict": "FAIL",
+      "initialBlockers": [
+        "review occurred before the fresh evidence and rework were committed"
+      ],
+      "resolution": "committed the scoped implementation and package-specific evidence, then re-reviewed pre-push readiness",
+      "finalVerdict": "PASS",
+      "confidence": "HIGH"
+    }
+  ],
+  "blockingIssues": [],
+  "verification": {
+    "focusedTests": "8 pass, 0 fail",
+    "affectedTests": "505 pass, 0 fail",
+    "fullTests": "12554 pass, 3 skip, 0 fail",
+    "typecheck": "pass",
+    "build": "pass",
+    "senpiLiveQa": "pass",
+    "opencodeLiveQa": "pass",
+    "generatedExtensionCheck": "pass"
+  }
+}
