@@ -1,0 +1,45 @@
+PR #6397 current-dev merge verification - 2026-07-31
+
+WHAT WAS TESTED
+
+1. Regenerated the Senpi bundle from the merged source:
+   bun run build:senpi-plugin
+2. Focused shared-core and Senpi adapter suites:
+   bun test packages/comment-checker-core packages/omo-senpi/src/components/comment-checker
+3. Package typechecks:
+   bunx tsgo --noEmit -p packages/comment-checker-core
+   bunx tsgo --noEmit -p packages/omo-senpi
+4. Senpi QA driver self-test:
+   node packages/omo-senpi/scripts/qa/drive.mjs --self-test
+5. Real installed-Senpi Windows smoke using the regenerated local plugin.
+
+WHAT WAS OBSERVED
+
+- The Senpi plugin build exited 0 and regenerated `plugin/extensions/omo.js`
+  from the merged source.
+- The focused suites passed: 26 pass, 0 fail.
+- Both package typechecks exited 0 with no diagnostics.
+- The QA driver self-test printed `SELF-TEST OK`.
+- The real Windows Senpi run loaded the local plugin and observed
+  `ultraworkInjected: true`; the real Senpi credential digest remained
+  unchanged.
+- The driver's comment-checker feedback lane did not pass on Windows because
+  its resolved `@code-yeongyu/comment-checker/cli.js` is not directly
+  executable as the configured checker binary on this platform. The earlier
+  committed `senpi-live-qa.txt` remains the exact real-harness proof of the
+  EPIPE containment and exit-code-2 feedback behavior.
+
+WHY IT IS ENOUGH
+
+The merge conflict affected only the generated Senpi bundle. Rebuilding from
+the merged source, passing the source-level behavior suites and typechecks,
+and loading that regenerated bundle in real Senpi prove the conflict
+resolution did not discard the fix. The issue-specific live behavior was
+already captured in the committed macOS harness artifact and its source logic
+was unchanged by the merge.
+
+WHAT WAS OMITTED
+
+No credentials, tokens, auth headers, private configuration, or raw provider
+payloads were captured. The failed Windows sandbox contained no credential
+files and its remaining empty directories were identified for cleanup.
