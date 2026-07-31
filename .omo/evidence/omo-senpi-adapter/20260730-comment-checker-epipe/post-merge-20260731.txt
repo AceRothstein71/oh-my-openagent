@@ -12,17 +12,25 @@ WHAT WAS TESTED
 4. Senpi QA driver self-test:
    node packages/omo-senpi/scripts/qa/drive.mjs --self-test
 5. Real installed-Senpi Windows smoke using the regenerated local plugin.
+6. Deadline-return regression and direct library driver:
+   bun test packages/comment-checker-core/src/runner.test.ts
+   bun -e <manual runCommentChecker timer driver>
 
 WHAT WAS OBSERVED
 
 - The Senpi plugin build exited 0 and regenerated `plugin/extensions/omo.js`
   from the merged source.
-- The focused suites passed: 26 pass, 0 fail.
+- The final focused suites passed: 27 pass, 0 fail; the runner-specific suite
+  passed 7/7.
 - Both package typechecks exited 0 with no diagnostics.
 - The QA driver self-test printed `SELF-TEST OK`.
 - The real Windows Senpi run loaded the local plugin and observed
   `ultraworkInjected: true`; the real Senpi credential digest remained
   unchanged.
+- The direct deadline driver printed:
+  `{"result":{"hasComments":false,"message":""},"beforeGrace":["SIGTERM"],"afterGrace":["SIGTERM","SIGKILL"]}`.
+  This proves the hook result returns at the initial deadline while the grace
+  callback remains active only for SIGKILL cleanup.
 - The driver's comment-checker feedback lane did not pass on Windows because
   its resolved `@code-yeongyu/comment-checker/cli.js` is not directly
   executable as the configured checker binary on this platform. The earlier

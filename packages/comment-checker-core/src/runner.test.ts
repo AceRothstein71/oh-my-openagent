@@ -219,12 +219,13 @@ describe("comment checker runner", () => {
     expect(signals).toEqual(["SIGTERM"])
   })
 
-  test("#given a checker ignores SIGTERM #when the timeout grace expires #then it receives SIGKILL", async () => {
+  test("#given a checker ignores SIGTERM #when the deadline expires #then returns before the kill grace callback", async () => {
     // given
+    const callbacks: Array<() => void> = []
     const signals: string[] = []
 
     // when
-    const result = await runCommentChecker(
+    const resultPromise = runCommentChecker(
       {
         binaryPath: "/tmp/comment-checker",
         hookInput: {
@@ -250,10 +251,71 @@ describe("comment checker runner", () => {
             signals.push(signal)
           },
         }),
-        timeoutMs: 1,
-        killGraceMs: 1,
+        timeoutMs: 30_000,
+        killGraceMs: 60_000,
+        setTimeoutFn: ((callback: () => void) => {
+          callbacks.push(callback)
+          return callbacks.length as unknown as ReturnType<typeof setTimeout>
+        }) as typeof setTimeout,
+        clearTimeoutFn: (() => {}) as typeof clearTimeout,
       },
     )
+
+    callbacks[0]?.()
+    const result = await resultPromise
+
+    // then
+    expect(result).toEqual({ hasComments: false, message: "" })
+    expect(signals).toEqual(["SIGTERM"])
+    expect(callbacks).toHaveLength(2)
+    callbacks[1]?.()
+    expect(signals).toEqual(["SIGTERM", "SIGKILL"])
+  })
+
+  test("#given a checker ignores SIGTERM #when the timeout grace expires #then it receives SIGKILL", async () => {
+    // given
+    const callbacks: Array<() => void> = []
+    const signals: string[] = []
+
+    // when
+    const resultPromise = runCommentChecker(
+      {
+        binaryPath: "/tmp/comment-checker",
+        hookInput: {
+          session_id: "session-1",
+          tool_name: "write",
+          transcript_path: "/tmp/transcript.json",
+          cwd: "/tmp",
+          hook_event_name: "tool.execute.after",
+          tool_input: {},
+        },
+      },
+      {
+        existsSync: () => true,
+        spawn: () => ({
+          stdin: {
+            write: () => {},
+            end: () => {},
+          },
+          stdout: createStream(),
+          stderr: createStream(),
+          exited: new Promise<number>(() => {}),
+          kill: (signal) => {
+            signals.push(signal)
+          },
+        }),
+        timeoutMs: 30_000,
+        killGraceMs: 60_000,
+        setTimeoutFn: ((callback: () => void) => {
+          callbacks.push(callback)
+          return callbacks.length as unknown as ReturnType<typeof setTimeout>
+        }) as typeof setTimeout,
+        clearTimeoutFn: (() => {}) as typeof clearTimeout,
+      },
+    )
+    callbacks[0]?.()
+    const result = await resultPromise
+    callbacks[1]?.()
 
     // then
     expect(result).toEqual({ hasComments: false, message: "" })

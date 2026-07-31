@@ -80,6 +80,13 @@ export async function runCommentChecker(
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let graceId: ReturnType<typeof setTimeout> | null = null
   let timedOut = false
+  const clearGraceTimer = () => {
+    if (graceId !== null) {
+      clearTimer(graceId)
+      graceId = null
+    }
+  }
+  void process.exited.then(clearGraceTimer, clearGraceTimer)
 
   const timeoutPromise = new Promise<"timeout">((resolve) => {
     timeoutId = setTimer(() => {
@@ -88,8 +95,8 @@ export async function runCommentChecker(
 
       graceId = setTimer(() => {
         void tryKillProcess(process, "SIGKILL")
-        resolve("timeout")
       }, killGraceMs)
+      resolve("timeout")
     }, timeoutMs)
   })
 
@@ -126,8 +133,6 @@ export async function runCommentChecker(
     if (timeoutId !== null) {
       clearTimer(timeoutId)
     }
-    if (graceId !== null) {
-      clearTimer(graceId)
-    }
+    if (!timedOut) clearGraceTimer()
   }
 }
