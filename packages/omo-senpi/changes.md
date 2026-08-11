@@ -1,3 +1,18 @@
+## 2026-08-12 — Publish and control native tasks over RPC
+
+The task component now emits every available child-session, result, error, persisted/live run-stat,
+and semantic live-progress field through `omo.task.updated`. It owns one deduplicated child
+subscription per live resident task and releases subscriptions when a task settles, leaves the
+session, or the session shuts down.
+
+Modern Senpi hosts also receive session-scoped `omo.task.output`, `omo.task.send`, and
+`omo.task.cancel` request handlers. These handlers reuse the existing task tool policies, reject
+malformed or foreign-session requests, never enable `all_scope`, and remain an optional no-op on
+older hosts that expose only `pi.rpc.emit`.
+
+Future changes must preserve the single live-subscription owner, semantic snapshot deduplication,
+parent-session scoping, and old-host compatibility.
+
 ## 2026-08-06 — Refresh local Senpi installs before activation
 
 Source installs now rebuild every generated OMO Senpi artifact even when the previous bundle is
