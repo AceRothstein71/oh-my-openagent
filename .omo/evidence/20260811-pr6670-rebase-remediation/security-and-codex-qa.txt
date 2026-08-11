@@ -7,7 +7,7 @@ Commands:
 Observed:
 - The original GitGuardian findings were generic high-entropy matches in a QA sandbox token and a generated public PostHog project key.
 - The QA JSON now preserves all PASS results and counts while redacting sandbox tokens, absolute host/session paths, process IDs, and task IDs.
-- The PostHog project key is assembled at runtime from two non-secret fragments; its runtime value is unchanged and the generated installer no longer contains the flagged literal.
+- The PostHog project key is a public client-side project token already present in telemetry-core and intentionally shipped. Its new generated-installer occurrence carries a same-line `ggignore`; runtime bytes and the source-byte audit remain unchanged.
 - TruffleHog reported 0 verified and 0 unverified secrets in the final evidence directory before the clean-squash commit.
 - Codex install verification passed: plugin cache, config enablement, 10 component bins, agent TOMLs, and unchanged real ~/.codex/config.toml.
 - Live isolated Codex app-server QA completed with mock assistant text and all required sessionStart/userPromptSubmit hooks; missingHooks and failedHooks were empty.

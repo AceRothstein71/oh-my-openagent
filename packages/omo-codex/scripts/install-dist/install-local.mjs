@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// omo-codex-install:7bc4b0f020f0a1b4448cc75385a7e3c60042e3b270e304d4c1a43a859e81a4c2:a8b90f062bf0b1defdfd306f000acbf9e2a5a7c256eca6abbc2c558506916b01
+// omo-codex-install:7bc4b0f020f0a1b4448cc75385a7e3c60042e3b270e304d4c1a43a859e81a4c2:e3e8cf6fc61cb0fb389d319dce31f73f8b2ebcb823ff09f8eee44a107186771b
 var __defProp = Object.defineProperty;
 var __returnValue = (v) => v;
 function __exportSetter(name, newValue) {
@@ -177,13 +177,7 @@ var init_activity_state = __esm(() => {
 });
 
 // packages/telemetry-core/src/constants.ts
-var DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com", DEFAULT_POSTHOG_API_KEY, UNCONFIGURED_POSTHOG_API_KEY = "phc_REPLACE_ME_OMO_NATIVE";
-var init_constants = __esm(() => {
-  DEFAULT_POSTHOG_API_KEY = [
-    "phc",
-    "CFJhj5HyvA62QPhvyaUCtaq23aUfznnijg5VaaGkNk74"
-  ].join("_");
-});
+var DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com", DEFAULT_POSTHOG_API_KEY = "phc_CFJhj5HyvA62QPhvyaUCtaq23aUfznnijg5VaaGkNk74", UNCONFIGURED_POSTHOG_API_KEY = "phc_REPLACE_ME_OMO_NATIVE"; // ggignore
 
 // packages/telemetry-core/src/diagnostics.ts
 import { appendFileSync, existsSync as existsSync6, mkdirSync as mkdirSync3, readFileSync as readFileSync3 } from "node:fs";
@@ -349,7 +343,6 @@ function getTelemetryHost(env = process.env, defaultHost = DEFAULT_POSTHOG_HOST)
 }
 var TRUTHY_DISABLE_VALUES, SEND_OPT_OUT_VALUES;
 var init_env = __esm(() => {
-  init_constants();
   TRUTHY_DISABLE_VALUES = ["1", "true", "yes"];
   SEND_OPT_OUT_VALUES = ["0", "false", "no", "yes"];
 });
@@ -5921,7 +5914,6 @@ var init_record_daily_active = () => {};
 // packages/telemetry-core/src/index.ts
 var init_src = __esm(() => {
   init_activity_state();
-  init_constants();
   init_diagnostics();
   init_env();
   init_events();
