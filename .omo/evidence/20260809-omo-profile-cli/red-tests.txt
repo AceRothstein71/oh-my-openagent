@@ -1,0 +1,55 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-config-core/src/loader/active-profile.test.ts:
+[test-setup] vendored lsp-daemon dist missing; building once via `npm ci && npm run build`...
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'readOmoProfileState' not found in module '/Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-config-core/src/index.ts'.
+-------------------------------
+
+
+packages/omo-opencode/src/cli/cli-program.test.ts:
+(pass) cli-program > install command exposes 'setup' as an alias so the historical install path keeps working [7.22ms]
+(pass) cli-program > cleanup command exposes Codex cleanup for lazycodex migrations [0.39ms]
+(pass) cli-program > cleanup command exposes uninstall as the user-facing alias [0.26ms]
+(pass) cli-program > config migrate command exposes dry-run and JSON-only controls [0.31ms]
+(pass) cli-program > doctor command exposes explicit platform selection for Codex-only diagnostics [0.26ms]
+(pass) program configures explicit '-h, --help' help option for consistent help-flag ordering [0.49ms]
+125 |
+126 |   // when
+127 |   const registersProfileCommand = cliProgramSource.includes("program.addCommand(createProfileCommand())")
+128 |
+129 |   // then
+130 |   expect(registersProfileCommand).toBe(true)
+                                        ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-opencode/src/cli/cli-program.test.ts:130:35)
+(fail) program registers the profile command group [1.41ms]
+(pass) program registers runtime commands [0.25ms]
+
+packages/omo-opencode/src/cli/profile/profile.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+error: Cannot find module './profile' from '/Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-opencode/src/cli/profile/profile.test.ts'
+-------------------------------
+
+
+packages/omo-opencode/src/cli/profile/index.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+error: Cannot find module './index' from '/Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-opencode/src/cli/profile/index.test.ts'
+-------------------------------
+
+
+ 7 pass
+ 4 fail
+ 3 errors
+ 22 expect() calls
+Ran 11 tests across 4 files. [5.61s]

@@ -1,10 +1,10 @@
-# src/cli/ — CLI: install, run, doctor, mcp (oauth), refresh-model-capabilities, get-local-version, version, boulder, cleanup, ulw-loop
+# src/cli/ — CLI: install, run, doctor, mcp (oauth), profile, refresh-model-capabilities, get-local-version, version, boulder, cleanup, ulw-loop
 
 **Generated:** 2026-07-03
 
 ## OVERVIEW
 
-Commander.js CLI with 10 commands (`sparkshell` removed 2026-07). Entry: `index.ts` → `runCli()` in `cli-program.ts`.
+Commander.js CLI with 11 commands (`sparkshell` removed 2026-07). Entry: `index.ts` → `runCli()` in `cli-program.ts`.
 
 ## COMMANDS
 
@@ -16,6 +16,7 @@ Commander.js CLI with 10 commands (`sparkshell` removed 2026-07). Entry: `index.
 | `get-local-version` | Version detection | Installed vs npm latest |
 | `version` | Print plugin version | Trivial 2-line subcommand |
 | `mcp` | MCP management; nested `oauth` group | `mcp oauth login <server-name>` (PKCE), `logout`, `status` |
+| `profile` | Named config profile switching | `profile list`/`use <name>`/`current`/`clear`; persists `active_profile` in `~/.omo/omo.jsonc` |
 | `refresh-model-capabilities` | Refresh models.dev cache | Model capabilities refresh |
 | `boulder` | Boulder state inspector | Format work-state + tasks from `.omo/boulder-state/` |
 | `cleanup` (alias `uninstall`) | Remove Codex Light state | Clean managed Codex cache/marketplace + repair project-local legacy Codex artifacts |
@@ -28,7 +29,7 @@ Commander.js CLI with 10 commands (`sparkshell` removed 2026-07). Entry: `index.
 ```
 cli/
 ├── index.ts                     # Entry point → runCli()
-├── cli-program.ts               # Commander.js program (10 commands)
+├── cli-program.ts               # Commander.js program (11 commands)
 ├── install.ts                   # Routes to TUI or CLI installer
 ├── cli-installer.ts             # Non-interactive (console output)
 ├── tui-installer.ts             # Interactive (@clack/prompts)
@@ -53,7 +54,8 @@ cli/
 │   ├── session-resolver.ts      # Create/resume sessions
 │   ├── event-handlers.ts        # Event processing
 │   └── poll-for-completion.ts   # Wait for todos/background tasks
-└── mcp-oauth/                   # OAuth token management
+├── mcp-oauth/                   # OAuth token management
+└── profile/                     # Profile command group (list/use/current/clear)
 ```
 
 ## MODEL FALLBACK SYSTEM

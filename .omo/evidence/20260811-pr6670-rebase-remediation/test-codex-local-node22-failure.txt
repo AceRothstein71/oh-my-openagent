@@ -1,0 +1,1036 @@
+$ bun run build:codex-install && bun run build:git-bash-mcp && bun run build:lsp-tools-mcp && bun run build:lsp-daemon && npm --prefix packages/lsp-tools-mcp test && npm --prefix packages/omo-codex/plugin ci && npm --prefix packages/omo-codex/plugin/components/ulw-loop test && bun run --cwd packages/omo-codex/plugin build && npm --prefix packages/omo-codex/plugin/components/codegraph run typecheck && npm --prefix packages/omo-codex/plugin/components/codegraph test && node scripts/check-third-party-notices.mjs --ship && bun test packages/omo-opencode/src/cli/cli-installer.platform.test.ts packages/omo-codex/src/install/codex-cache.test.ts packages/omo-codex/src/install/codex-cleanup.test.ts packages/omo-codex/src/install/codex-config-agent-cleanup.test.ts packages/omo-codex/src/install/codex-config-autonomous-features.test.ts packages/omo-codex/src/install/codex-config-reasoning.test.ts packages/omo-codex/src/install/codex-config-toml.test.ts packages/omo-codex/src/install/codex-project-local-cleanup.test.ts packages/omo-codex/src/install/install-codex-project-local-cleanup.test.ts packages/omo-codex/src/install/install-codex.test.ts packages/omo-codex/src/install/install-codex-packaged.test.ts packages/omo-codex/src/install/link-cached-plugin-agents.test.ts packages/omo-codex/src/**/*.test.ts packages/utils/src/jsonc-parser.test.ts packages/utils/src/frontmatter.test.ts packages/hashline-core/src/hash-computation.test.ts packages/hashline-core/src/smoke-untested-modules.test.ts packages/rules-engine/src/index.test.ts packages/rules-engine/src/security-boundary.test.ts packages/agents-md-core/src/injector.test.ts packages/omo-codex/plugin/components/lsp/test/package-smoke.test.ts && node --test packages/omo-codex/plugin/test/*.test.mjs packages/omo-codex/scripts/install-cache-copy.test.mjs packages/omo-codex/scripts/install-cli-args.test.mjs packages/omo-codex/scripts/install-delegated-command.test.mjs packages/omo-codex/scripts/install-config-autonomous-features.test.mjs packages/omo-codex/scripts/install-config-autonomous.test.mjs packages/omo-codex/scripts/install-config-reasoning.test.mjs packages/omo-codex/scripts/install-config.test.mjs packages/omo-codex/scripts/install-hook-targets.test.mjs packages/omo-codex/scripts/install-project-local-cleanup.test.mjs packages/omo-codex/scripts/install-lazycodex-version-stamp.test.mjs packages/omo-codex/scripts/install-local-entrypoint.test.mjs packages/omo-codex/scripts/install-local-git-bash-preflight.test.mjs packages/omo-codex/scripts/install-local.test.mjs packages/omo-codex/scripts/install-marketplace-cache.test.mjs packages/omo-codex/scripts/install-mcp-context7-runtime.test.mjs packages/omo-codex/scripts/install-mcp-runtime.test.mjs packages/omo-codex/scripts/install-packaged-local.test.mjs packages/omo-codex/scripts/install-generated-bundle.test.mjs packages/omo-codex/scripts/install-agent-links.test.mjs packages/omo-codex/scripts/install-bin-links.test.mjs
+$ bun run script/build-codex-install.ts
+$ bun run --cwd packages/git-bash-mcp build
+$ bun build src/cli.ts --outdir dist --target node --format esm
+Bundled 15 modules in 6ms
+
+  cli.js  22.58 KB  (entry point)
+
+$ npm --prefix packages/lsp-tools-mcp ci && npm --prefix packages/lsp-tools-mcp run build
+
+added 52 packages, and audited 55 packages in 2s
+
+18 packages are looking for funding
+  run `npm fund` for details
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+
+> @code-yeongyu/lsp-tools-mcp@0.1.0 build
+> node scripts/ensure-core-links.mjs && rm -rf dist && tsc -p tsconfig.build.json --emitDeclarationOnly && bun build src/cli.ts src/mcp.ts src/tools.ts src/request-context.ts src/lsp/manager.ts --outdir dist --target node --format esm
+
+Bundled 65 modules in 8ms
+
+  cli.js               177.32 KB  (entry point)
+  mcp.js               176.84 KB  (entry point)
+  tools.js             165.0 KB   (entry point)
+  request-context.js   7.43 KB    (entry point)
+  lsp/manager.js       103.40 KB  (entry point)
+
+$ npm --prefix packages/lsp-daemon ci && npm --prefix packages/lsp-daemon run build
+
+added 52 packages, and audited 55 packages in 1s
+
+18 packages are looking for funding
+  run `npm fund` for details
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+
+> @code-yeongyu/lsp-daemon@0.1.0 build
+> node scripts/clean-dist.mjs && tsc -p tsconfig.build.json && bun build src/cli.ts src/index.ts src/client.ts --outdir dist --target node --format esm && node scripts/stamp-dist-version.mjs
+
+Bundled 78 modules in 8ms
+
+  cli.js     232.13 KB  (entry point)
+  index.js   213.0 KB   (entry point)
+  client.js  210.56 KB  (entry point)
+
+
+> @code-yeongyu/lsp-tools-mcp@0.1.0 test
+> vitest --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.8 [39m[90m/Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/lsp-tools-mcp[39m
+
+ [32m✓[39m test/server-definitions.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/server-install-state.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m test/request-context.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m test/config-loader-security.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m test/config-loader.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m test/utils.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m test/startup-failure.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m test/package-smoke.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m test/server-installation-security.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/json-rpc-connection.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/process.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 242[2mms[22m[39m
+ [32m✓[39m test/formatters.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m test/effective-extension.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m test/server-resolution.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m test/workspace-edit.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m test/directory-diagnostics.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m test/manager.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m test/request-context-paths.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/client-wrapper.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m test/infer-extension.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m test/transport-security.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 1[2mms[22m[39m
+ [32m✓[39m test/tool-surface.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m test/tools.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m test/mcp.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m test/initialize-timeout.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 847[2mms[22m[39m
+     [33m[2m✓[22m[39m #given initialize response slower than the request timeout #when initialize runs #then it succeeds within the initialize timeout [33m 637[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m25 passed[39m[22m[90m (25)[39m
+[2m      Tests [22m [1m[32m96 passed[39m[22m[90m (96)[39m
+[2m   Start at [22m 13:01:15
+[2m   Duration [22m 1.17s[2m (transform 3.43s, setup 0ms, import 4.57s, tests 1.27s, environment 1ms)[22m
+
+
+added 74 packages, and audited 94 packages in 2s
+
+18 packages are looking for funding
+  run `npm fund` for details
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+
+> @code-yeongyu/codex-ulw-loop@5.0.0-beta.5 test
+> vitest --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.8 [39m[90m/Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-codex/plugin/components/ulw-loop[39m
+
+ [32m✓[39m test/goal-status.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/cli-helpers.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m test/cli-steering.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m test/quality-gate.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m test/evidence.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+ [32m✓[39m test/stop-resume-hook.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 93[2mms[22m[39m
+ [32m✓[39m test/plan-io.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 97[2mms[22m[39m
+ [32m✓[39m test/codex-hook.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 87[2mms[22m[39m
+ [32m✓[39m test/steering-batch.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 108[2mms[22m[39m
+ [32m✓[39m test/codex-goal-instruction.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/plan-crud.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 126[2mms[22m[39m
+ [32m✓[39m test/spawn-guard.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 115[2mms[22m[39m
+ [32m✓[39m test/review-blockers.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m test/checkpoint-final.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 147[2mms[22m[39m
+ [32m✓[39m test/steering.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 163[2mms[22m[39m
+ [32m✓[39m test/cli-create-goals.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 134[2mms[22m[39m
+ [32m✓[39m test/cli-commands.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 95[2mms[22m[39m
+ [32m✓[39m test/validation-batch-checkpoint.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 70[2mms[22m[39m
+ [32m✓[39m test/cli-checkpoint.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 123[2mms[22m[39m
+ [32m✓[39m test/evidence-criteria-gate.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m test/paths.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/quality-gate-roles.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m test/steering-snapshot.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m test/codex-goal-snapshot.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m test/checkpoint.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+ [32m✓[39m test/validation-batch.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m test/quality-gate-blockers.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m test/ultrawork-directive.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 175[2mms[22m[39m
+ [32m✓[39m test/cli-json-errors.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m test/types.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/quality-gate-doc.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m test/cli-complete-goals.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m test/cli-steering-batch.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m test/cli-steering-kind-guidance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m test/cli-validation-batch.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m test/cli-checkpoint-continuation.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m test/checkpoint-continuation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m test/checkpoint-status.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m test/package-smoke.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 361[2mms[22m[39m
+     [33m[2m✓[22m[39m #given PATH omo-agent-toolkit lacks ulw-loop #when bootstrap runs #then falls back to cached ulw-loop CLI [33m 336[2mms[22m[39m
+ [32m✓[39m test/cli-entrypoint.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 1299[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m40 passed[39m[22m[90m (40)[39m
+[2m      Tests [22m [1m[32m422 passed[39m[22m[90m (422)[39m
+[2m   Start at [22m 13:01:20
+[2m   Duration [22m 1.80s[2m (transform 1.95s, setup 0ms, import 3.38s, tests 3.69s, environment 2ms)[22m
+
+$ node scripts/sync-version.mjs && node scripts/sync-hook-status-messages.mjs && node scripts/build-bundled-mcp-runtimes.mjs && node scripts/materialize-shared-upstreams.mjs --strict && node scripts/sync-skills.mjs && node scripts/build-components.mjs
+Synced OMO Codex manifests to version 5.0.0-beta.5 (0 updated)
+Using bundled lsp-tools-mcp dist
+Using bundled lsp-daemon dist
+Using bundled git-bash-mcp dist
+[materialize] wrote 148 frontend reference files from submodules
+Building components/teammode
+
+> @sisyphuslabs/codex-teammode@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 2 modules in 6ms
+
+  cli.js  4.18 KB  (entry point)
+
+Building components/comment-checker
+
+> @code-yeongyu/codex-comment-checker@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 10 modules in 13ms
+
+  cli.js  19.23 KB  (entry point)
+
+Building components/rules
+
+> @code-yeongyu/codex-rules@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 51 modules in 12ms
+
+  cli.js  155.30 KB  (entry point)
+
+Bundling components/teammode/dist/cli.js
+Bundled 2 modules in 4ms
+
+  cli.js  4.22 KB  (entry point)
+
+Building components/codegraph
+
+> @sisyphuslabs/codex-codegraph@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/serve.ts --target node --format esm --outfile dist/serve.js && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 162 modules in 32ms
+
+  serve.js  0.33 MB  (entry point)
+
+Bundled 185 modules in 18ms
+
+  cli.js  0.42 MB  (entry point)
+
+Building components/start-work-continuation
+
+> @code-yeongyu/codex-start-work-continuation@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 5 modules in 6ms
+
+  cli.js  14.55 KB  (entry point)
+
+Building components/telemetry
+
+> @code-yeongyu/codex-telemetry@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js && bun build src/posthog.ts --target node --format esm --outfile dist/posthog.js
+
+Bundled 79 modules in 20ms
+
+  cli.js  204.98 KB  (entry point)
+
+Bundled 77 modules in 14ms
+
+  posthog.js  202.55 KB  (entry point)
+
+Bundling components/comment-checker/dist/cli.js
+Bundled 10 modules in 5ms
+
+  cli.js  19.40 KB  (entry point)
+
+Bundling components/rules/dist/cli.js
+Bundled 51 modules in 11ms
+
+  cli.js  155.51 KB  (entry point)
+
+Bundling components/start-work-continuation/dist/cli.js
+Bundled 5 modules in 6ms
+
+  cli.js  14.79 KB  (entry point)
+
+Bundling components/codegraph/dist/cli.js
+Bundled 185 modules in 18ms
+
+  cli.js  0.42 MB  (entry point)
+
+Bundling components/telemetry/dist/cli.js
+Bundled 79 modules in 14ms
+
+  cli.js  204.71 KB  (entry point)
+
+Building components/lsp
+
+> @code-yeongyu/codex-lsp@5.0.0-beta.5 prebuild
+> node scripts/build-lsp-tools.mjs && node scripts/build-lsp-daemon.mjs
+
+
+> @code-yeongyu/codex-lsp@5.0.0-beta.5 build
+> node scripts/build-runtime.mjs
+
+Building components/ultrawork
+
+> @code-yeongyu/codex-ultrawork@5.0.0-beta.5 build
+> node scripts/sync-directive.mjs && node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 4 modules in 4ms
+
+  cli.js  7.30 KB  (entry point)
+
+Bundling components/ultrawork/dist/cli.js
+Bundled 4 modules in 6ms
+
+  cli.js  7.44 KB  (entry point)
+
+Building components/git-bash
+
+> @sisyphuslabs/codex-git-bash-hook@5.0.0-beta.5 build
+> tsc -p tsconfig.build.json
+
+Bundling components/git-bash/dist/cli.js
+Bundled 2 modules in 3ms
+
+  cli.js  5.75 KB  (entry point)
+
+Building components/lazycodex-executor-verify
+
+> @code-yeongyu/codex-lazycodex-executor-verify@5.0.0-beta.5 build
+> tsc -p tsconfig.build.json
+
+Bundling components/lazycodex-executor-verify/dist/cli.js
+Bundled 5 modules in 3ms
+
+  cli.js  8.33 KB  (entry point)
+
+Building components/ulw-loop
+
+> @code-yeongyu/codex-ulw-loop@5.0.0-beta.5 build
+> tsc -p tsconfig.build.json
+
+Bundling components/ulw-loop/dist/cli.js
+Bundled 38 modules in 4ms
+
+  cli.js  153.72 KB  (entry point)
+
+Building components/bootstrap
+
+> @sisyphuslabs/codex-bootstrap@5.0.0-beta.5 build
+> node scripts/build.mjs
+
+Resolving dependencies
+Resolved, downloaded and extracted [2]
+Saved lockfile
+
+  dist/cli.js  148.7kb
+
+⚡ Done in 7ms
+Bundling components/bootstrap/dist/cli.js
+Bundled 49 modules in 5ms
+
+  cli.js  153.14 KB  (entry point)
+
+
+> @sisyphuslabs/codex-codegraph@5.0.0-beta.5 typecheck
+> tsc --noEmit
+
+
+> @sisyphuslabs/codex-codegraph@5.0.0-beta.5 test
+> bun test ./test
+
+bun test v1.3.14 (0d9b296a)
+
+test/hook-session-start-guard.test.ts:
+(pass) CodeGraph SessionStart spawn guards > #given an inconclusive probe timeout #when SessionStart runs #then timeout is not treated as uninitialized [6.22ms]
+{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"LazyCodex CodeGraph bootstrap scheduled in background"}}
+(pass) CodeGraph SessionStart spawn guards > #given one hook already owns the project lock #when a second SessionStart runs #then it records skipped-locked without spawning [3.54ms]
+{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"LazyCodex CodeGraph bootstrap scheduled in background"}}
+(pass) CodeGraph SessionStart spawn guards > #given a failed worker cooldown #when SessionStart retries before and after expiry #then only the expired retry spawns [2.85ms]
+(pass) CodeGraph SessionStart spawn guards > #given an ancestor has a CodeGraph database #when SessionStart runs in a nested project #then it records skipped-nested-root [1.22ms]
+
+test/hook-exclusion.test.ts:
+(pass) CodeGraph SessionStart exclusion policy > #given project root is inside an OMO state directory #when SessionStart fires #then it skips before probing or spawning [1.52ms]
+(pass) CodeGraph SessionStart exclusion policy > #given project root is under a configured excluded root #when SessionStart fires #then it skips before spawning [0.59ms]
+(pass) CodeGraph SessionStart exclusion policy > #given project root is under /tmp #when SessionStart fires on POSIX #then it skips before spawning [0.37ms]
+
+test/session-start-project.test.ts:
+(pass) CodeGraph SessionStart project probe > #given the exact project directory has a CodeGraph database #when probing #then it is initialized [0.50ms]
+(pass) CodeGraph SessionStart project probe > #given an ancestor directory has a CodeGraph database #when probing a nested project #then the ancestor covers it [0.71ms]
+(pass) CodeGraph SessionStart project probe > #given neither the project nor its ancestors have a CodeGraph database #when probing #then it is definitively uninitialized [0.23ms]
+
+test/cache-gc.test.ts:
+(pass) CodeGraph cache GC wrapper > #given cache GC hits an expected filesystem race #when best-effort wrapper runs #then it logs and continues [0.08ms]
+(pass) CodeGraph cache GC wrapper > #given cache GC hits an unknown code bug #when best-effort wrapper runs #then it rethrows [0.32ms]
+
+test/sweep-cli.test.ts:
+(pass) CodeGraph sweep CLI > #given sweep dry-run args with an injected root #when invoked #then it reports candidates as JSON and does not kill [1.90ms]
+
+test/provisioned-node-guard.test.ts:
+(pass) CodeGraph provisioned launcher Node guard > #given provisioned CodeGraph binary #when serve runs under unsupported local Node #then it trusts the launcher [8.97ms]
+(pass) CodeGraph provisioned launcher Node guard > #given provisioned CodeGraph exists #when SessionStart worker runs under unsupported local Node #then it bootstraps through the launcher [2.75ms]
+
+test/session-start-state.test.ts:
+(pass) CodeGraph SessionStart lock > #given a live project lock #when a second hook acquires it #then the second hook is deduplicated [1.69ms]
+(pass) CodeGraph SessionStart lock > #given a project lock older than the stale threshold #when another hook acquires it #then the stale lock is recovered [1.84ms]
+(pass) CodeGraph SessionStart cooldown > #given a failed worker outcome #when the cooldown is checked #then retries are suppressed until expiry and the next failure backs off [2.03ms]
+
+test/session-start-worker-flow.test.ts:
+(pass) CodeGraph SessionStart worker flow > #given install_dir has the pinned platform binary #when worker resolves provisioned CodeGraph #then it uses that launcher [2.14ms]
+(pass) CodeGraph SessionStart worker flow > #given Windows codegraph.cmd #when default worker runner builds invocation #then it runs through cmd.exe [0.07ms]
+(pass) CodeGraph SessionStart worker flow > #given Windows CodeGraph resolves to a Node script #when default worker runner builds invocation #then Node executes it [0.01ms]
+(pass) CodeGraph SessionStart worker flow > #given non-Windows codegraph command #when default worker runner builds invocation #then it executes directly [0.01ms]
+(pass) CodeGraph SessionStart worker flow > #given an uninitialized exact project #when worker runs #then it invokes init directly without a status command [1.04ms]
+(pass) CodeGraph SessionStart worker flow > #given codegraph.daemon=true #when the indexing worker runs #then its env stays daemon-less with CODEGRAPH_NO_DAEMON=1 [1.23ms]
+(pass) CodeGraph SessionStart worker flow > #given ambient provider tokens #when default worker runner spawns CodeGraph #then child env only gets safe and controlled variables [23.97ms]
+
+test/serve-mcp-facade.test.ts:
+(pass) runCodegraphServe MCP unavailable facade > #given CodeGraph is unavailable #when an MCP client initializes #then it answers with an empty-tool facade [2.59ms]
+
+test/serve-unavailable.test.ts:
+(pass) runCodegraphServe unavailable CodeGraph paths > #given CodeGraph is unresolved #when serving MCP #then exposes an empty facade with a skip hint [0.83ms]
+(pass) runCodegraphServe unavailable CodeGraph paths > #given an unsupported local Node #when serving MCP #then exposes an empty facade without spawning codegraph [2.69ms]
+(pass) runCodegraphServe unavailable CodeGraph paths > #given OMO_CODEGRAPH_BIN points at a missing path #when serving MCP #then exposes an empty facade before spawn [1.87ms]
+(pass) runCodegraphServe unavailable CodeGraph paths > #given Codex SOT disables CodeGraph #when serving MCP #then exposes an empty facade with a disabled hint [2.67ms]
+(pass) runCodegraphServe unavailable CodeGraph paths > #given the unavailable facade with held-open stdio and a dead parent #when the watchdog polls #then the placeholder server settles without waiting for stdin EOF [11.62ms]
+
+test/hook-sweep.test.ts:
+(pass) CodeGraph SessionStart zombie sweep > #given the zombie sweep fails #when SessionStart fires #then the hook still exits zero [0.20ms]
+
+test/serve-mcp-bridge-lifecycle.test.ts:
+(pass) runCodegraphServe MCP bridge lifecycle > #given an exiting Codegraph child and delayed closed parent output #when the final response write fails #then the output error is preserved [428.40ms]
+(pass) runCodegraphServe MCP bridge lifecycle > #given a held-open Codegraph child and a dead parent #when the bridge watchdog polls #then the child is terminated and the bridge settles through the child-exit path [282.16ms]
+
+test/session-start-node-support.test.ts:
+(pass) CodeGraph SessionStart worker Node support > #given an unsupported local Node and a PATH CodeGraph command with auto provisioning disabled #when worker runs #then it skips without touching the workspace [1.98ms]
+(pass) CodeGraph SessionStart worker Node support > #given an unsupported local Node and a PATH CodeGraph command #when auto provisioning succeeds #then it bootstraps with the provisioned binary [2.24ms]
+(pass) CodeGraph SessionStart worker Node support > #given bundled CodeGraph and a stale managed install #when the worker runs #then it upgrades and uses the managed runtime [3.33ms]
+(pass) CodeGraph SessionStart worker Node support > #given an unsupported local Node but bundled CodeGraph resolves through CODEGRAPH_NODE_BIN #when worker runs #then it bootstraps with the compatible runtime [2.51ms]
+
+test/serve.test.ts:
+(pass) runCodegraphServe > #given CodeGraph resolves #when serving MCP #then execs codegraph serve --mcp with bridged stdio and telemetry disabled [1.79ms]
+(pass) runCodegraphServe > #given codegraph.daemon=false #when serving MCP #then CODEGRAPH_NO_DAEMON pins daemon-off [0.29ms]
+(pass) runCodegraphServe > #given an unsupported local Node but the unsafe override is set #when serving MCP #then it still spawns codegraph [1.71ms]
+(pass) runCodegraphServe > #given an unsupported local Node but CODEGRAPH_NODE_BIN resolves a bundled shim with Node 22 #when serving MCP #then it spawns the compatible runtime [1.53ms]
+(pass) runCodegraphServe > #given OMO_CODEGRAPH_BIN points at an explicit command #when local Node is unsupported #then serve trusts the configured command [1.54ms]
+(pass) runCodegraphServe > #given Codex SOT install_dir has the pinned launcher and daemon is omitted #when serving MCP #then it defaults daemon-on [1.44ms]
+(pass) runCodegraphServe > #given Codex SOT install_dir with codegraph.daemon=false #when serving MCP #then CODEGRAPH_NO_DAEMON pins daemon-off [1.01ms]
+(pass) runCodegraphServe > #given project cwd is under a configured excluded root #when serving MCP #then it exposes an unavailable stub without spawning CodeGraph [0.60ms]
+(pass) runCodegraphServe > #given Windows OMO_CODEGRAPH_BIN is a Node script #when resolving serve invocation #then Node executes the script path [0.02ms]
+(pass) runCodegraphServe > #given Windows CodeGraph resolves to a cmd shim #when resolving serve invocation #then cmd.exe executes the shim [0.01ms]
+
+test/serve-built-wrapper.test.ts:
+(pass) built CodeGraph serve wrappers > #given built serve entry #when invoked with a fake CodeGraph binary #then it runs serve mcp exactly once [304.67ms]
+(pass) built CodeGraph serve wrappers > #given built cli entry #when invoked with a fake CodeGraph binary #then it runs serve mcp exactly once [303.22ms]
+
+test/serve-provision.test.ts:
+(pass) runCodegraphServe provisioning > #given CodeGraph is unresolved and daemon is omitted #when serving MCP #then provisions CodeGraph with daemon-on [0.49ms]
+(pass) runCodegraphServe provisioning > #given a bundled runtime and a stale managed install #when serving MCP #then it upgrades and uses the managed runtime [2.64ms]
+(pass) runCodegraphServe provisioning > #given CodeGraph is unresolved and codegraph.daemon=false #when serving MCP #then provisions CodeGraph with daemon-off [0.35ms]
+
+test/package-runtime.test.ts:
+(pass) CodeGraph component runtime package metadata > #given the CodeGraph component package #when validating runtime distribution metadata #then upstream CodeGraph installs optionally with shipped legal files [0.24ms]
+(pass) CodeGraph component runtime package metadata > #given marketplace payload includes only the plugin tree #when reading CodeGraph NOTICE #then it is self-contained [0.09ms]
+(pass) CodeGraph component runtime package metadata > #given CodeGraph platform bundles include Node #when reading runtime licenses #then Node license text ships with the component [0.37ms]
+(pass) CodeGraph component runtime package metadata > #given third-party notices #when validating CodeGraph component notices #then aggregate Codex notices list CodeGraph as shipped [0.20ms]
+
+test/session-start-worker-cooldown.test.ts:
+(pass) CodeGraph SessionStart worker cooldown > #given codegraph init times out #when the worker finishes #then it records a failed outcome and cooldown [3.10ms]
+(pass) CodeGraph SessionStart worker cooldown > #given codegraph init exits zero without an exact database #when the worker verifies the result #then it records a failure cooldown [4.17ms]
+
+test/hook.test.ts:
+(pass) CodeGraph SessionStart hook > #given hook session-start cli args #when invoked with empty JSON input #then it emits valid JSON and exits zero [7.58ms]
+(pass) CodeGraph SessionStart hook > #given CodeGraph MCP reports an uninitialized project #when PostToolUse fires #then it emits OMO global-store init guidance [0.48ms]
+(pass) CodeGraph SessionStart hook > #given real CodeGraph status output has no MCP path phrase #when PostToolUse fires #then it emits OMO global-store init guidance [0.22ms]
+(pass) CodeGraph SessionStart hook > #given CodeGraph is disabled by Codex SOT config #when SessionStart fires #then it skips without spawning [0.20ms]
+(pass) CodeGraph SessionStart hook > #given HOME OMO config disables Codex CodeGraph #when SessionStart fires #then it skips without spawning [5.54ms]
+(pass) CodeGraph SessionStart hook > #given project Codex SOT disables global CodeGraph enablement #when SessionStart fires #then project config wins [5.58ms]
+(pass) CodeGraph SessionStart hook > #given env disables CodeGraph over SOT enablement #when SessionStart fires #then it skips without spawning [3.51ms]
+(pass) CodeGraph SessionStart hook > #given CodeGraph is enabled #when SessionStart fires #then it detaches a background worker immediately [4.39ms]
+(pass) CodeGraph SessionStart hook > #given CodeGraph is already initialized #when SessionStart fires #then it stays silent without spawning [2.03ms]
+(pass) CodeGraph SessionStart hook > #given malformed hook input with CodeGraph disabled #when SessionStart fires #then it stays silent and exits zero [0.19ms]
+
+test/hook-registration.test.ts:
+(pass) CodeGraph hook registration > #given plugin hook config #when inspected #then CodeGraph is registered after bootstrap SessionStart [0.89ms]
+
+test/session-start-worker-availability.test.ts:
+(pass) CodeGraph SessionStart worker availability > #given CodeGraph cannot be resolved or provisioned #when worker runs #then it logs a graceful skip [6.34ms]
+(pass) CodeGraph SessionStart worker availability > #given CodeGraph is unavailable and auto provisioning is disabled #when worker runs #then it leaves the project untouched [4.54ms]
+
+test/session-start-trust-boundary.test.ts:
+(pass) CodeGraph SessionStart trust boundary > #given project config sets install_dir #when worker provisions CodeGraph #then it uses the trusted home install root [6.94ms]
+
+test/serve-node-support.test.ts:
+(pass) runCodegraphServe node support > #given Node is too new and no command resolves #when serving MCP #then the unsupported-node hint wins [3.99ms]
+
+test/hook-store-upgrade.test.ts:
+(pass) CodeGraph SessionStart hook with a migrated 1.0.1 project store under CodeGraph 1.5.0 > #given the migrated store has an exact database #when SessionStart runs #then it never invokes the CodeGraph CLI [2.14ms]
+
+test/serve-mcp-bridge.test.ts:
+(pass) runCodegraphServe MCP protocol bridge > #given Codex framed stdio and a newline-json CodeGraph child #when listing tools #then it bridges frames and serves from the project cwd [257.36ms]
+(pass) runCodegraphServe MCP protocol bridge > #given old upstream codegraph_node metadata and container outline guidance #when bridging #then it exposes the corrected LazyCodex contract [249.82ms]
+(pass) runCodegraphServe MCP protocol bridge > #given a held-open Codegraph child and closed parent output #when response forwarding fails #then the child is terminated before rejection [253.73ms]
+
+ 78 pass
+ 0 fail
+ 249 expect() calls
+Ran 78 tests across 25 files. [2.34s]
+
+> oh-my-opencode@5.0.0-beta.5 prepare
+> bun run build
+
+$ bun run script/build.ts
+error: script "build" exited with code 1
+npm error code 1
+npm error path /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli
+npm error command failed
+npm error command sh -c bun run build
+npm error A complete log of this run can be found in: /Users/sungsoopark/.npm/_logs/2026-08-11T04_01_28_588Z-debug-0.log
+build:materialize
+$ node packages/omo-codex/plugin/scripts/materialize-shared-upstreams.mjs --strict
+[materialize] wrote 148 frontend reference files from submodules
+build:git-bash-mcp
+$ bun run --cwd packages/git-bash-mcp build
+$ bun build src/cli.ts --outdir dist --target node --format esm
+Bundled 15 modules in 22ms
+
+  cli.js  22.58 KB  (entry point)
+
+build:ast-grep-mcp
+$ bun run --cwd packages/ast-grep-mcp build
+$ bun build src/cli.ts --outdir dist --target node --format esm
+Bundled 254 modules in 70ms
+
+  cli.js  84.78 KB  (entry point)
+
+build:tui
+Bundled 564 modules in 143ms
+
+  tui.js  2.16 MB  (entry point)
+
+build:codex-install
+$ bun run script/build-codex-install.ts
+build:cli
+Bundled 932 modules in 188ms
+
+  index.js  3.30 MB  (entry point)
+
+build:cli-node
+$ bun run script/build-cli-node.ts
+built dist/cli-node (1 output)
+build:schema
+$ bun run script/build-schema.ts
+Generating JSON Schemas...
+✓ JSON Schemas generated: assets/omo.schema.json, assets/oh-my-opencode.schema.json
+build:index
+Bundled 1987 modules in 227ms
+
+  index.js  5.77 MB  (entry point)
+
+build:omo-schema
+$ bun run script/build-omo-schema.ts
+Generating omo JSON Schema...
+✓ omo JSON Schema generated: assets/omo.schema.json
+build:node-require-shim
+$ bun run script/patch-node-require-shim.ts
+Patched Node/Electron require shim in dist/index.js
+build:shared-skills-assets
+$ bun run build:materialize-frontend && rm -rf dist/skills && cp -R packages/shared-skills/skills dist/skills
+$ node packages/omo-codex/plugin/scripts/materialize-shared-upstreams.mjs --strict
+[materialize] skipped (OMO_SKIP_MATERIALIZE=1)
+build:declarations
+build:lsp-tools-mcp
+$ npm --prefix packages/lsp-tools-mcp ci && npm --prefix packages/lsp-tools-mcp run build
+add tslib 2.8.1
+add lightningcss-win32-x64-msvc 1.32.0
+add lightningcss-win32-arm64-msvc 1.32.0
+add lightningcss-linux-x64-musl 1.32.0
+add lightningcss-linux-x64-gnu 1.32.0
+add lightningcss-linux-arm64-musl 1.32.0
+add lightningcss-linux-arm64-gnu 1.32.0
+add lightningcss-linux-arm-gnueabihf 1.32.0
+add lightningcss-freebsd-x64 1.32.0
+add lightningcss-darwin-x64 1.32.0
+add lightningcss-android-arm64 1.32.0
+add @tybys/wasm-util 0.10.2
+add @rolldown/binding-win32-x64-msvc 1.0.3
+add @rolldown/binding-win32-arm64-msvc 1.0.3
+add @rolldown/binding-wasm32-wasi 1.0.3
+add @rolldown/binding-openharmony-arm64 1.0.3
+add @rolldown/binding-linux-x64-musl 1.0.3
+add @rolldown/binding-linux-x64-gnu 1.0.3
+add @rolldown/binding-linux-s390x-gnu 1.0.3
+add @rolldown/binding-linux-ppc64-gnu 1.0.3
+add @rolldown/binding-linux-arm64-musl 1.0.3
+add @rolldown/binding-linux-arm64-gnu 1.0.3
+add @rolldown/binding-linux-arm-gnueabihf 1.0.3
+add @rolldown/binding-freebsd-x64 1.0.3
+add @rolldown/binding-darwin-x64 1.0.3
+add @rolldown/binding-android-arm64 1.0.3
+add @napi-rs/wasm-runtime 1.1.4
+add @emnapi/wasi-threads 1.2.1
+add @emnapi/runtime 1.10.0
+add @emnapi/core 1.10.0
+add @biomejs/cli-win32-x64 2.4.16
+add @biomejs/cli-win32-arm64 2.4.16
+add @biomejs/cli-linux-x64-musl 2.4.16
+add @biomejs/cli-linux-x64 2.4.16
+add @biomejs/cli-linux-arm64-musl 2.4.16
+add @biomejs/cli-linux-arm64 2.4.16
+add @biomejs/cli-darwin-x64 2.4.16
+{
+  "added": 37,
+  "removed": 0,
+  "changed": 0,
+  "audited": 0,
+  "funding": 29
+}
+
+> @code-yeongyu/lsp-tools-mcp@0.1.0 build
+> node scripts/ensure-core-links.mjs && rm -rf dist && tsc -p tsconfig.build.json --emitDeclarationOnly && bun build src/cli.ts src/mcp.ts src/tools.ts src/request-context.ts src/lsp/manager.ts --outdir dist --target node --format esm
+
+Bundled 65 modules in 15ms
+
+  cli.js               177.32 KB  (entry point)
+  mcp.js               176.84 KB  (entry point)
+  tools.js             165.0 KB   (entry point)
+  request-context.js   7.43 KB    (entry point)
+  lsp/manager.js       103.40 KB  (entry point)
+
+build:lsp-daemon
+$ npm --prefix packages/lsp-daemon ci && npm --prefix packages/lsp-daemon run build
+add tslib 2.8.1
+add lightningcss-win32-x64-msvc 1.32.0
+add lightningcss-win32-arm64-msvc 1.32.0
+add lightningcss-linux-x64-musl 1.32.0
+add lightningcss-linux-x64-gnu 1.32.0
+add lightningcss-linux-arm64-musl 1.32.0
+add lightningcss-linux-arm64-gnu 1.32.0
+add lightningcss-linux-arm-gnueabihf 1.32.0
+add lightningcss-freebsd-x64 1.32.0
+add lightningcss-darwin-x64 1.32.0
+add lightningcss-android-arm64 1.32.0
+add @tybys/wasm-util 0.10.2
+add @rolldown/binding-win32-x64-msvc 1.0.3
+add @rolldown/binding-win32-arm64-msvc 1.0.3
+add @rolldown/binding-wasm32-wasi 1.0.3
+add @rolldown/binding-openharmony-arm64 1.0.3
+add @rolldown/binding-linux-x64-musl 1.0.3
+add @rolldown/binding-linux-x64-gnu 1.0.3
+add @rolldown/binding-linux-s390x-gnu 1.0.3
+add @rolldown/binding-linux-ppc64-gnu 1.0.3
+add @rolldown/binding-linux-arm64-musl 1.0.3
+add @rolldown/binding-linux-arm64-gnu 1.0.3
+add @rolldown/binding-linux-arm-gnueabihf 1.0.3
+add @rolldown/binding-freebsd-x64 1.0.3
+add @rolldown/binding-darwin-x64 1.0.3
+add @rolldown/binding-android-arm64 1.0.3
+add @napi-rs/wasm-runtime 1.1.4
+add @emnapi/wasi-threads 1.2.1
+add @emnapi/runtime 1.10.0
+add @emnapi/core 1.10.0
+add @biomejs/cli-win32-x64 2.4.16
+add @biomejs/cli-win32-arm64 2.4.16
+add @biomejs/cli-linux-x64-musl 2.4.16
+add @biomejs/cli-linux-x64 2.4.16
+add @biomejs/cli-linux-arm64-musl 2.4.16
+add @biomejs/cli-linux-arm64 2.4.16
+add @biomejs/cli-darwin-x64 2.4.16
+{
+  "added": 37,
+  "removed": 0,
+  "changed": 0,
+  "audited": 0,
+  "funding": 29
+}
+
+> @code-yeongyu/lsp-daemon@0.1.0 build
+> node scripts/clean-dist.mjs && tsc -p tsconfig.build.json && bun build src/cli.ts src/index.ts src/client.ts --outdir dist --target node --format esm && node scripts/stamp-dist-version.mjs
+
+Bundled 78 modules in 9ms
+
+  cli.js     232.13 KB  (entry point)
+  index.js   213.0 KB   (entry point)
+  client.js  210.56 KB  (entry point)
+
+build:codex-plugin
+$ npm --prefix packages/omo-codex/plugin ci && bun run --cwd packages/omo-codex/plugin build
+add tslib 2.8.1
+add lightningcss-win32-x64-msvc 1.32.0
+add lightningcss-win32-arm64-msvc 1.32.0
+add lightningcss-linux-x64-musl 1.32.0
+add lightningcss-linux-x64-gnu 1.32.0
+add lightningcss-linux-arm64-musl 1.32.0
+add lightningcss-linux-arm64-gnu 1.32.0
+add lightningcss-linux-arm-gnueabihf 1.32.0
+add lightningcss-freebsd-x64 1.32.0
+add lightningcss-darwin-x64 1.32.0
+add lightningcss-android-arm64 1.32.0
+add @tybys/wasm-util 0.10.2
+add @rolldown/binding-win32-x64-msvc 1.0.3
+add @rolldown/binding-win32-arm64-msvc 1.0.3
+add @rolldown/binding-wasm32-wasi 1.0.3
+add @rolldown/binding-openharmony-arm64 1.0.3
+add @rolldown/binding-linux-x64-musl 1.0.3
+add @rolldown/binding-linux-x64-gnu 1.0.3
+add @rolldown/binding-linux-s390x-gnu 1.0.3
+add @rolldown/binding-linux-ppc64-gnu 1.0.3
+add @rolldown/binding-linux-arm64-musl 1.0.3
+add @rolldown/binding-linux-arm64-gnu 1.0.3
+add @rolldown/binding-linux-arm-gnueabihf 1.0.3
+add @rolldown/binding-freebsd-x64 1.0.3
+add @rolldown/binding-darwin-x64 1.0.3
+add @rolldown/binding-android-arm64 1.0.3
+add @napi-rs/wasm-runtime 1.1.5
+add @emnapi/wasi-threads 1.2.1
+add @emnapi/runtime 1.10.0
+add @emnapi/core 1.10.0
+add @colbymchenry/codegraph-win32-x64 1.5.0
+add @colbymchenry/codegraph-win32-arm64 1.5.0
+add @colbymchenry/codegraph-linux-x64 1.5.0
+add @colbymchenry/codegraph-linux-arm64 1.5.0
+add @colbymchenry/codegraph-darwin-x64 1.5.0
+add @biomejs/cli-win32-x64 2.4.16
+add @biomejs/cli-win32-arm64 2.4.16
+add @biomejs/cli-linux-x64-musl 2.4.16
+add @biomejs/cli-linux-x64 2.4.16
+add @biomejs/cli-linux-arm64-musl 2.4.16
+add @biomejs/cli-linux-arm64 2.4.16
+add @biomejs/cli-darwin-x64 2.4.16
+remove @code-yeongyu/lsp-daemon 0.1.0
+{
+  "added": 42,
+  "removed": 1,
+  "changed": 0,
+  "audited": 0,
+  "funding": 29
+}
+$ node scripts/sync-version.mjs && node scripts/sync-hook-status-messages.mjs && node scripts/build-bundled-mcp-runtimes.mjs && node scripts/materialize-shared-upstreams.mjs --strict && node scripts/sync-skills.mjs && node scripts/build-components.mjs
+Synced OMO Codex manifests to version 5.0.0-beta.5 (0 updated)
+Using bundled lsp-tools-mcp dist
+Using bundled lsp-daemon dist
+Using bundled git-bash-mcp dist
+[materialize] skipped (OMO_SKIP_MATERIALIZE=1)
+Building components/comment-checker
+
+> @code-yeongyu/codex-comment-checker@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 10 modules in 8ms
+
+  cli.js  19.23 KB  (entry point)
+
+Building components/codegraph
+
+> @sisyphuslabs/codex-codegraph@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/serve.ts --target node --format esm --outfile dist/serve.js && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 162 modules in 15ms
+
+  serve.js  0.33 MB  (entry point)
+
+Bundled 185 modules in 17ms
+
+  cli.js  0.42 MB  (entry point)
+
+Bundling components/comment-checker/dist/cli.js
+Bundled 10 modules in 7ms
+
+  cli.js  19.40 KB  (entry point)
+
+Building components/rules
+
+> @code-yeongyu/codex-rules@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 51 modules in 16ms
+
+  cli.js  155.30 KB  (entry point)
+
+Building components/lsp
+
+> @code-yeongyu/codex-lsp@5.0.0-beta.5 build
+> node scripts/build-runtime.mjs
+
+Bundling components/codegraph/dist/cli.js
+Bundled 185 modules in 23ms
+
+  cli.js  0.42 MB  (entry point)
+
+Building components/start-work-continuation
+
+> @code-yeongyu/codex-start-work-continuation@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 5 modules in 7ms
+
+  cli.js  14.55 KB  (entry point)
+
+Building components/teammode
+
+> @sisyphuslabs/codex-teammode@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 2 modules in 6ms
+
+  cli.js  4.18 KB  (entry point)
+
+Bundling components/rules/dist/cli.js
+Bundled 51 modules in 12ms
+
+  cli.js  155.51 KB  (entry point)
+
+Bundling components/start-work-continuation/dist/cli.js
+Bundled 5 modules in 6ms
+
+  cli.js  14.79 KB  (entry point)
+
+Bundling components/teammode/dist/cli.js
+Bundled 2 modules in 4ms
+
+  cli.js  4.22 KB  (entry point)
+
+Building components/telemetry
+
+> @code-yeongyu/codex-telemetry@5.0.0-beta.5 build
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js && bun build src/posthog.ts --target node --format esm --outfile dist/posthog.js
+
+Bundled 79 modules in 18ms
+
+  cli.js  204.98 KB  (entry point)
+
+Bundled 77 modules in 15ms
+
+  posthog.js  202.55 KB  (entry point)
+
+Building components/ultrawork
+
+> @code-yeongyu/codex-ultrawork@5.0.0-beta.5 build
+> node scripts/sync-directive.mjs && node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && bun build src/cli.ts --target node --format esm --outfile dist/cli.js
+
+Bundled 4 modules in 8ms
+
+  cli.js  7.30 KB  (entry point)
+
+Bundling components/telemetry/dist/cli.js
+Bundled 79 modules in 15ms
+
+  cli.js  204.71 KB  (entry point)
+
+Bundling components/ultrawork/dist/cli.js
+Bundled 4 modules in 7ms
+
+  cli.js  7.44 KB  (entry point)
+
+Building components/git-bash
+
+> @sisyphuslabs/codex-git-bash-hook@5.0.0-beta.5 build
+> tsc -p tsconfig.build.json
+
+Bundling components/git-bash/dist/cli.js
+Bundled 2 modules in 3ms
+
+  cli.js  5.75 KB  (entry point)
+
+Building components/lazycodex-executor-verify
+
+> @code-yeongyu/codex-lazycodex-executor-verify@5.0.0-beta.5 build
+> tsc -p tsconfig.build.json
+
+Bundling components/lazycodex-executor-verify/dist/cli.js
+Bundled 5 modules in 3ms
+
+  cli.js  8.33 KB  (entry point)
+
+Building components/ulw-loop
+
+> @code-yeongyu/codex-ulw-loop@5.0.0-beta.5 build
+> tsc -p tsconfig.build.json
+
+Bundling components/ulw-loop/dist/cli.js
+Bundled 38 modules in 5ms
+
+  cli.js  153.72 KB  (entry point)
+
+Building components/bootstrap
+
+> @sisyphuslabs/codex-bootstrap@5.0.0-beta.5 build
+> node scripts/build.mjs
+
+Resolving dependencies
+Resolved, downloaded and extracted [2]
+Saved lockfile
+
+  dist/cli.js  148.7kb
+
+⚡ Done in 8ms
+Bundling components/bootstrap/dist/cli.js
+Bundled 49 modules in 8ms
+
+  cli.js  153.14 KB  (entry point)
+
+build:senpi-plugin
+$ bun run build:materialize-frontend && node packages/omo-senpi/plugin/scripts/stage-lsp-daemon-runtime.mjs && node packages/omo-senpi/plugin/scripts/stage-ast-grep-mcp-runtime.mjs && node packages/omo-senpi/plugin/scripts/stage-agent-toolkit.mjs && node packages/omo-senpi/plugin/scripts/build-extension.mjs && node packages/omo-senpi/plugin/scripts/sync-skills.mjs && node packages/omo-senpi/plugin/scripts/embed-directive.mjs --check && node packages/omo-senpi/plugin/scripts/build-install.mjs
+$ node packages/omo-codex/plugin/scripts/materialize-shared-upstreams.mjs --strict
+[materialize] skipped (OMO_SKIP_MATERIALIZE=1)
+Staged Senpi LSP runtime: /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-senpi/plugin/runtime/lsp-daemon/dist
+Staged Senpi ast-grep MCP runtime: /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-senpi/plugin/runtime/ast-grep-mcp/cli.js
+add @sisyphuslabs/codex-teammode 5.0.0-beta.5
+add @sisyphuslabs/codex-git-bash-hook 5.0.0-beta.5
+add @sisyphuslabs/codex-codegraph 5.0.0-beta.5
+add @oh-my-opencode/utils 0.1.0
+add @oh-my-opencode/telemetry-core 0.1.0
+add @oh-my-opencode/shared-skills 0.1.0
+add @oh-my-opencode/rules-engine 0.1.0
+add @oh-my-opencode/prompts-core 0.1.0
+add @oh-my-opencode/lsp-core 0.1.0
+add @oh-my-opencode/comment-checker-core 0.1.0
+add @code-yeongyu/lsp-daemon 0.1.0
+add @code-yeongyu/codex-ulw-loop 5.0.0-beta.5
+add @code-yeongyu/codex-ultrawork 5.0.0-beta.5
+add @code-yeongyu/codex-telemetry 5.0.0-beta.5
+add @code-yeongyu/codex-start-work-continuation 5.0.0-beta.5
+add @code-yeongyu/codex-rules 5.0.0-beta.5
+add @code-yeongyu/codex-lsp 5.0.0-beta.5
+add @code-yeongyu/codex-lazycodex-executor-verify 5.0.0-beta.5
+add @code-yeongyu/codex-comment-checker 5.0.0-beta.5
+add why-is-node-running 2.3.0
+add vitest 4.1.8
+add vite 8.0.16
+add undici-types 7.24.6
+add typescript 6.0.3
+add tslib 2.8.1
+add tinyrainbow 3.1.0
+add tinyglobby 0.2.17
+add tinyexec 1.2.3
+add tinybench 2.9.0
+add std-env 4.1.0
+add stackback 0.0.2
+add source-map-js 1.2.1
+add siginfo 2.0.0
+add rolldown 1.0.3
+add postcss 8.5.15
+add picomatch 4.0.4
+add picocolors 1.1.1
+add pathe 2.0.3
+add obug 2.1.1
+add nanoid 3.3.12
+add magic-string 0.30.21
+add lightningcss-win32-x64-msvc 1.32.0
+add lightningcss-win32-arm64-msvc 1.32.0
+add lightningcss-linux-x64-musl 1.32.0
+add lightningcss-linux-x64-gnu 1.32.0
+add lightningcss-linux-arm64-musl 1.32.0
+add lightningcss-linux-arm64-gnu 1.32.0
+add lightningcss-linux-arm-gnueabihf 1.32.0
+add lightningcss-freebsd-x64 1.32.0
+add lightningcss-darwin-x64 1.32.0
+add lightningcss-darwin-arm64 1.32.0
+add lightningcss-android-arm64 1.32.0
+add lightningcss 1.32.0
+add fsevents 2.3.3
+add fdir 6.5.0
+add expect-type 1.3.0
+add estree-walker 3.0.3
+add es-module-lexer 2.1.0
+add detect-libc 2.1.2
+add convert-source-map 2.0.0
+add chai 6.2.2
+add bun-types 1.3.14
+add assertion-error 2.0.1
+add @vitest/utils 4.1.8
+add @vitest/spy 4.1.8
+add @vitest/snapshot 4.1.8
+add @vitest/runner 4.1.8
+add @vitest/pretty-format 4.1.8
+add @vitest/mocker 4.1.8
+add @vitest/expect 4.1.8
+add @types/picomatch 4.0.3
+add @types/node 25.9.3
+add @types/estree 1.0.9
+add @types/deep-eql 4.0.2
+add @types/chai 5.2.3
+add @tybys/wasm-util 0.10.2
+add @standard-schema/spec 1.1.0
+add @rolldown/pluginutils 1.0.1
+add @rolldown/binding-win32-x64-msvc 1.0.3
+add @rolldown/binding-win32-arm64-msvc 1.0.3
+add @rolldown/binding-wasm32-wasi 1.0.3
+add @rolldown/binding-openharmony-arm64 1.0.3
+add @rolldown/binding-linux-x64-musl 1.0.3
+add @rolldown/binding-linux-x64-gnu 1.0.3
+add @rolldown/binding-linux-s390x-gnu 1.0.3
+add @rolldown/binding-linux-ppc64-gnu 1.0.3
+add @rolldown/binding-linux-arm64-musl 1.0.3
+add @rolldown/binding-linux-arm64-gnu 1.0.3
+add @rolldown/binding-linux-arm-gnueabihf 1.0.3
+add @rolldown/binding-freebsd-x64 1.0.3
+add @rolldown/binding-darwin-x64 1.0.3
+add @rolldown/binding-darwin-arm64 1.0.3
+add @rolldown/binding-android-arm64 1.0.3
+add @oxc-project/types 0.133.0
+add @napi-rs/wasm-runtime 1.1.5
+add @jridgewell/sourcemap-codec 1.5.5
+add @emnapi/wasi-threads 1.2.1
+add @emnapi/runtime 1.10.0
+add @emnapi/core 1.10.0
+add @colbymchenry/codegraph-win32-x64 1.5.0
+add @colbymchenry/codegraph-win32-arm64 1.5.0
+add @colbymchenry/codegraph-linux-x64 1.5.0
+add @colbymchenry/codegraph-linux-arm64 1.5.0
+add @colbymchenry/codegraph-darwin-x64 1.5.0
+add @colbymchenry/codegraph-darwin-arm64 1.5.0
+add @colbymchenry/codegraph 1.5.0
+add @code-yeongyu/comment-checker 0.8.0
+add @biomejs/cli-win32-x64 2.4.16
+add @biomejs/cli-win32-arm64 2.4.16
+add @biomejs/cli-linux-x64-musl 2.4.16
+add @biomejs/cli-linux-x64 2.4.16
+add @biomejs/cli-linux-arm64-musl 2.4.16
+add @biomejs/cli-linux-arm64 2.4.16
+add @biomejs/cli-darwin-x64 2.4.16
+add @biomejs/cli-darwin-arm64 2.4.16
+add @biomejs/biome 2.4.16
+remove @code-yeongyu/lsp-daemon 0.1.0
+{
+  "added": 116,
+  "removed": 1,
+  "changed": 0,
+  "audited": 0,
+  "funding": 29
+}
+
+> @code-yeongyu/codex-ulw-loop@5.0.0-beta.5 build
+> tsc -p tsconfig.build.json
+
+error TS2688: Cannot find type definition file for 'node'.
+  The file is in the program because:
+    Entry point of type library 'node' specified in compilerOptions
+npm error Lifecycle script `build` failed with error:
+npm error code 2
+npm error path /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-codex/plugin/components/ulw-loop
+npm error workspace @code-yeongyu/codex-ulw-loop@5.0.0-beta.5
+npm error location /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-codex/plugin/components/ulw-loop
+npm error command failed
+npm error command sh -c tsc -p tsconfig.build.json
+npm --prefix packages/omo-codex/plugin run --workspace components/ulw-loop build failed with exit code 2
+error: script "build:senpi-plugin:stage" exited with code 1
+build: FAILED: build:senpi-plugin failed with exit code 1
+{
+  "error": {
+    "code": 1,
+    "summary": "command failed",
+    "detail": "sh -c bun run build"
+  }
+}
+file:///Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/scripts/check-third-party-notices.mjs:238
+    throw new Error(`npm pack --dry-run --json --ignore-scripts failed with exit ${result.status}`)
+          ^
+
+Error: npm pack --dry-run --json --ignore-scripts failed with exit 1
+    at readRootDryRunPackFiles (file:///Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/scripts/check-third-party-notices.mjs:238:11)
+    at runShipCheck (file:///Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/scripts/check-third-party-notices.mjs:202:21)
+    at main (file:///Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/scripts/check-third-party-notices.mjs:284:5)
+    at file:///Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/scripts/check-third-party-notices.mjs:293:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.14.0
+error: script "test:codex" exited with code 1

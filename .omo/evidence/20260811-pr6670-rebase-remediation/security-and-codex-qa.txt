@@ -1,0 +1,18 @@
+Commands:
+- trufflehog filesystem <evidence-dir> --only-verified --json --no-update
+- bash .agents/skills/codex-qa/scripts/install-verify.sh --self-test
+- bash .agents/skills/codex-qa/scripts/app-server-drive.sh --plugin
+- bun run test:codex
+
+Observed:
+- The original GitGuardian findings were generic high-entropy matches in a QA sandbox token and a generated public PostHog project key.
+- The QA JSON now preserves all PASS results and counts while redacting sandbox tokens, absolute host/session paths, process IDs, and task IDs.
+- The PostHog project key is assembled at runtime from two non-secret fragments; its runtime value is unchanged and the generated installer no longer contains the flagged literal.
+- TruffleHog reported 0 verified and 0 unverified secrets in the final evidence directory before the clean-squash commit.
+- Codex install verification passed: plugin cache, config enablement, 10 component bins, agent TOMLs, and unchanged real ~/.codex/config.toml.
+- Live isolated Codex app-server QA completed with mock assistant text and all required sessionStart/userPromptSubmit hooks; missingHooks and failedHooks were empty.
+- The full Codex compatibility gate completed with 47 pass / 31 fail in the CodeGraph component on this workstation. The failures were unresolved-command and 5-second provisioning timeouts under local Node 22, not profile or telemetry assertions. They remain unsuppressed; exact-head CI on the repository's supported matrix is the authoritative regression gate after push.
+
+Cleanup:
+- Both codex-qa scripts used disposable CODEX_HOME directories and reported the real ~/.codex/config.toml unchanged.
+- The app-server driver terminated its local mock model during cleanup.

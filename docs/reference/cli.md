@@ -46,6 +46,7 @@ bunx oh-my-opencode
 | `get-local-version` | Show current installed version and check for updates |
 | `refresh-model-capabilities` | Refresh cached model capabilities snapshot from models.dev |
 | `config migrate` | Migrate legacy OMO configuration into the unified config |
+| `profile` | List, activate, inspect, and clear named OMO configuration profiles |
 | `ulw-loop [args...]` | Pass arguments through to the Codex LazyCodex ulw-loop CLI |
 | `boulder` | Inspect Sisyphus boulder work-state (active plan, per-task timers, session lineage) |
 | `version` | Show CLI version |
@@ -288,9 +289,37 @@ bunx oh-my-openagent mcp oauth status [server-name]
 
 ---
 
+## profile
+
+Switches between the named profiles declared under `profiles` in your omo config (see [omo.json reference](./omo-json.md#profiles)). `profile use` persists the selection as the top-level `active_profile` key in `~/.omo/omo.jsonc`, so a plain `opencode` run picks the profile up without any environment variable.
+
+### Usage
+
+```bash
+# List every defined profile; the active one is marked with *
+bunx oh-my-openagent profile list
+
+# Persist "gpt" as the active profile
+bunx oh-my-openagent profile use gpt
+
+# Show the active profile and where its activation comes from
+bunx oh-my-openagent profile current
+
+# Drop the persisted selection and go back to the base config
+bunx oh-my-openagent profile clear
+```
+
+### Notes
+
+- `profile use` rejects a name that is not defined under `profiles`, exits `1`, and leaves the config file untouched.
+- Writes go through the atomic omo config writer, so comments survive and a timestamped `.bak` copy is kept.
+- Activation precedence stays `OMO_PROFILE` > `OCX_PROFILE` > `OPENCODE_CONFIG_DIR` tail `profiles/<name>` > persisted user-layer `active_profile` > none. A project `.omo/omo.jsonc` cannot set the active profile; it is ignored with a diagnostic. When an environment variable wins, `profile current` names it and `profile use` prints a note that the persisted value is overridden in that environment.
+
+---
+
 ## Exit Codes
 
 - `0` on success
 - `1` on failure
 
-`run`, `install`, `doctor`, `get-local-version`, `refresh-model-capabilities`, and `mcp oauth` subcommands return explicit numeric exit codes.
+`run`, `install`, `doctor`, `get-local-version`, `refresh-model-capabilities`, `profile`, and `mcp oauth` subcommands return explicit numeric exit codes.

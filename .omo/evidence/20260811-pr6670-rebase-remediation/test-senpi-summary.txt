@@ -1,0 +1,45 @@
+(pass) /remember > #given an unbound session #when invoked #then an actionable error is returned and nothing is sent [0.15ms]
+
+packages/omo-senpi/src/components/memory/commands/memfs-extra.test.ts:
+(pass) /memfs backup > #given a repository #when backup runs #then a sibling memory-backup dir holds a copy [612.49ms]
+(pass) /memfs backup > #given a backup already exists for the same clock #when backup runs again #then the existing backup is not clobbered [619.03ms]
+(pass) /memfs restore > #given a named backup #when restore runs #then repo content is replaced and a safety backup is kept [645.54ms]
+(pass) /memfs restore > #given no backups #when restore runs #then an actionable error is returned [929.80ms]
+(pass) /memfs restore > #given backups and an interactive session #when restore runs without a name #then the user selects one [620.18ms]
+(pass) /memfs restore > #given backups and a noninteractive session #when restore runs without a name #then available backups are listed [865.96ms]
+(pass) /memfs restore > #given an unknown backup name #when restore runs #then an actionable error is returned [617.80ms]
+(pass) /memfs diff > #given a clean tree #when diff runs #then no changes are reported at info level [1255.83ms]
+(pass) /memfs diff > #given tracked modifications #when diff runs #then the diff is returned as a warning [945.51ms]
+(pass) /memfs tokens > #given system files #when tokens runs #then a bytes/4 estimate and per-file rows render [625.66ms]
+(pass) /memfs tokens > #given no repository #when tokens runs #then an actionable error is returned [1.87ms]
+
+packages/omo-senpi/src/components/memory/commands/tokens.test.ts:
+(pass) estimateSystemTokens > #given no system directory #when estimated #then the total is zero [2.30ms]
+(pass) estimateSystemTokens > #given system files including nested paths #when estimated #then tokens are bytes/4 per file sorted by size [6.77ms]
+(pass) estimateSystemTokens > #given a file whose byte length is not divisible by four #when estimated #then the file rounds up [2.19ms]
+
+packages/omo-senpi/src/components/memory/bindings/entry-renderer.test.ts:
+(pass) renderMemoryBindingEntry > #given a persisted identity binding #when the TUI asks to render it #then it stays hidden and cannot produce model text [0.08ms]
+
+packages/omo-senpi/src/components/memory/worker/completion.test.ts:
+(pass) reflection completion flow > #given no live source session #when completion is recorded #then it remains durable and pending [1.15ms]
+(pass) reflection completion flow > #given a worker completion record #when the landed palace collector reads reflection outcomes #then runId outcome and finishedAt match its contract [1.08ms]
+(pass) reflection completion flow > #given a pending offline completion #when its source session starts #then appendEntry notify and consumed state happen without a model message [1.00ms]
+
+packages/omo-senpi/src/components/memory/worker/runner.integration.test.ts:
+(pass) SenpiSubprocessRunner integration > #given a stub child that commits in its reflection worktree #when launched #then it merges records notifies and advances the cursor [315.00ms]
+(pass) SenpiSubprocessRunner integration > #given a child sleeping beyond an injected hard deadline #when launched #then the process group times out and cleanup leaves the cursor retryable [330.66ms]
+(pass) SenpiSubprocessRunner integration > #given empty categories and no quick model #when launched twice in one session #then both fail without spawning and only one unsuppressed warning appears [119.43ms]
+(pass) SenpiSubprocessRunner integration > #given a zero-exit child that modifies linked-worktree git administration #when completion validates #then it fails cleans up and leaves the cursor unmoved [197.52ms]
+
+packages/omo-senpi/src/components/memory/worker/resolve-model.test.ts:
+(pass) resolveReflectionModel > #given quick category model and reasoning #when resolved #then it returns the Senpi model selector and thinking level [1.23ms]
+(pass) resolveReflectionModel > #given an empty model registry #when quick cannot resolve #then it fails closed as category_unavailable [0.10ms]
+(pass) resolveReflectionModel > #given a pinned user model with a stale availability snapshot #when resolved #then find() wins over the gate [0.11ms]
+(pass) resolveReflectionModel > #given a pinned model that find() cannot locate #when resolved #then it still fails closed [0.11ms]
+(pass) resolveReflectionModel > #given the task warning suppression convention #when evaluated #then global opt-out and per-category opt-in retain their precedence [0.19ms]
+
+ 987 pass
+ 0 fail
+ 2978 expect() calls
+Ran 987 tests across 152 files. [58.13s]

@@ -1,0 +1,17 @@
+sandbox HOME: /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-codex-qa.RL4LL3/home
+
+== no persisted profile ==
+codex quick model: anthropic/base-model
+
+== omo profile use gpt ==
+Activated profile "gpt" (persisted in /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-profile-codex-qa.RL4LL3/home/.omo/omo.jsonc).
+codex quick model: openai/gpt-profile-model
+
+== OMO_PROFILE=nonexistent overrides and degrades to base ==
+codex quick model: anthropic/base-model
+
+== isolation ==
+real ~/.codex/config.toml sha before: 5c4e56d5721c2f502fb3f0b54ec8be75eac80515122787af6c38bde6ed0c1adb  /Users/sungsoopark/.codex/config.toml
+real ~/.codex/config.toml sha after:  5c4e56d5721c2f502fb3f0b54ec8be75eac80515122787af6c38bde6ed0c1adb  /Users/sungsoopark/.codex/config.toml
+sandbox CODEX_HOME contents:
+sandbox removed: /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-codex-qa.RL4LL3

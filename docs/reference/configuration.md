@@ -67,9 +67,10 @@ No default profiles ship: a profile exists only when you write one under `profil
 1. `OMO_PROFILE`
 2. `OCX_PROFILE` (set by `ocx oc -p <name>`)
 3. An `OPENCODE_CONFIG_DIR` whose path ends in `profiles/<name>`
-4. None
+4. The persisted `active_profile` key in the USER config, written by `omo profile use <name>` (a project layer setting it is ignored with a diagnostic)
+5. None
 
-Activating a profile that does not exist produces a diagnostic and falls back to the base configuration.
+Activating a profile that does not exist produces a diagnostic and falls back to the base configuration. `omo profile list`, `omo profile current`, and `omo profile clear` cover the rest of the switching workflow; see the [CLI reference](./cli.md#profile).
 
 #### Model Catalog
 

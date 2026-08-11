@@ -11,7 +11,7 @@ Harness-neutral primitives for the `omo.json` config surface: a Zod v4 schema tr
 | Path | Purpose |
 |------|---------|
 | `src/index.ts` | Barrel re-exporting `./schema`, `./loader`, `./models`, `./writer`, `./migration`. |
-| `src/schema/config.ts` | Root `OmoConfigSchema` + `OmoConfigLayerSchema` (`.strict()`; `$schema`, `categories`, `agents`, `codegraph`, `task`, `teams`, `models`, `[opencode]`/`[senpi]`/`[codex]` blocks, `profiles`, `_migrations`, `legacy_migrations`). `OmoConfig` type. |
+| `src/schema/config.ts` | Root `OmoConfigSchema` + `OmoConfigLayerSchema` (`.strict()`; `$schema`, `active_profile`, `categories`, `agents`, `codegraph`, `task`, `teams`, `models`, `[opencode]`/`[senpi]`/`[codex]` blocks, `profiles`, `_migrations`, `legacy_migrations`). `OmoConfig` type. |
 | `src/schema/harness.ts` | `HARNESS_IDS` (`codex`/`opencode`/`omo`), `OMO_CONFIG_HARNESS_IDS` (`opencode`/`senpi`/`codex`), `OmoHarnessIdSchema`, and `SETTING_HARNESS_SUPPORT` (per-key codegraph harness applicability). |
 | `src/schema/model-catalog.ts` | `OmoModelCatalogSchema` / `*Layer` variants: record of short name to `{ model, variant?, reasoningEffort? }`. |
 | `src/schema/category.ts` | `OmoCategoryConfigSchema` / `OmoCategoriesConfigSchema`. Keeps the OpenCode camelCase keys (`maxTokens`, `reasoningEffort`, `textVerbosity`) verbatim for parity. |
@@ -22,7 +22,8 @@ Harness-neutral primitives for the `omo.json` config surface: a Zod v4 schema tr
 | `src/schema/fallback-models.ts` | `OmoFallbackModelsSchema` union (string, string[], object[], mixed[]) + `OmoThinkingConfigSchema`. |
 | `src/loader/loader.ts` | `loadOmoConfig(options)` - reads each layer, JSONC-parses, validates the layer, merges, resolves the harness/profile view, then validates the merged config with defaults applied once at the end. |
 | `src/loader/paths.ts` | `resolveOmoConfigPaths` (user layer + walked project layers), plus `resolveUserOmoConfigPath` / `resolveHomeDir`. |
-| `src/loader/resolution.ts` | `resolveOmoConfigView` (base -> `[harness]` -> `profiles.<P>` -> `profiles.<P>.[harness]` fold, control keys stripped) + `resolveOmoProfileName` (`OMO_PROFILE` > `OCX_PROFILE` > `OPENCODE_CONFIG_DIR` tail `profiles/<name>` > none). |
+| `src/loader/resolution.ts` | `resolveOmoConfigView` (base -> `[harness]` -> `profiles.<P>` -> `profiles.<P>.[harness]` fold, control keys stripped) + `resolveOmoProfile`/`resolveOmoProfileName` (`OMO_PROFILE` > `OCX_PROFILE` > `OPENCODE_CONFIG_DIR` tail `profiles/<name>` > persisted user-layer `active_profile` > none) + `readPersistedOmoProfileName`/`readPersistedOmoProfileFromLayers` (user scope only; project layers get an ignored-key diagnostic). |
+| `src/loader/profile-state.ts` | `readOmoProfileState(options)` - defined profile names, the persisted `active_profile`, and the active selection with its origin. Backs the `omo profile` CLI group. |
 | `src/loader/merge.ts` | `mergeOmoConfigRecords` - recursive deep merge with prototype-pollution key sanitization. |
 | `src/loader/types.ts` | `LoadOmoConfigOptions/Result`, `OmoConfigDiagnostic`, `OmoConfigSource`, the injectable `OmoConfigReadFileSystem` port, and `DEFAULT_READ_FILE_SYSTEM`. |
 | `src/models/model-reference-resolution.ts` | `resolveModelReferences` - expands `models` catalog keys referenced by agent/category `model` strings, fills unset tuning (site tuning wins), and reports `model_catalog_cycle` diagnostics. |
@@ -35,7 +36,7 @@ Harness-neutral primitives for the `omo.json` config surface: a Zod v4 schema tr
 | Module | Key exports |
 |--------|-------------|
 | `schema/` | `OmoConfigSchema`, `OmoConfigLayerSchema`, `OmoCategoryConfigSchema`, `OmoCodegraphSettingsSchema`, `OmoAgentDefSchema`, `OmoTaskSettingsSchema`, `OmoTeamSpecSchema`, `OmoFallbackModelsSchema`, `OmoModelCatalogSchema`, `OmoHarnessIdSchema`, `HARNESS_IDS`, `OMO_CONFIG_HARNESS_IDS`, `SETTING_HARNESS_SUPPORT`; types `OmoConfig`, `OmoCategoryConfig`, `OmoCodegraphSettings`, `OmoAgentDef`, `OmoTaskSettings`, `OmoTeamSpec`, ... |
-| `loader/` | `loadOmoConfig`, `resolveOmoConfigPaths`, `resolveOmoConfigView`, `resolveOmoProfileName`, `resolveUserOmoConfigPath`, `resolveHomeDir`; types `LoadOmoConfigResult`, `OmoConfigDiagnostic`, `OmoConfigSource`, `OmoConfigReadFileSystem` |
+| `loader/` | `loadOmoConfig`, `resolveOmoConfigPaths`, `resolveOmoConfigView`, `resolveOmoProfile`, `resolveOmoProfileName`, `readOmoProfileState`, `readPersistedOmoProfileName`, `resolveUserOmoConfigPath`, `resolveHomeDir`; types `LoadOmoConfigResult`, `OmoProfileState`, `OmoConfigDiagnostic`, `OmoConfigSource`, `OmoConfigReadFileSystem` |
 | `models/` | `resolveModelReferences`; types `OmoModelReferenceDiagnostic`, `ResolveModelReferencesResult` |
 | `writer/` | `updateOmoConfig`, `OmoConfigWriteError`, `DEFAULT_WRITE_FILE_SYSTEM`; types `OmoConfigEdit`, `UpdateOmoConfigOptions`, `UpdateOmoConfigResult` |
 | `migration/` | `runMigration`, `runMigrations`, journal/lock/predicate/recovery primitives; types `MigrationRunResult`, `RunMigrationOptions`, `MigrationFileSystem`, `MigrationBoundary` |
@@ -70,7 +71,7 @@ tsgo --noEmit -p packages/omo-config-core/tsconfig.json
 bun test packages/omo-config-core
 ```
 
-Co-located `*.test.ts` cover the schema (`src/schema/config-schema.test.ts`), the loader precedence and diagnostics (`src/loader/loader.test.ts`), the deep-merge and pollution guard (`src/loader/merge.test.ts`), and the writer plus its symlink/atomicity security path (`src/writer/writer.test.ts`, `src/writer/writer-security.test.ts`). Parent: [`packages/AGENTS.md`](../AGENTS.md).
+Co-located `*.test.ts` cover the schema (`src/schema/config-schema.test.ts`), the loader precedence and diagnostics (`src/loader/loader.test.ts`), the persisted profile activation contract (`src/loader/active-profile.test.ts`), the deep-merge and pollution guard (`src/loader/merge.test.ts`), and the writer plus its symlink/atomicity security path (`src/writer/writer.test.ts`, `src/writer/writer-security.test.ts`). Parent: [`packages/AGENTS.md`](../AGENTS.md).
 
 ## GENERATED SCHEMA
 

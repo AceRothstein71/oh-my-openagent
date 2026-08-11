@@ -1,0 +1,64 @@
+# Final pre-commit review
+
+## Branch history
+fae05e24e (HEAD -> feature/omo-profile-cli) test(qa): trim the bulk test logs in the evidence bundle to their summaries
+e9e3323ed test(qa): record the profile CLI evidence bundle
+89cdadfc0 docs: document the persisted active profile and the profile command
+433f03522 feat(cli): add the omo profile command group
+eccfa679b feat(omo-config-core): persist the active profile in omo config
+ee81ab7c5 (origin/dev, origin/HEAD) Merge pull request #6723 from code-yeongyu/fix/senpi-rpc-entry-unexported-v5
+305eb5c92 build(omo-senpi): refresh RPC startup bundle
+1c4343c7b fix(senpi-task): resolve RPC entry without package export
+1b91e9771 Merge pull request #6721 from code-yeongyu/fix/memory-footer-evidence-eol
+16cbd41ef docs(qa): normalize memory footer ANSI evidence
+5ef2f8e44 Merge pull request #6694 from code-yeongyu/fix/senpi-memory-footer-first-use
+670f4f76d docs(qa): correct Senpi stale-package failure record
+
+## Diff check
+
+## Diff stat against origin/dev
+ .omo/evidence/20260809-omo-profile-cli/README.md   |  99 +++++++++
+ .../20260809-omo-profile-cli/bun-test-full.txt     |  22 ++
+ .../20260809-omo-profile-cli/cli-manual-qa.sh      |  62 ++++++
+ .../20260809-omo-profile-cli/cli-manual-qa.txt     | 120 +++++++++++
+ .../20260809-omo-profile-cli/codex-config-check.sh |  56 ++++++
+ .../codex-config-check.txt                         |  17 ++
+ .../20260809-omo-profile-cli/green-tests.txt       | 223 +++++++++++++++++++++
+ .../20260809-omo-profile-cli/opencode-qa.sh        |  96 +++++++++
+ .../20260809-omo-profile-cli/opencode-qa.txt       |  31 +++
+ .../20260809-omo-profile-cli/red-tests.txt         |  55 +++++
+ .../20260809-omo-profile-cli/test-codex.txt        |  43 ++++
+ .../20260809-omo-profile-cli/typecheck.txt         |   7 +
+ AGENTS.md                                          |   4 +-
+ assets/omo.schema.json                             |   3 +
+ docs/guide/installation.md                         |   2 +-
+ docs/reference/cli.md                              |  31 ++-
+ docs/reference/configuration.md                    |   5 +-
+ docs/reference/omo-json.md                         |  10 +-
+ packages/omo-config-core/AGENTS.md                 |   9 +-
+ .../src/loader/active-profile.test.ts              | 158 +++++++++++++++
+ packages/omo-config-core/src/loader/index.ts       |   1 +
+ packages/omo-config-core/src/loader/loader.ts      |   5 +-
+ .../omo-config-core/src/loader/profile-state.ts    |  39 ++++
+ packages/omo-config-core/src/loader/resolution.ts  |  38 +++-
+ packages/omo-config-core/src/schema/config.ts      |   2 +
+ packages/omo-opencode/src/cli/AGENTS.md            |  10 +-
+ packages/omo-opencode/src/cli/cli-program.test.ts  |  14 ++
+ packages/omo-opencode/src/cli/cli-program.ts       |   3 +
+ packages/omo-opencode/src/cli/profile/command.ts   |  47 +++++
+ .../omo-opencode/src/cli/profile/index.test.ts     |  27 +++
+ packages/omo-opencode/src/cli/profile/index.ts     |   3 +
+ .../omo-opencode/src/cli/profile/profile.test.ts   | 196 ++++++++++++++++++
+ packages/omo-opencode/src/cli/profile/profile.ts   | 129 ++++++++++++
+ packages/omo-opencode/src/cli/profile/types.ts     |   8 +
+ 34 files changed, 1552 insertions(+), 23 deletions(-)
+ .../plugin/components/codegraph/dist/cli.js        | 139 ++++----
+ .../plugin/components/codegraph/dist/serve.js      | 143 ++++----
+ .../scripts/install-dist/install-local.mjs         | 142 ++++----
+ packages/omo-opencode/src/cli/profile/command.ts   |   4 +-
+ .../omo-opencode/src/cli/profile/profile.test.ts   |  39 +++
+ packages/omo-opencode/src/cli/profile/profile.ts   |  24 +-
+ packages/omo-opencode/src/config/validate.test.ts  |  15 +
+ .../src/plugin-config/omo-config-chain.ts          |   2 +-
+ packages/omo-senpi/plugin/extensions/omo.js        | 362 ++++++++++-----------
+ 9 files changed, 488 insertions(+), 382 deletions(-)

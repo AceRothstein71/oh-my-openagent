@@ -749,69 +749,69 @@ function config(newConfig) {
 // ../../../../../node_modules/.bun/zod@4.4.3/node_modules/zod/v4/core/util.js
 var exports_util = {};
 __export(exports_util, {
-  BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
-  Class: () => Class,
-  NUMBER_FORMAT_RANGES: () => NUMBER_FORMAT_RANGES,
-  aborted: () => aborted,
-  allowsEval: () => allowsEval,
-  assert: () => assert,
-  assertEqual: () => assertEqual,
-  assertIs: () => assertIs,
-  assertNever: () => assertNever,
-  assertNotEqual: () => assertNotEqual,
-  assignProp: () => assignProp,
-  base64ToUint8Array: () => base64ToUint8Array,
-  base64urlToUint8Array: () => base64urlToUint8Array,
-  cached: () => cached,
-  captureStackTrace: () => captureStackTrace,
-  cleanEnum: () => cleanEnum,
-  cleanRegex: () => cleanRegex,
-  clone: () => clone,
-  cloneDef: () => cloneDef,
-  createTransparentProxy: () => createTransparentProxy,
-  defineLazy: () => defineLazy,
-  esc: () => esc,
-  escapeRegex: () => escapeRegex,
-  explicitlyAborted: () => explicitlyAborted,
-  extend: () => extend,
-  finalizeIssue: () => finalizeIssue,
-  floatSafeRemainder: () => floatSafeRemainder,
-  getElementAtPath: () => getElementAtPath,
-  getEnumValues: () => getEnumValues,
-  getLengthableOrigin: () => getLengthableOrigin,
-  getParsedType: () => getParsedType,
-  getSizableOrigin: () => getSizableOrigin,
-  hexToUint8Array: () => hexToUint8Array,
-  isObject: () => isObject,
-  isPlainObject: () => isPlainObject,
-  issue: () => issue,
-  joinValues: () => joinValues,
-  jsonStringifyReplacer: () => jsonStringifyReplacer,
-  merge: () => merge,
-  mergeDefs: () => mergeDefs,
-  normalizeParams: () => normalizeParams,
-  nullish: () => nullish,
-  numKeys: () => numKeys,
-  objectClone: () => objectClone,
-  omit: () => omit,
-  optionalKeys: () => optionalKeys,
-  parsedType: () => parsedType,
-  partial: () => partial,
-  pick: () => pick,
-  prefixIssues: () => prefixIssues,
-  primitiveTypes: () => primitiveTypes,
-  promiseAllObject: () => promiseAllObject,
-  propertyKeyTypes: () => propertyKeyTypes,
-  randomString: () => randomString,
-  required: () => required,
-  safeExtend: () => safeExtend,
-  shallowClone: () => shallowClone,
-  slugify: () => slugify,
-  stringifyPrimitive: () => stringifyPrimitive,
-  uint8ArrayToBase64: () => uint8ArrayToBase64,
-  uint8ArrayToBase64url: () => uint8ArrayToBase64url,
+  unwrapMessage: () => unwrapMessage,
   uint8ArrayToHex: () => uint8ArrayToHex,
-  unwrapMessage: () => unwrapMessage
+  uint8ArrayToBase64url: () => uint8ArrayToBase64url,
+  uint8ArrayToBase64: () => uint8ArrayToBase64,
+  stringifyPrimitive: () => stringifyPrimitive,
+  slugify: () => slugify,
+  shallowClone: () => shallowClone,
+  safeExtend: () => safeExtend,
+  required: () => required,
+  randomString: () => randomString,
+  propertyKeyTypes: () => propertyKeyTypes,
+  promiseAllObject: () => promiseAllObject,
+  primitiveTypes: () => primitiveTypes,
+  prefixIssues: () => prefixIssues,
+  pick: () => pick,
+  partial: () => partial,
+  parsedType: () => parsedType,
+  optionalKeys: () => optionalKeys,
+  omit: () => omit,
+  objectClone: () => objectClone,
+  numKeys: () => numKeys,
+  nullish: () => nullish,
+  normalizeParams: () => normalizeParams,
+  mergeDefs: () => mergeDefs,
+  merge: () => merge,
+  jsonStringifyReplacer: () => jsonStringifyReplacer,
+  joinValues: () => joinValues,
+  issue: () => issue,
+  isPlainObject: () => isPlainObject,
+  isObject: () => isObject,
+  hexToUint8Array: () => hexToUint8Array,
+  getSizableOrigin: () => getSizableOrigin,
+  getParsedType: () => getParsedType,
+  getLengthableOrigin: () => getLengthableOrigin,
+  getEnumValues: () => getEnumValues,
+  getElementAtPath: () => getElementAtPath,
+  floatSafeRemainder: () => floatSafeRemainder,
+  finalizeIssue: () => finalizeIssue,
+  extend: () => extend,
+  explicitlyAborted: () => explicitlyAborted,
+  escapeRegex: () => escapeRegex,
+  esc: () => esc,
+  defineLazy: () => defineLazy,
+  createTransparentProxy: () => createTransparentProxy,
+  cloneDef: () => cloneDef,
+  clone: () => clone,
+  cleanRegex: () => cleanRegex,
+  cleanEnum: () => cleanEnum,
+  captureStackTrace: () => captureStackTrace,
+  cached: () => cached,
+  base64urlToUint8Array: () => base64urlToUint8Array,
+  base64ToUint8Array: () => base64ToUint8Array,
+  assignProp: () => assignProp,
+  assertNotEqual: () => assertNotEqual,
+  assertNever: () => assertNever,
+  assertIs: () => assertIs,
+  assertEqual: () => assertEqual,
+  assert: () => assert,
+  allowsEval: () => allowsEval,
+  aborted: () => aborted,
+  NUMBER_FORMAT_RANGES: () => NUMBER_FORMAT_RANGES,
+  Class: () => Class,
+  BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES
 });
 function assertEqual(val) {
   return val;
@@ -6021,6 +6021,15 @@ var OmoTeamSpecLayerSchema = OmoTeamSpecBaseSchema.partial();
 var OmoTeamsConfigSchema = record(string2(), OmoTeamSpecSchema);
 var OmoTeamsConfigLayerSchema = record(string2(), OmoTeamSpecLayerSchema);
 
+// ../../../../omo-config-core/src/schema/telemetry.ts
+var OmoTelemetrySettingsShape = {
+  enabled: boolean2()
+};
+var OmoTelemetrySettingsLayerSchema = object(OmoTelemetrySettingsShape).partial().strict();
+var OmoTelemetrySettingsSchema = OmoTelemetrySettingsLayerSchema.extend({
+  enabled: boolean2().default(true)
+}).strict();
+
 // ../../../../omo-config-core/src/schema/config.ts
 var OmoOpenCodeHarnessConfigSchema = record(string2(), unknown());
 var OmoTypedHarnessConfigSchema = object({
@@ -6030,7 +6039,8 @@ var OmoTypedHarnessConfigSchema = object({
   task: OmoTaskSettingsLayerSchema.optional(),
   teams: OmoTeamsConfigLayerSchema.optional(),
   models: OmoModelCatalogLayerSchema.optional(),
-  memory: OmoMemorySettingsLayerSchema.optional()
+  memory: OmoMemorySettingsLayerSchema.optional(),
+  telemetry: OmoTelemetrySettingsLayerSchema.optional()
 }).strict();
 var OmoConfigProfileSchema = object({
   categories: OmoCategoriesConfigSchema.optional(),
@@ -6040,12 +6050,14 @@ var OmoConfigProfileSchema = object({
   teams: OmoTeamsConfigLayerSchema.optional(),
   models: OmoModelCatalogLayerSchema.optional(),
   memory: OmoMemorySettingsLayerSchema.optional(),
+  telemetry: OmoTelemetrySettingsLayerSchema.optional(),
   "[opencode]": OmoOpenCodeHarnessConfigSchema.optional(),
   "[senpi]": OmoTypedHarnessConfigSchema.optional(),
   "[codex]": OmoTypedHarnessConfigSchema.optional()
 }).strict();
 var OmoConfigSchema = object({
   $schema: string2().optional(),
+  active_profile: string2().optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
   codegraph: OmoCodegraphSettingsSchema.optional(),
@@ -6053,6 +6065,7 @@ var OmoConfigSchema = object({
   teams: OmoTeamsConfigSchema.optional(),
   models: OmoModelCatalogSchema.optional(),
   memory: OmoMemorySettingsSchema.optional(),
+  telemetry: OmoTelemetrySettingsSchema.optional(),
   "[opencode]": OmoOpenCodeHarnessConfigSchema.optional(),
   "[senpi]": OmoTypedHarnessConfigSchema.optional(),
   "[codex]": OmoTypedHarnessConfigSchema.optional(),
@@ -6062,6 +6075,7 @@ var OmoConfigSchema = object({
 }).strict();
 var OmoConfigLayerSchema = object({
   $schema: string2().optional(),
+  active_profile: string2().optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
   codegraph: OmoCodegraphSettingsLayerSchema.optional(),
@@ -6069,6 +6083,7 @@ var OmoConfigLayerSchema = object({
   teams: OmoTeamsConfigLayerSchema.optional(),
   models: OmoModelCatalogLayerSchema.optional(),
   memory: OmoMemorySettingsLayerSchema.optional(),
+  telemetry: OmoTelemetrySettingsLayerSchema.optional(),
   "[opencode]": OmoOpenCodeHarnessConfigSchema.optional(),
   "[senpi]": OmoTypedHarnessConfigSchema.optional(),
   "[codex]": OmoTypedHarnessConfigSchema.optional(),
@@ -7578,6 +7593,7 @@ function resolveOmoConfigPaths(options) {
 
 // ../../../../omo-config-core/src/loader/resolution.ts
 var HARNESS_KEYS = [...new Set([...HARNESS_IDS, ...OMO_CONFIG_HARNESS_IDS])].map((harness) => `[${harness}]`);
+var OMO_ACTIVE_PROFILE_KEY = "active_profile";
 function profileName(value) {
   return value === "" ? undefined : value;
 }
@@ -7585,9 +7601,48 @@ function profileNameFromOpenCodeConfigDir(path) {
   const match = path?.match(/(?:^|[\\/])profiles[\\/]([^\\/]+)[\\/]*$/);
   return profileName(match?.[1]);
 }
-function resolveOmoProfileName(options = {}) {
+function readPersistedOmoProfileName(config2) {
+  const value = config2[OMO_ACTIVE_PROFILE_KEY];
+  return typeof value === "string" ? profileName(value) : undefined;
+}
+function readPersistedOmoProfileFromLayers(layers) {
+  let persisted;
+  const ignoredPaths = [];
+  for (const layer of layers) {
+    const name = readPersistedOmoProfileName(layer.config);
+    if (name === undefined)
+      continue;
+    if (layer.source.scope === "user")
+      persisted = name;
+    else
+      ignoredPaths.push(layer.source.path);
+  }
+  return { ignoredPaths, ...persisted === undefined ? {} : { persisted } };
+}
+function ignoredProjectProfileDiagnostics(paths) {
+  return paths.map((path) => ({
+    kind: "profile",
+    message: `Ignoring "${OMO_ACTIVE_PROFILE_KEY}" in ${path}: profile activation is read from the user omo config only`,
+    path
+  }));
+}
+function resolveOmoProfile(options = {}) {
   const env = options.env ?? process.env;
-  return profileName(options.profile) ?? profileName(env["OMO_PROFILE"]) ?? profileName(env["OCX_PROFILE"]) ?? profileNameFromOpenCodeConfigDir(env["OPENCODE_CONFIG_DIR"]);
+  const candidates = [
+    ["explicit", profileName(options.profile)],
+    ["OMO_PROFILE", profileName(env["OMO_PROFILE"])],
+    ["OCX_PROFILE", profileName(env["OCX_PROFILE"])],
+    ["OPENCODE_CONFIG_DIR", profileNameFromOpenCodeConfigDir(env["OPENCODE_CONFIG_DIR"])],
+    ["persisted", profileName(options.persisted)]
+  ];
+  for (const [origin, name] of candidates) {
+    if (name !== undefined)
+      return { name, origin };
+  }
+  return;
+}
+function resolveOmoProfileName(options = {}) {
+  return resolveOmoProfile(options)?.name;
 }
 function toRecord(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value))
@@ -7597,7 +7652,7 @@ function toRecord(value) {
 function withoutControlKeys(config2) {
   const result = {};
   for (const [key, value] of Object.entries(config2)) {
-    if (key === "profiles" || HARNESS_KEYS.includes(key))
+    if (key === "profiles" || key === OMO_ACTIVE_PROFILE_KEY || HARNESS_KEYS.includes(key))
       continue;
     result[key] = value;
   }
@@ -7660,6 +7715,7 @@ function stripResolutionControlKeys(config2) {
     "[codex]": _codex,
     "[opencode]": _opencode,
     "[senpi]": _senpi,
+    active_profile: _activeProfile,
     profiles: _profiles,
     ...resolved
   } = config2;
@@ -7749,8 +7805,11 @@ function loadOmoConfig(options = {}) {
       merged = mergeOmoConfigRecords(merged, loaded.value);
     }
   }
+  const persistedProfile = readPersistedOmoProfileFromLayers(layers);
+  diagnostics.push(...ignoredProjectProfileDiagnostics(persistedProfile.ignoredPaths));
   const requestedProfile = resolveOmoProfileName({
     ...options.env === undefined ? {} : { env: options.env },
+    ...persistedProfile.persisted === undefined ? {} : { persisted: persistedProfile.persisted },
     ...options.profile === undefined ? {} : { profile: options.profile }
   });
   const resolved = resolveOmoConfigView({
@@ -9728,7 +9787,7 @@ function isDirectInvocation(argvPath) {
   return realpathSync3(resolve5(argvPath)) === realpathSync3(modulePath);
 }
 export {
-  resolveServeProcessInvocation,
+  runCodegraphServeCli,
   runCodegraphServe,
-  runCodegraphServeCli
+  resolveServeProcessInvocation
 };

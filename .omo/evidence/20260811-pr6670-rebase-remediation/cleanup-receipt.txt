@@ -1,0 +1,1 @@
+OpenCode QA sandbox cleanup passed in opencode-qa-self-check.txt. Senpi task E2E reported no leaked PIDs and real_senpi_untouched PASS. The preserved pre-rebase worktree stash was applied successfully and removed before this commit.

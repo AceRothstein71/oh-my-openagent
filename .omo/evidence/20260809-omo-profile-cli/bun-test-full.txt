@@ -1,0 +1,22 @@
+# bun test (root suite) - full run, tail only
+# The complete run printed one line per test (17053 lines); the summary and the
+# failure/skip sections are kept here. Reproduce with: bun test
+
+17038:5 tests skipped:
+17039-(skip) bounded sg NDJSON runner > #given a hung child on Windows #when aborted #then child.kill terminates it without POSIX grace signaling
+17040-(skip) bounded sg NDJSON runner > #given a hung child on Windows #when the whole-call budget expires #then child.kill terminates it without POSIX grace signaling
+17041-(skip) team-mode live tmux smoke > #given a real caller tmux session and two mock members #when createTeamLayout runs #then teammate panes appear in the caller window and cleanup leaves the session intact
+17042-(skip) reapLspDaemons live ownership > #given a live Windows named pipe legacy daemon #when reaping #then it defers without sending POSIX signals
+17043-(skip) team-mode live tmux smoke > #given a real caller tmux session and two mock members #when createTeamLayout runs #then teammate panes appear in the caller window and cleanup leaves the session intact
+17044-
+17045- 13439 pass
+17046- 5 skip
+
+ 5 skip
+ 0 fail
+ 1 snapshots, 76108 expect() calls
+Ran 13444 tests across 1735 files. [181.03s]
+
+real	3m1.085s
+user	0m53.499s
+sys	0m53.549s

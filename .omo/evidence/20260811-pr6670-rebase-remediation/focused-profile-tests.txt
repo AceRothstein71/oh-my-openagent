@@ -1,0 +1,47 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-config-core/src/loader/active-profile.test.ts:
+(pass) persisted active profile > #given no environment activation #when resolving the profile name #then the persisted selection is used [1.82ms]
+(pass) persisted active profile > #given OMO_PROFILE and a persisted selection #when resolving the profile name #then the environment wins [0.10ms]
+(pass) persisted active profile > #given an OPENCODE_CONFIG_DIR profile tail and a persisted selection #when resolving the profile name #then the directory tail wins [0.18ms]
+(pass) persisted active profile > #given a config with active_profile #when loading #then the profile layer applies and the control key never leaks [5.95ms]
+(pass) persisted active profile > #given active_profile and OMO_PROFILE #when loading #then the environment profile layer applies [1.33ms]
+(pass) persisted active profile > #given a persisted profile that does not exist #when loading #then the base config is used with a profile diagnostic [1.16ms]
+(pass) persisted active profile > #given a project config that sets active_profile #when loading #then it is ignored with a diagnostic and the user layer decides [1.37ms]
+(pass) persisted active profile > #given only a project config that sets active_profile #when loading #then no profile is activated [0.96ms]
+(pass) persisted active profile > #given no persisted profile and no environment activation #when loading #then no profile is active [0.94ms]
+(pass) readOmoProfileState > #given defined profiles and a persisted selection #when reading state #then names are sorted and the persisted origin is reported [1.41ms]
+(pass) readOmoProfileState > #given OMO_PROFILE over a persisted selection #when reading state #then the environment origin is reported [0.72ms]
+(pass) readOmoProfileState > #given a config without profiles #when reading state #then no profiles and no active selection are reported [0.68ms]
+
+packages/omo-opencode/src/config/validate.test.ts:
+(pass) validatePluginConfig > #given no omo config #when validating #then returns plugin defaults [2.53ms]
+(pass) validatePluginConfig > #given a project omo harness block #when validating #then loads the opencode view [1.75ms]
+(pass) validatePluginConfig > #given an invalid ancestor omo harness block #when validating from a child #then reports the schema path [2.92ms]
+(pass) validatePluginConfig > #given user and project omo views #when validating #then preserves plugin merge and disabled-set semantics [3.90ms]
+(pass) validatePluginConfig > #given protected fields in user and project base blocks #when validating #then honors only the user base values [2.50ms]
+(pass) validatePluginConfig > #given protected fields in an active user profile and project profile #when validating #then honors only the user profile values [2.54ms]
+(pass) validatePluginConfig > #given unknown opencode keys #when validating #then reports and strips every unknown path without losing known values [2.02ms]
+(pass) validatePluginConfig > #given an active_profile control key #when validating #then applies its profile without forwarding the key to plugin validation [1.39ms]
+(pass) validatePluginConfig > #given an OCX profile overlay #when OCX_PROFILE changes #then flips the resolved sisyphus model [2.22ms]
+(pass) validatePluginConfig > #given a model catalog reference in the opencode view #when validating #then resolves the model identifier [1.99ms]
+(pass) validatePluginConfig > #given a migrated canonical agent model chain #when validating #then materializes the runtime model fields [2.18ms]
+
+packages/omo-opencode/src/cli/profile/profile.test.ts:
+(pass) omo profile > #given defined profiles and no selection #when listing #then every profile prints without an active marker [2.72ms]
+(pass) omo profile > #given no profiles in the config #when listing #then a discoverable empty-state message prints [0.72ms]
+(pass) omo profile > #given a defined profile #when using it #then the selection persists as active_profile and comments survive [2.62ms]
+(pass) omo profile > #given OMO_PROFILE wins #when using a different profile #then the persisted write reports the post-write active selection [1.17ms]
+(pass) omo profile > #given an unknown profile name #when using it #then the command fails and leaves the config untouched [1.39ms]
+(pass) omo profile > #given a persisted profile #when asking for the current profile #then the persisted origin prints [1.78ms]
+(pass) omo profile > #given OMO_PROFILE set over a persisted profile #when asking for the current profile #then the environment wins and is named [1.65ms]
+(pass) omo profile > #given no selection at all #when asking for the current profile #then the base-config state prints [1.13ms]
+(pass) omo profile > #given a persisted profile #when clearing #then active_profile is removed and current reports the base config [2.63ms]
+(pass) omo profile > #given OMO_PROFILE wins #when clearing the persisted profile #then the command reports the post-write active selection [2.74ms]
+(pass) omo profile > #given nothing persisted #when clearing #then the command reports there is nothing to clear [1.38ms]
+(pass) omo profile > #given a persisted profile #when listing #then it carries the active marker [1.66ms]
+
+ 35 pass
+ 0 fail
+ 99 expect() calls
+Ran 35 tests across 3 files. [271.00ms]

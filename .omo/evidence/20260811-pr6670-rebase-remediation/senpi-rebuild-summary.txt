@@ -1,0 +1,32 @@
+# Senpi generated-output rebuild
+
+Bundled 78 modules in 8ms
+Bundled 10 modules in 8ms
+Bundled 162 modules in 21ms
+Bundled 185 modules in 21ms
+Bundled 2 modules in 5ms
+Bundled 51 modules in 14ms
+Bundled 10 modules in 6ms
+Bundled 79 modules in 16ms
+Bundled 77 modules in 12ms
+Bundled 2 modules in 6ms
+Bundled 185 modules in 16ms
+Bundled 51 modules in 8ms
+Bundled 79 modules in 11ms
+Bundled 5 modules in 4ms
+Bundled 5 modules in 3ms
+Bundled 4 modules in 3ms
+Bundled 4 modules in 3ms
+Bundled 2 modules in 3ms
+Bundled 5 modules in 4ms
+Bundled 38 modules in 5ms
+Bundled 49 modules in 5ms
+Staged Senpi LSP runtime: /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-senpi/plugin/runtime/lsp-daemon/dist
+Staged Senpi ast-grep MCP runtime: /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-senpi/plugin/runtime/ast-grep-mcp/cli.js
+Bundled 38 modules in 5ms
+Staged Senpi agent-toolkit runtime: /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-senpi/plugin/runtime/agent-toolkit
+Bundled 783 modules in 39ms
+Bundled 280 modules in 14ms
+Bundled 61 modules in 5ms
+Built omo-senpi extensions: /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-senpi/plugin/extensions/omo.js, /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/packages/omo-senpi/plugin/extensions/omo-member.js
+Bundled 4 modules in 3ms

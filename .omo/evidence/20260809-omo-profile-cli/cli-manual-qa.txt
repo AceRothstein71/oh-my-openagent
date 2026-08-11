@@ -1,0 +1,120 @@
+sandbox HOME: /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-qa.Rs0Ut6/home
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile --help
+Usage: oh-my-opencode profile [options] [command]
+
+Switch between named OMO configuration profiles
+
+Options:
+  -h, --help      display help for command
+
+Commands:
+  list            List profiles defined in your omo config, marking the active
+                  one
+  use <name>      Persist <name> as the active profile in ~/.omo/omo.jsonc
+  current         Show the active profile and where its activation comes from
+  clear           Remove the persisted active profile and fall back to the base
+                  config
+  help [command]  display help for command
+
+Examples:
+  $ omo profile list        # Show every profile with the active marker
+  $ omo profile use gpt     # Persist "gpt" so plain opencode picks it up
+  $ omo profile current     # Show the active profile and its source
+  $ omo profile clear       # Drop the persisted profile, back to base config
+
+Activation order (highest first): OMO_PROFILE, OCX_PROFILE, an OPENCODE_CONFIG_DIR
+ending in profiles/<name>, then the persisted "active_profile" key.
+
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile list
+Profiles:
+  gpt
+  kimi
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile current
+No active profile (using the base config).
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile use nope
+Unknown profile "nope". Defined profiles: gpt, kimi.
+[exit=1]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile use gpt
+Activated profile "gpt" (persisted in /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-profile-qa.Rs0Ut6/home/.omo/omo.jsonc).
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile current
+gpt (persisted in your omo config)
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile list
+Profiles:
+* gpt
+  kimi
+Active: gpt (persisted in your omo config)
+[exit=0]
+
+$ OMO_PROFILE=kimi node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile current
+kimi (from OMO_PROFILE)
+[exit=0]
+
+$ OPENCODE_CONFIG_DIR=/tmp/does-not-exist/profiles/kimi node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile current
+kimi (from OPENCODE_CONFIG_DIR)
+[exit=0]
+
+$ OMO_PROFILE=kimi node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile use gpt
+Activated profile "gpt" (persisted in /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-profile-qa.Rs0Ut6/home/.omo/omo.jsonc).
+Note: OMO_PROFILE activates "kimi" and overrides the persisted profile in this environment.
+[exit=0]
+
+$ cat '/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-qa.Rs0Ut6/home/.omo/omo.jsonc'
+{
+  // sandbox fixture: two delta-only profiles over one base config
+  "categories": {
+    "quick": { "model": "anthropic/base-model" }
+  },
+  "profiles": {
+    "gpt": { "categories": { "quick": { "model": "openai/gpt-5.6-sol" } } },
+    "kimi": { "categories": { "quick": { "model": "kimi-for-coding/kimi-k3" } } }
+  },
+  "active_profile": "gpt"
+}
+[exit=0]
+
+$ ls '/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-qa.Rs0Ut6/home/.omo'
+omo.jsonc
+omo.jsonc.bak.2026-08-09T12-20-37-262Z
+omo.jsonc.bak.2026-08-09T12-20-37-838Z
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile clear
+Cleared the persisted profile "gpt" in /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-profile-qa.Rs0Ut6/home/.omo/omo.jsonc; using the base config.
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile current
+No active profile (using the base config).
+[exit=0]
+
+$ node /Users/sungsoopark/Documents/GitHub/oh-my-openagent-wt/feature/omo-profile-cli/dist/cli-node/index.js profile clear
+No persisted profile to clear; already using the base config.
+[exit=0]
+
+$ cat '/var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-qa.Rs0Ut6/home/.omo/omo.jsonc'
+{
+  // sandbox fixture: two delta-only profiles over one base config
+  "categories": {
+    "quick": { "model": "anthropic/base-model" }
+  },
+  "profiles": {
+    "gpt": { "categories": { "quick": { "model": "openai/gpt-5.6-sol" } } },
+    "kimi": { "categories": { "quick": { "model": "kimi-for-coding/kimi-k3" } } }
+  }
+}
+[exit=0]
+
+$ real host ~/.omo untouched check
+host config still present, sandbox HOME was /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-qa.Rs0Ut6/home
+sandbox removed: /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-qa.Rs0Ut6

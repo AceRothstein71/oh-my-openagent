@@ -1,0 +1,21 @@
+{
+  "type": "text",
+  "timestamp": 1786420242528,
+  "sessionID": "ses_0110e5c1bffeEU3v1mShvBmM0p",
+  "part": {
+    "id": "prt_feef1a857001rS6AvAtC7Vi8qn",
+    "messageID": "msg_feef1a5040016a7Q11t241MWDk",
+    "sessionID": "ses_0110e5c1bffeEU3v1mShvBmM0p",
+    "type": "text",
+    "text": "fake response 2",
+    "time": {
+      "start": 1786420242519,
+      "end": 1786420242520
+    },
+    "metadata": {
+      "openai": {
+        "itemId": "msg_2"
+      }
+    }
+  }
+}

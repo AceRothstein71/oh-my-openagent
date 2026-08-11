@@ -880,7 +880,7 @@ Merge rules:
 - Plain objects: deep merged recursively (prototype-pollution safe)
 - Scalars and arrays: override replaces base value
 - `mcp_env_allowlist`: **user-layer only** for security; project layers cannot extend it
-- Profile activation: `OMO_PROFILE` > `OCX_PROFILE` > `OPENCODE_CONFIG_DIR` tail `profiles/<name>` > none
+- Profile activation: `OMO_PROFILE` > `OCX_PROFILE` > `OPENCODE_CONFIG_DIR` tail `profiles/<name>` > persisted user-layer `active_profile` (`omo profile use <name>`) > none
 
 Schema autocomplete in your editor:
 

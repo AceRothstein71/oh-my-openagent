@@ -1,0 +1,31 @@
+sandbox: /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-opencode-qa.B7es6T
+opencode: 1.18.15
+real opencode DB sessions before: 7409
+
+== 1. no persisted profile: plugin resolves the base [opencode] block ==
+No active profile (using the base config).
+opencode debug config: exit=0 stdout_bytes=300844 stderr=
+"model": "anthropic/base-oracle-model"
+
+== 2. omo profile use gpt: persisted selection reaches opencode ==
+Activated profile "gpt" (persisted in /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-profile-opencode-qa.B7es6T/home/.omo/omo.jsonc).
+gpt (persisted in your omo config)
+opencode debug config: exit=0 stdout_bytes=300580 stderr=
+"model": "openai/gpt-profile-model"
+
+== 3. OMO_PROFILE overrides the persisted selection for one run ==
+kimi (from OMO_PROFILE)
+opencode debug config: exit=0 stdout_bytes=300840
+"model": "kimi/kimi-profile-model"
+
+== 4. omo profile clear: back to the base [opencode] block ==
+Cleared the persisted profile "gpt" in /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T/omo-profile-opencode-qa.B7es6T/home/.omo/omo.jsonc; using the base config.
+No active profile (using the base config).
+opencode debug config: exit=0 stdout_bytes=300844 stderr=
+"model": "anthropic/base-oracle-model"
+
+== isolation ==
+real opencode DB sessions after: 7409 (before: 7409)
+host ~/.omo/omo.jsonc sha before: 77b76d2c4d96c8021c964e6d09544b12cade33c67f1133c8e7bef7a445c66357  /Users/sungsoopark/.omo/omo.jsonc
+host ~/.omo/omo.jsonc sha after:  77b76d2c4d96c8021c964e6d09544b12cade33c67f1133c8e7bef7a445c66357  /Users/sungsoopark/.omo/omo.jsonc
+sandbox removed: /var/folders/13/yyrkyfts6qsg303mcwpwzq200000gn/T//omo-profile-opencode-qa.B7es6T

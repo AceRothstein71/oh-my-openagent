@@ -42,6 +42,7 @@ export const OmoConfigProfileSchema = z.object({
 
 export const OmoConfigSchema = z.object({
   $schema: z.string().optional(),
+  active_profile: z.string().optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
   codegraph: OmoCodegraphSettingsSchema.optional(),
@@ -60,6 +61,7 @@ export const OmoConfigSchema = z.object({
 
 export const OmoConfigLayerSchema = z.object({
   $schema: z.string().optional(),
+  active_profile: z.string().optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
   codegraph: OmoCodegraphSettingsLayerSchema.optional(),

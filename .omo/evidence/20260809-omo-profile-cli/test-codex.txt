@@ -1,0 +1,43 @@
+# bun run test:codex - tail only (full run printed 3624 lines)
+# Reproduce with: bun run test:codex
+
+  duration_ms: 1.581
+  ...
+# Subtest: \#given project-local Codex config is a symlink \#when script cleanup runs \#then symlink target is not modified
+ok 512 - \#given project-local Codex config is a symlink \#when script cleanup runs \#then symlink target is not modified
+  ---
+  duration_ms: 2.089291
+  ...
+# Subtest: \#given project-local .codex directory is a symlink \#when script cleanup runs \#then symlink target is not modified
+ok 513 - \#given project-local .codex directory is a symlink \#when script cleanup runs \#then symlink target is not modified
+  ---
+  duration_ms: 1.1955
+  ...
+# Subtest: \#given malformed project directory from the environment \#when script cleanup runs \#then it skips project-local cleanup without failing install
+ok 514 - \#given malformed project directory from the environment \#when script cleanup runs \#then it skips project-local cleanup without failing install
+  ---
+  duration_ms: 0.812584
+  ...
+# Subtest: \#given absent project directory from the script surface \#when script cleanup runs \#then it skips project-local cleanup without throwing
+ok 515 - \#given absent project directory from the script surface \#when script cleanup runs \#then it skips project-local cleanup without throwing
+  ---
+  duration_ms: 0.238542
+  ...
+# Subtest: \#given project cleanup hits a filesystem edge \#when Node installer runs \#then install succeeds and reports skipped cleanup
+ok 516 - \#given project cleanup hits a filesystem edge \#when Node installer runs \#then install succeeds and reports skipped cleanup
+  ---
+  duration_ms: 21.031708
+  ...
+1..516
+# tests 516
+# suites 0
+# pass 516
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5032.533542
+
+real	0m57.131s
+user	1m0.149s
+sys	0m33.471s

@@ -78,7 +78,7 @@ oh-my-opencode/                      # workspace root (no root src/ — it moved
 │   │       ├── features/            # 23 feature modules (team-mode, background-agent, skill-mcp-manager, opencode-skill-loader, mcp-oauth, claude-code-plugin-loader, boulder-state, …)
 │   │       ├── shared/              # cross-cutting utilities; logger → oh-my-opencode.log in os.tmpdir() (50 MB cap, .1/.2 backups)
 │   │       ├── config/             # Zod v4 schema system (36 schema files)
-│   │       ├── cli/                 # Commander.js CLI, 11 commands: install(setup), run, doctor, cleanup(uninstall), version, get-local-version, refresh-model-capabilities, boulder, ulw-loop, config (migrate), mcp (oauth login/logout/status)
+│   │       ├── cli/                 # Commander.js CLI, 12 commands: install(setup), run, doctor, cleanup(uninstall), version, get-local-version, refresh-model-capabilities, boulder, ulw-loop, config (migrate), profile (list/use/current/clear), mcp (oauth login/logout/status)
 │   │       ├── mcp/                 # 5 built-in MCPs (3 remote + local stdio lsp + codegraph)
 │   │       ├── plugin/ plugin-handlers/  # OpenCode hook handlers + 6-phase config loading pipeline
 │   │       ├── openclaw/            # Bidirectional Discord/Telegram/HTTP/shell integration + reply listener daemon
@@ -230,7 +230,7 @@ Defaults                   (Zod schema defaults)
 ```
 
 - Harness blocks: `[opencode]` (freeform plugin config), `[senpi]` / `[codex]` (typed shared keys)
-- Profile activation: `OMO_PROFILE` > `OCX_PROFILE` (`ocx oc -p <name>`) > `OPENCODE_CONFIG_DIR` tail `profiles/<name>` > none; no default profiles ship
+- Profile activation: `OMO_PROFILE` > `OCX_PROFILE` (`ocx oc -p <name>`) > `OPENCODE_CONFIG_DIR` tail `profiles/<name>` > persisted user-layer top-level `active_profile` (written by `omo profile use`; project layers ignored) > none; no default profiles ship
 - `models` catalog: a `model` string matching a catalog key resolves to the entry's model id and fills unset tuning; site tuning wins; `[harness]` blocks can override entries
 - Merge: plain objects deep-merge recursively (prototype-pollution safe); scalars and arrays replace
 - `mcp_env_allowlist` + `browser_automation_engine.playwright_mcp_args`: **user-layer only** (incl. the user's own profile block); project layers cannot extend them

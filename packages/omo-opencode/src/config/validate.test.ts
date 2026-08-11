@@ -219,6 +219,21 @@ describe("validatePluginConfig", () => {
     })
   })
 
+  it("#given an active_profile control key #when validating #then applies its profile without forwarding the key to plugin validation", () => {
+    withOmoConfig("active-profile", (fixture) => {
+      writeUserConfig(fixture, {
+        active_profile: "kimi",
+        profiles: { kimi: { "[opencode]": { tui: { sidebar: { enabled: false } } } } },
+      })
+
+      const result = validatePluginConfig(fixture.project)
+
+      expect(result.valid).toBe(true)
+      expect(result.messages).toEqual([])
+      expect(result.config.tui?.sidebar.enabled).toBe(false)
+    })
+  })
+
   it("#given an OCX profile overlay #when OCX_PROFILE changes #then flips the resolved sisyphus model", () => {
     withOmoConfig("ocx-profile", (fixture) => {
       writeUserConfig(fixture, {

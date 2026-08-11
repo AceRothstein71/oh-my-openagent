@@ -8,6 +8,9 @@
     "$schema": {
       "type": "string"
     },
+    "active_profile": {
+      "type": "string"
+    },
     "categories": {
       "type": "object",
       "propertyNames": {
