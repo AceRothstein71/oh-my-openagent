@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test"
 
 import { FakeExtensionAPI } from "../../../test-support/fake-extension-api"
+import { createStartWorkContinuationComponent } from "../start-work-continuation"
+import { getOrCreateStopContinuationGuard } from "../start-work-continuation/stop-continuation-guard"
 import { ULW_LOOP_FOOTER_FRAMES } from "./footer-status"
 import { createUlwLoopComponent } from "./index"
 import {
@@ -217,5 +219,56 @@ describe("omo-senpi ulw-loop continuation", () => {
       ])
       expect(footerCalls).toEqual([{ key: "ulw-loop", text: ULW_LOOP_FOOTER_FRAMES[0] }])
     }
+  })
+})
+
+describe("omo-senpi ulw-loop stop-continuation guard (issue #6752)", () => {
+  it("#given a stopped session #when agent_end fires #then ulw-loop continuation is suppressed", async () => {
+    // ulw-loop must observe the same stop guard as start-work-continuation, so a
+    // /stop-continuation issued via start-work-continuation also silences the
+    // ulw-loop `agent_end` injection.
+    const { pi } = await registerWithRunner([activeStatus()])
+    const guard = getOrCreateStopContinuationGuard(pi)
+
+    // Simulate /stop-continuation: sessionManager returns "qa-s1".
+    guard.stop("qa-s1")
+
+    await pi.dispatch(
+      "agent_end",
+      { type: "agent_end" },
+      { cwd: "/repo", sessionManager: { getSessionId: () => "qa-s1" } },
+    )
+
+    expect(pi.messages).toEqual([])
+  })
+
+  it("#given start-work-continuation and ulw-loop share one pi #when /stop-continuation is issued #then both components observe the stop", async () => {
+    // End-to-end sharing contract: register both components against the same pi
+    // (as the compose layer does in production), stop via start-work-continuation's
+    // command, and confirm ulw-loop's agent_end handler sees the stopped state.
+    const pi = new FakeExtensionAPI()
+    const logger = createLogger()
+    await createStartWorkContinuationComponent().register(pi, {
+      logger,
+      config: { getFlag: () => false },
+    })
+    await createUlwLoopComponent({
+      resolveOmoBin: () => "/tmp/omo",
+      runCommand: async () => ({ code: 0, stdout: activeStatus() }),
+    }).register(pi, { logger, config: { getFlag: () => false } })
+
+    const stopHandler = pi.commands.find((command) => command.name === "stop-continuation")?.options[
+      "handler"
+    ] as (args: string, ctx: unknown) => void
+    stopHandler("", { sessionManager: { getSessionId: () => "qa-s1" } })
+
+    await pi.dispatch(
+      "agent_end",
+      { type: "agent_end" },
+      { cwd: "/repo", sessionManager: { getSessionId: () => "qa-s1" } },
+    )
+
+    // No ulw-loop hidden followUp was sent because the guard suppressed it.
+    expect(pi.messages).toEqual([])
   })
 })

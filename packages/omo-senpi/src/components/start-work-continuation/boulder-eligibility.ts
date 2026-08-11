@@ -21,7 +21,11 @@ export function findContinuableBoulderWork(
     return null
   }
 
-  if (work.status !== "active" && work.status !== "paused") {
+  // Only `active` work is continuable. `paused` (and every other non-active status: `completed`,
+  // `abandoned`) is intentionally excluded so an explicit pause suppresses the `agent_end`
+  // continuation injection until the work is explicitly resumed. Ports the OpenCode
+  // `stop-continuation-guard` semantics — see issue #6752.
+  if (work.status !== "active") {
     return null
   }
 

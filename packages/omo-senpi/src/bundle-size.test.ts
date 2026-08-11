@@ -33,7 +33,12 @@ const builtExtensionPath = join(packageRoot, "plugin", "extensions", "omo.js")
 // bundle-purity.test.ts passes on the new build. A trim was attempted and rejected because reclaiming
 // the bytes would require a secondary chunk and loader-topology change. The round 900,000 ceiling
 // preserves explicit headroom instead of raising the budget to the failing value.
-const BUDGET_BYTES = 900_000
+// Raised 900,000 -> 910,000 for issue #6752: the ported OpenCode stop-continuation-guard adds a
+// per-pi WeakMap-backed guard, two new slash commands (/stop-continuation and /resume-continuation),
+// a session_shutdown clear path, and guard reads in both start-work-continuation and ulw-loop. This
+// is first-party correctness code (a bug fix, not a new third-party inline), measured at 900,869
+// bytes after minification. bundle-purity.test.ts passes on the new build.
+const BUDGET_BYTES = 910_000
 
 describe("omo-senpi bundle size budget", () => {
   it("#given the built extension #when its byte size is measured #then it stays within the documented byte budget", () => {

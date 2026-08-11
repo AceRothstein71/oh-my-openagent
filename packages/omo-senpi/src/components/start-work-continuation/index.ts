@@ -2,6 +2,10 @@ import { join } from "node:path"
 
 import type { ComponentContext, OmoSenpiComponent, SenpiExtensionAPI } from "../../extension/types"
 import { findContinuableBoulderWork } from "./boulder-eligibility"
+import {
+  getOrCreateStopContinuationGuard,
+  type StopContinuationGuard,
+} from "./stop-continuation-guard"
 
 export interface StartWorkContinuationComponentOptions {
   // none yet; retained for future DI seams
@@ -39,17 +43,43 @@ export function createStartWorkContinuationComponent(
         lastSignature: undefined as string | undefined,
       }
 
+      // Port of the OpenCode `stop-continuation-guard`: an explicit /stop-continuation
+      // command durably suppresses continuation for the session. Shared with `ulw-loop`
+      // via a per-pi WeakMap so both components observe the same stopped set. See
+      // `./stop-continuation-guard.ts` and issue #6752.
+      const guard = getOrCreateStopContinuationGuard(pi)
+      registerStopContinuationCommands(pi, ctx, guard, () => {
+        // /stop-continuation additionally clears the retry counter and stale-signature
+        // memo so a later /resume-continuation starts from a clean slate.
+        state.consecutiveContinuations = 0
+        state.lastSignature = undefined
+      })
+
       pi.on("input", async (payload, eventCtx) => {
         if (!isInputEvent(payload)) return { action: "continue" }
         if (!isUserSourcedInput(payload)) return { action: "continue" }
 
-        state.consecutiveContinuations = 0
-        state.lastSignature = undefined
+        const inputSessionId = extractSessionId(eventCtx)
+        // Ordinary user input MUST NOT re-arm continuation for a stopped session. The
+        // pre-fix behavior — clearing the counter and signature on every user message —
+        // meant that a stop/end steering message was immediately followed by an
+        // eligible agent_end injection, effectively re-enabling the continuation cycle
+        // (issue #6752 second reproduction). We keep the reset on non-stopped sessions
+        // so the existing cap-recovery behavior is preserved.
+        if (!inputSessionId || !guard.isStopped(inputSessionId)) {
+          state.consecutiveContinuations = 0
+          state.lastSignature = undefined
+        }
         if (payload.streamingBehavior === undefined) return { action: "continue" }
 
-        const sessionId = extractSessionId(eventCtx)
+        const sessionId = inputSessionId
         const cwd = extractCwd(eventCtx)
         if (!sessionId || !cwd) return { action: "continue" }
+
+        // Stopped sessions also do not receive the queued-steer transform. Injecting the
+        // <omo-senpi-start-work> steering reminder into a queued prompt would functionally
+        // re-arm continuation on the very next turn.
+        if (guard.isStopped(sessionId)) return { action: "continue" }
 
         const continuable = findContinuableBoulderWork(cwd, sessionId)
         if (!continuable) return { action: "continue" }
@@ -62,6 +92,15 @@ export function createStartWorkContinuationComponent(
       })
 
       pi.on("agent_end", async (_payload, eventCtx) => {
+        const sessionId = extractSessionId(eventCtx)
+        const cwd = extractCwd(eventCtx)
+        if (sessionId && guard.isStopped(sessionId)) {
+          ctx.logger.info("omo-senpi start-work-continuation skipped", {
+            reason: "stopped-by-user",
+          })
+          return
+        }
+
         if (state.consecutiveContinuations >= CONTINUATION_LIMIT) {
           ctx.logger.info("omo-senpi start-work-continuation skipped", {
             reason: "continuation-cap-reached",
@@ -70,8 +109,6 @@ export function createStartWorkContinuationComponent(
           return
         }
 
-        const sessionId = extractSessionId(eventCtx)
-        const cwd = extractCwd(eventCtx)
         if (!sessionId || !cwd) {
           ctx.logger.info("omo-senpi start-work-continuation skipped", { reason: "missing-context" })
           return
@@ -106,8 +143,62 @@ export function createStartWorkContinuationComponent(
 
         deliverContinuation(pi, ctx, content)
       })
+
+      // Clear per-session guard state when Senpi tears the session down so a resumed
+      // session never inherits a stale stop marker from a previous incarnation.
+      pi.on("session_shutdown", async (_payload, eventCtx) => {
+        const sessionId = extractSessionId(eventCtx)
+        if (sessionId) guard.clear(sessionId)
+      })
     },
   }
+}
+
+interface StopCommandContext {
+  readonly sessionManager?: { getSessionId(): unknown }
+  readonly ui?: { notify(message: string, type?: "info" | "warning" | "error"): void }
+}
+
+function registerStopContinuationCommands(
+  pi: SenpiExtensionAPI,
+  ctx: ComponentContext,
+  guard: StopContinuationGuard,
+  onStop: () => void,
+): void {
+  pi.registerCommand("stop-continuation", {
+    description: "Suppress start-work / ulw-loop continuation for this session until /resume-continuation.",
+    handler: (_args: string, commandCtx: StopCommandContext) => {
+      const sessionId = extractCommandSessionId(commandCtx)
+      if (!sessionId) {
+        commandCtx.ui?.notify("stop-continuation: no active session id", "warning")
+        return
+      }
+      guard.stop(sessionId)
+      onStop()
+      ctx.logger.info("omo-senpi start-work-continuation stopped", { sessionId })
+      commandCtx.ui?.notify("Continuation stopped. Use /resume-continuation to re-arm.", "info")
+    },
+  })
+  pi.registerCommand("resume-continuation", {
+    description: "Re-arm start-work / ulw-loop continuation after /stop-continuation.",
+    handler: (_args: string, commandCtx: StopCommandContext) => {
+      const sessionId = extractCommandSessionId(commandCtx)
+      if (!sessionId) {
+        commandCtx.ui?.notify("resume-continuation: no active session id", "warning")
+        return
+      }
+      guard.clear(sessionId)
+      ctx.logger.info("omo-senpi start-work-continuation resumed", { sessionId })
+      commandCtx.ui?.notify("Continuation resumed.", "info")
+    },
+  })
+}
+
+function extractCommandSessionId(commandCtx: StopCommandContext): string | undefined {
+  const manager = commandCtx.sessionManager
+  if (!manager || typeof manager.getSessionId !== "function") return undefined
+  const id = manager.getSessionId()
+  return typeof id === "string" ? id : undefined
 }
 
 const START_WORK_CONTINUATION_INJECTION_KEY = "omo-senpi-start-work-continuation"

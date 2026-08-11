@@ -1,4 +1,5 @@
 import { findContinuableBoulderWork } from "../start-work-continuation/boulder-eligibility"
+import { getOrCreateStopContinuationGuard } from "../start-work-continuation/stop-continuation-guard"
 import type { ComponentContext, OmoSenpiComponent, SenpiExtensionAPI } from "../../extension/types"
 import { createUlwLoopFooterStatus, type UlwLoopFooterStatusOptions } from "./footer-status"
 import { resolveOmoBin, runOmoCommand } from "./omo-command"
@@ -51,6 +52,10 @@ export function createUlwLoopComponent(options: UlwLoopComponentOptions = {}): O
 
       const runCommand = options.runCommand ?? runOmoCommand
       const footerStatus = createUlwLoopFooterStatus(options.footerStatus)
+      // Shared stop-continuation guard: `start-work-continuation` owns the
+      // `/stop-continuation` and `/resume-continuation` commands and mutates this
+      // guard; ulw-loop only READS `isStopped(sessionId)`. See issue #6752.
+      const guard = getOrCreateStopContinuationGuard(pi)
       const state = {
         consecutiveContinuations: 0,
         previousStatusRaw: undefined as string | undefined,
@@ -79,6 +84,12 @@ export function createUlwLoopComponent(options: UlwLoopComponentOptions = {}): O
       })
 
       pi.on("agent_end", async (_payload, eventCtx) => {
+        const sessionId = extractSessionId(eventCtx)
+        if (sessionId && guard.isStopped(sessionId)) {
+          ctx.logger.info("omo-senpi ulw-loop continuation skipped", { reason: "stopped-by-user" })
+          return
+        }
+
         if (state.consecutiveContinuations >= CONTINUATION_LIMIT) {
           ctx.logger.info("omo-senpi ulw-loop continuation skipped", {
             reason: "continuation-cap-reached",
@@ -88,7 +99,6 @@ export function createUlwLoopComponent(options: UlwLoopComponentOptions = {}): O
         }
 
         const cwd = cwdFromContext(eventCtx)
-        const sessionId = extractSessionId(eventCtx)
         if (sessionId && findContinuableBoulderWork(cwd, sessionId) !== null) {
           ctx.logger.info("omo-senpi ulw-loop continuation skipped", { reason: "boulder-continuation-active" })
           return
