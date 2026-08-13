@@ -202,6 +202,7 @@ async function runSupervisedChild(input: {
     detached: true,
     stdio: "ignore",
   })
+  console.error(`[facts-runner-trace] supervisor:spawned pid=${supervisor.pid ?? "unknown"}`)
   supervisor.unref()
   const supervisorExit = await new Promise<{ readonly code: number | null; readonly signal: NodeJS.Signals | null }>((resolve, reject) => {
     let settled = false
@@ -210,7 +211,11 @@ async function runSupervisedChild(input: {
       settled = true
       reject(error)
     })
+    supervisor.once("exit", (code, signal) => {
+      console.error(`[facts-runner-trace] supervisor:exit code=${code ?? "null"} signal=${signal ?? "null"}`)
+    })
     supervisor.once("close", (code, signal) => {
+      console.error(`[facts-runner-trace] supervisor:close code=${code ?? "null"} signal=${signal ?? "null"}`)
       if (settled) return
       settled = true
       resolve({ code, signal })
