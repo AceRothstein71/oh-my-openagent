@@ -149,6 +149,40 @@ afterEach(async () => {
 })
 
 describe("memory run supervisor", () => {
+  test("#given successful standalone completion #when the entrypoint is inspected #then exit is owned by the durable supervisor boundary", async () => {
+    // given
+    const source = await readFile(join(import.meta.dir, "memory-run-supervisor.ts"), "utf8")
+    const supervisorStart = source.indexOf("async function runSupervisor")
+    const entrypointStart = source.indexOf("\nconst args = process.argv.slice(2)")
+
+    // when
+    const supervisorSource = source.slice(supervisorStart, entrypointStart)
+    const entrypointSource = source.slice(entrypointStart)
+
+    // then
+    expect(supervisorSource).toContain("await unlinkRunArtifact(launchPath)\n  process.exit(0)")
+    expect(entrypointSource).not.toContain("process.exit(0)")
+  })
+
+  test("#given an unrelated active handle #when the durable outcome is published #then the standalone supervisor exits", async () => {
+    // given
+    const runDir = await makeRun({ mode: "inspect" })
+    const keepalivePath = join(import.meta.dir, "__fixtures__", "supervisor-keepalive.ts")
+    const supervisor = spawn(process.execPath, [keepalivePath, runDir], {
+      detached: true,
+      stdio: "ignore",
+    })
+    if (supervisor.pid !== undefined) processGroups.add(supervisor.pid)
+    const exit = waitForExit(supervisor)
+
+    // when
+    const outcome = await readOutcome(runDir)
+
+    // then
+    expect(outcome.childExit).toEqual({ code: 23, signal: null })
+    await expect(exit).resolves.toEqual({ code: 0, signal: null })
+  }, 60_000)
+
   test("#given a retryable model miss and a next attempt #when the supervisor publishes the outcome #then the ledger advances first", async () => {
     // given
     const runDir = await makeRun({
