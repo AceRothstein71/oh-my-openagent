@@ -41,6 +41,7 @@ export async function launchFactsModelChain(input: FactsChildLaunchInput) {
     },
     ...input.resolution.fallbacks,
   ]
+  process.stderr.write(`[facts-runner-trace] chain:start:${candidates.length}\n`)
   return (input.resolveAndPreflightLaunch ?? resolveAndPreflightMemoryLaunch)({
     candidates,
     senpiCommand: input.senpiCommand,
@@ -51,6 +52,7 @@ export async function launchFactsModelChain(input: FactsChildLaunchInput) {
     warn: input.warn,
     surfaceName: "facts",
     attempt: async (candidate, attempt, nextAttempt) => {
+      process.stderr.write(`[facts-runner-trace] chain:attempt:${attempt}:prepare:start\n`)
       const spawnArgs = await prepareFactsSpawn({
         runId: input.runId,
         runDir: input.runDir,
@@ -64,7 +66,8 @@ export async function launchFactsModelChain(input: FactsChildLaunchInput) {
         senpiCommand: input.senpiCommand,
         senpiPrefixArgs: input.senpiPrefixArgs,
       })
-      return runFactsChild(spawnArgs, {
+      process.stderr.write(`[facts-runner-trace] chain:attempt:${attempt}:prepare:done\n`)
+      const child = await runFactsChild(spawnArgs, {
         terminationGraceMs: input.terminationGraceMs,
         maxOutputBytes: input.maxOutputBytes,
         sandbox: input.sandbox,
@@ -73,6 +76,8 @@ export async function launchFactsModelChain(input: FactsChildLaunchInput) {
         queued: input.queued,
         now: () => input.launchedAt,
       })
+      process.stderr.write(`[facts-runner-trace] chain:attempt:${attempt}:child:done:${child.code}:${child.timedOut}\n`)
+      return child
     },
   })
 }

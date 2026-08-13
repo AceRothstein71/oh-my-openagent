@@ -196,31 +196,41 @@ async function runSupervisedChild(input: {
     deadlineAt: input.hardDeadlineAt + input.terminationGraceMs,
   }
   await writeRunJsonAtomic(join(input.runDir, "ledger.json"), ledger)
+  process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:ledger:written\n`)
   await writeRunJsonAtomic(join(input.runDir, "launch.json"), launch)
+  process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:launch:written\n`)
 
   const supervisor = spawn(process.execPath, [input.supervisorPath ?? defaultSupervisorPath(), input.runDir], {
     detached: true,
     stdio: "ignore",
   })
+  process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:spawned:${supervisor.pid ?? "unknown"}\n`)
   supervisor.unref()
   const supervisorExit = await new Promise<{ readonly code: number | null; readonly signal: NodeJS.Signals | null }>((resolve, reject) => {
     let settled = false
     supervisor.once("error", (error) => {
+      process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:error:${error.message}\n`)
       if (settled) return
       settled = true
       reject(error)
     })
     supervisor.once("close", (code, signal) => {
+      process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:close:${code}:${signal ?? "none"}\n`)
       if (settled) return
       settled = true
       resolve({ code, signal })
     })
+    supervisor.once("exit", (code, signal) => {
+      process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:exit:${code}:${signal ?? "none"}\n`)
+    })
   })
+  process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:wait:done\n`)
   const outcomePath = join(input.runDir, "outcome.json")
   if (!existsSync(outcomePath) && (supervisorExit.code !== 0 || supervisorExit.signal !== null)) {
     throw new Error(`memory run supervisor exited with ${supervisorExit.code ?? supervisorExit.signal ?? "unknown status"}`)
   }
   const outcome = await readRunJson<RunOutcome>(outcomePath)
+  process.stderr.write(`[facts-runner-trace] supervisor:${input.runId}:outcome:read\n`)
   if (!runOutcomeMatchesLedger(ledger, outcome)) {
     throw new Error(`memory run outcome attempt ${outcome.attempt ?? "legacy"} does not match attempt ${input.attempt}`)
   }
