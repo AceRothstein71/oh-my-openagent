@@ -182,19 +182,27 @@ async function runSupervisor(runDir: string): Promise<void> {
       resolve({ code, signal })
     })
   })
+  process.stderr.write("[facts-runner-trace] supervisor:post-bootstrap:start\n")
   const childExit = parseSupervisorChildExit(bootstrapStatus)
-  if (platform === "win32" && timedOut && childExit === undefined) await hardKillFinished
+  process.stderr.write(`[facts-runner-trace] supervisor:post-bootstrap:parsed childExit=${childExit === undefined ? "undefined" : "defined"} timedOut=${timedOut}\n`)
+  if (platform === "win32" && timedOut && childExit === undefined) {
+    process.stderr.write("[facts-runner-trace] supervisor:hard-kill-wait:start\n")
+    await hardKillFinished
+    process.stderr.write("[facts-runner-trace] supervisor:hard-kill-wait:done\n")
+  }
   cancelTerm()
   cancelKill()
   childPid = undefined
   closeSync(stdoutFd)
   closeSync(stderrFd)
+  process.stderr.write("[facts-runner-trace] supervisor:fds:closed\n")
 
   // Record the timeout from whether the deadline instant was actually reached, not from which
   // process's deadline callback happened to run first: the bootstrap's own enforcement can end
   // the child before the supervisor's callback fires, and the cancels above would otherwise
   // erase a deadline that was in fact exceeded.
   const clockNow = readSupervisorClockNow()
+  process.stderr.write(`[facts-runner-trace] supervisor:clock:read value=${clockNow}\n`)
   const finishedAt = new Date().toISOString()
   const outcome: RunOutcome = {
     version: 1,
@@ -204,8 +212,11 @@ async function runSupervisor(runDir: string): Promise<void> {
     childExit: childExit ?? wrapperExit,
     timedOut: timedOut || (Number.isFinite(clockNow) && clockNow >= manifest.hardDeadlineAt),
   }
+  process.stderr.write("[facts-runner-trace] supervisor:publish:start\n")
   await publishRunOutcome(runDir, manifest, outcome)
+  process.stderr.write("[facts-runner-trace] supervisor:publish:done\n")
   await unlinkRunArtifact(launchPath)
+  process.stderr.write("[facts-runner-trace] supervisor:unlink:done\n")
 }
 const args = process.argv.slice(2)
 try {
