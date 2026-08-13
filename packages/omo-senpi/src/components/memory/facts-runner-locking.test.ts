@@ -41,10 +41,14 @@ describe("deterministic facts writer-lock interleavings", () => {
     const warnings: string[] = []
     const runner = new FactsExtractorRunner(runnerOptions(root, identity, queue, "fact", {
       withWriterLock: async (_operation, attempt) => {
+        console.error(`[facts-locking-trace] exhausted:lock:${attempt}`)
         attempts.push(attempt)
         throw new LockContentionError("memory-write.lock", null)
       },
-      retryDelay: async (attempt) => { delays.push(attempt) },
+      retryDelay: async (attempt) => {
+        console.error(`[facts-locking-trace] exhausted:delay:${attempt}`)
+        delays.push(attempt)
+      },
       logger: {
         info: () => undefined,
         warn: (message) => warnings.push(message),
@@ -54,7 +58,9 @@ describe("deterministic facts writer-lock interleavings", () => {
     }))
 
     // when
+    console.error("[facts-locking-trace] exhausted:launch:start")
     const result = await runner.launchPending()
+    console.error(`[facts-locking-trace] exhausted:launch:done:${result.status}`)
 
     // then
     expect(result.status).toBe("failed")
