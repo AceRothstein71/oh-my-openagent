@@ -200,7 +200,7 @@ async function runSupervisedChild(input: {
 
   const supervisor = spawn(process.execPath, [input.supervisorPath ?? defaultSupervisorPath(), input.runDir], {
     detached: true,
-    stdio: "ignore",
+    stdio: ["ignore", "ignore", "inherit"],
   })
   console.error(`[facts-runner-trace] supervisor:spawned pid=${supervisor.pid ?? "unknown"}`)
   supervisor.unref()
