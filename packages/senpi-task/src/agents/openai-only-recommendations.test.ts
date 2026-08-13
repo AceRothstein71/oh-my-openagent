@@ -58,6 +58,50 @@ describe("Senpi live OpenAI-only curated-agent recommendations", () => {
     expect(result.kind).toBe("model_unavailable")
   })
 
+  test("#given canonical Sol and Terra without Luna-fast #when a curated agent resolves #then no larger model is substituted", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({ name: "explore" }),
+      registry([model("openai", "gpt-5.6-sol"), model("openai", "gpt-5.6-terra")]),
+    )
+
+    expect(result.kind).toBe("model_unavailable")
+  })
+
+  test("#given a nested Luna-looking path on an unrelated provider #when a curated agent resolves #then automatic routing rejects it", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({ name: "explore" }),
+      registry([model("unrelated", "openai/gpt-5.6-luna-fast")]),
+    )
+
+    expect(result.kind).toBe("model_unavailable")
+  })
+
+  test("#given only a prompt override plus a nested fake route #when a curated agent resolves #then prompt tuning cannot authorize that route", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({ name: "explore", prompt: "CUSTOM" }),
+      registry([model("unrelated", "openai/gpt-5.6-luna-fast")]),
+      { hasExplicitUserConfig: true },
+    )
+
+    expect(result.kind).toBe("model_unavailable")
+  })
+
+  test("#given an explicit nested agent model #when automatic routing would reject it #then the user model remains authoritative", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({ name: "explore", model: "unrelated/openai/gpt-5.6-luna-fast" }),
+      registry([model("unrelated", "openai/gpt-5.6-luna-fast")]),
+      { hasExplicitUserConfig: true },
+    )
+
+    expect(result.kind).toBe("resolved")
+    if (result.kind !== "resolved") throw new Error("Expected explicit nested model to resolve")
+    expect(result.model).toBe("unrelated/openai/gpt-5.6-luna-fast")
+  })
+
   test("#given an upstream alias plus an unparseable registry entry #when a curated agent resolves #then identity classification fails closed", () => {
     const valid = model("codexlb", "luna-priority")
     const models = {

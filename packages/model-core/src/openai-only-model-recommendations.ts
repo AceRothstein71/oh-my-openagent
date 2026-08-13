@@ -30,7 +30,7 @@ const OPENAI_GATEWAY_PROVIDER_IDS: ReadonlySet<string> = new Set(["vercel"])
 const OPENAI_UPSTREAM_MODEL_ID = /^(?:gpt-|o[1-9](?:-|$)|codex-)/i
 
 export function isOpenAiOnlyRuntimeInventory(inventory: readonly OpenAiRuntimeModelIdentity[]): boolean {
-  return inventory.length > 0 && inventory.every((model) => canonicalOpenAiModelId(model) !== undefined)
+  return inventory.length > 0 && inventory.every((model) => canonicalOpenAiRuntimeModelId(model) !== undefined)
 }
 
 export function compileOpenAiOnlyModelRecommendations(
@@ -51,7 +51,7 @@ function compileRecommendations(
   for (const [name, recommendation] of Object.entries(recommendations)) {
     const recommendedModelId = modelIdFromRecommendation(recommendation.model)
     if (recommendedModelId === undefined) continue
-    const available = inventory.find((model) => canonicalOpenAiModelId(model) === recommendedModelId)
+    const available = findPreferredRuntimeModel(inventory, recommendedModelId)
     if (available === undefined) continue
     compiled[name] = {
       model: `${available.provider}/${available.modelId}`,
@@ -61,13 +61,36 @@ function compileRecommendations(
   return compiled
 }
 
+function findPreferredRuntimeModel(
+  inventory: readonly OpenAiRuntimeModelIdentity[],
+  canonicalModelId: string,
+): OpenAiRuntimeModelIdentity | undefined {
+  let preferred: OpenAiRuntimeModelIdentity | undefined
+  let preferredRank = Number.POSITIVE_INFINITY
+  for (const model of inventory) {
+    if (canonicalOpenAiRuntimeModelId(model) !== canonicalModelId) continue
+    const rank = model.provider === "openai"
+      ? 0
+      : OPENAI_GATEWAY_PROVIDER_IDS.has(model.provider)
+        ? 1
+        : 2
+    if (rank >= preferredRank) continue
+    preferred = model
+    preferredRank = rank
+  }
+  return preferred
+}
+
 function modelIdFromRecommendation(model: string): string | undefined {
   const separatorIndex = model.indexOf("/")
   if (separatorIndex <= 0 || separatorIndex === model.length - 1) return undefined
   return model.slice(separatorIndex + 1)
 }
 
-function canonicalOpenAiModelId(model: OpenAiRuntimeModelIdentity): string | undefined {
+// Canonical `openai` and the maintained Vercel gateway shape are first-party identities. For any
+// other transport, only an explicit runtime upstream mapping is provenance; compatible protocol or
+// a copied display id alone is deliberately insufficient.
+export function canonicalOpenAiRuntimeModelId(model: OpenAiRuntimeModelIdentity): string | undefined {
   if (model.provider === "openai") return model.modelId
   if (OPENAI_GATEWAY_PROVIDER_IDS.has(model.provider) && model.modelId.startsWith("openai/")) {
     const modelId = model.modelId.slice("openai/".length)

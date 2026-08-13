@@ -8,7 +8,11 @@ import type { SenpiModelPort, SenpiModelRegistryPort } from "../category"
 import { buildRuntimeModelChain, chainRungCandidates } from "../model-chain"
 import {
   compileSenpiOpenAiOnlyModelRecommendations,
+  filterAutomaticRuntimeModelIdentities,
+  projectVerifiedOpenAiAliases,
   recommendationToFallbackEntry,
+  resolveRuntimeModelIdentities,
+  type ResolvedRuntimeModelIdentity,
 } from "../openai-only-runtime-recommendations"
 import type { ResolvedModelRecord } from "../state"
 import { agentModelCandidates, type AgentModelCandidate } from "./agent-model-entry"
@@ -115,15 +119,31 @@ export function resolveAgent<TModel extends SenpiModelPort>(
   // unparseable available set keeps the find-only behavior rather than failing every resolution.
   const rawAvailableModels = registry.getAvailable()
   const availableRegistryModels = parseAvailableAgentRegistryModels<TModel>(rawAvailableModels)
-  const availableModels = availableRegistryModels
+  const runtimeModels = availableRegistryModels === undefined
+    ? undefined
+    : resolveRuntimeModelIdentities(registry, availableRegistryModels)
+  const resolvableRuntimeModels = runtimeModels === undefined
+    ? undefined
+    : filterAutomaticRuntimeModelIdentities(runtimeModels)
+  const availableModels = resolvableRuntimeModels
     ?.map((model) => `${model.provider}/${model.modelId}`)
     .sort()
+  const directAvailableModels = availableRegistryModels
+    ?.map((model) => `${model.provider}/${model.modelId}`)
   const completeIdentityInventory = Array.isArray(rawAvailableModels)
     && availableRegistryModels?.length === rawAvailableModels.length
+  const automaticRoutingModels = completeIdentityInventory && options.hasExplicitUserConfig !== true
+    ? filterAutomaticRuntimeModelIdentities(runtimeModels ?? [])
+    : []
   const recommendations = !completeIdentityInventory || options.hasExplicitUserConfig === true
     ? undefined
     : compileSenpiOpenAiOnlyModelRecommendations(registry, availableRegistryModels)
-  const fallbackChain = effectiveAgentFallbackChain(name, builtinFallbackChain, recommendations)
+  const fallbackChain = effectiveAgentFallbackChain(
+    name,
+    builtinFallbackChain,
+    recommendations,
+    automaticRoutingModels,
+  )
   let attemptedModel: string | undefined
   const configuredTuning = {
     ...(definition.variant === undefined ? {} : { variant: definition.variant }),
@@ -134,7 +154,7 @@ export function resolveAgent<TModel extends SenpiModelPort>(
     attemptedModel = candidate.model
     const found = findExactAgentModel(candidate.model, registry)
     if (found === undefined) continue
-    if (availableModels !== undefined && !availableModels.includes(`${found.provider}/${found.modelId}`)) continue
+    if (directAvailableModels !== undefined && !directAvailableModels.includes(`${found.provider}/${found.modelId}`)) continue
     return resolvedAgent(
       context,
       found,
@@ -195,12 +215,13 @@ function effectiveAgentFallbackChain(
   name: string,
   builtinChain: readonly DelegateFallbackEntry[] | undefined,
   recommendations: CompiledOpenAiOnlyModelRecommendations | undefined,
+  runtimeModels: readonly ResolvedRuntimeModelIdentity<SenpiModelPort>[],
 ): readonly DelegateFallbackEntry[] | undefined {
   const recommendation = recommendations !== undefined && Object.hasOwn(recommendations.agents, name)
     ? recommendations.agents[name]
     : undefined
   const recommendedRung = recommendationToFallbackEntry(recommendation)
-  if (recommendedRung === undefined) return builtinChain
+  if (recommendedRung === undefined) return projectVerifiedOpenAiAliases(builtinChain, runtimeModels)
   const alreadyFirst = builtinChain?.[0]
   if (
     alreadyFirst !== undefined
@@ -209,9 +230,9 @@ function effectiveAgentFallbackChain(
     && alreadyFirst.model === recommendedRung.model
     && alreadyFirst.variant === recommendedRung.variant
   ) {
-    return builtinChain
+    return projectVerifiedOpenAiAliases(builtinChain, runtimeModels)
   }
-  return [recommendedRung, ...(builtinChain ?? [])]
+  return projectVerifiedOpenAiAliases([recommendedRung, ...(builtinChain ?? [])], runtimeModels)
 }
 
 function agentPersona(name: string, definition: AgentDefinition): AgentPersona {

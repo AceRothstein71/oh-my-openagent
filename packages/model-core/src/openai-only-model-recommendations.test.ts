@@ -80,6 +80,16 @@ describe("OpenAI-only model recommendations", () => {
     expect(compileOpenAiOnlyModelRecommendations(inventory)).toBeUndefined()
   })
 
+  test("#given an unrelated provider with a nested OpenAI-looking path #when compiled #then the path does not establish identity", () => {
+    const inventory = [
+      { provider: "unrelated", modelId: "openai/gpt-5.6-sol" },
+      { provider: "unrelated", modelId: "openai/gpt-5.6-luna-fast" },
+    ]
+
+    expect(isOpenAiOnlyRuntimeInventory(inventory)).toBe(false)
+    expect(compileOpenAiOnlyModelRecommendations(inventory)).toBeUndefined()
+  })
+
   test("#given known OpenAI gateway identities #when compiled #then nested registry ids stay transport-correct", () => {
     const result = compileOpenAiOnlyModelRecommendations([
       { provider: "vercel", modelId: "openai/gpt-5.6-sol" },
@@ -114,6 +124,18 @@ describe("OpenAI-only model recommendations", () => {
         "visual-engineering": { model: "codexlb/sol-balanced", variant: "high" },
         writing: { model: "codexlb/sol-balanced", variant: "medium" },
       },
+    })
+  })
+
+  test("#given canonical and aliased copies of a recommended model #when compiled #then canonical OpenAI wins regardless of inventory order", () => {
+    const result = compileOpenAiOnlyModelRecommendations([
+      { provider: "codexlb", modelId: "sol-balanced", upstreamModelId: "gpt-5.6-sol" },
+      { provider: "openai", modelId: "gpt-5.6-sol" },
+    ])
+
+    expect(result?.categories.artistry).toEqual({
+      model: "openai/gpt-5.6-sol",
+      variant: "xhigh",
     })
   })
 })

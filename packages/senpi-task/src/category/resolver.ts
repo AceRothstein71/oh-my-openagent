@@ -2,7 +2,10 @@ import {
   resolveModelForDelegateTask,
   type DelegateFallbackEntry,
 } from "@oh-my-opencode/delegate-core"
-import type { CompiledOpenAiOnlyModelRecommendations } from "@oh-my-opencode/model-core"
+import {
+  parseModelString,
+  type CompiledOpenAiOnlyModelRecommendations,
+} from "@oh-my-opencode/model-core"
 import type {
   OmoCategoryConfig,
   OmoConfig,
@@ -22,7 +25,12 @@ import {
 import { buildRuntimeModelChain, chainRungCandidates, type ModelChainCandidate } from "../model-chain"
 import {
   compileSenpiOpenAiOnlyModelRecommendations,
+  filterAutomaticRuntimeModelIdentities,
+  projectVerifiedOpenAiAliases,
   recommendationToFallbackEntry,
+  resolveRuntimeModelIdentities,
+  runtimeModelIds,
+  type ResolvedRuntimeModelIdentity,
 } from "../openai-only-runtime-recommendations"
 import { CATEGORY_FALLBACK_CHAINS } from "./fallback-chains"
 import type {
@@ -129,6 +137,22 @@ function flattenFallbackModels(fallbackModels: OmoFallbackModels | undefined): r
   return fallbackModels.map((fallback) => typeof fallback === "string" ? fallback : fallbackObjectToString(fallback))
 }
 
+function explicitlyNamedCategoryModels(config: OmoCategoryConfig | undefined): ReadonlySet<string> {
+  if (config === undefined) return new Set()
+  const entries = [
+    ...(config.model === undefined ? [] : [config.model]),
+    ...(config.models ?? []).map((entry) => typeof entry === "string" ? entry : entry.model),
+    ...(config.fallback_models === undefined
+      ? []
+      : (typeof config.fallback_models === "string" ? [config.fallback_models] : config.fallback_models)
+        .map((entry) => typeof entry === "string" ? entry : entry.model)),
+  ]
+  return new Set(entries.map((entry) => {
+    const parsed = parseModelString(entry)
+    return parsed === undefined ? entry.trim() : `${parsed.providerID}/${parsed.modelID}`
+  }))
+}
+
 function categoryModelCandidates(config: OmoCategoryConfig): readonly ModelChainCandidate[] {
   // Canonical models[] wins over the legacy model + fallback_models branch: entry zero is the
   // primary model and the rest become the ordered runtime fallback chain.
@@ -184,13 +208,14 @@ function availableCategoryNames(
   config: OmoConfig,
   availableModelIds?: ReadonlySet<string>,
   recommendations?: CompiledOpenAiOnlyModelRecommendations,
+  runtimeModels: readonly ResolvedRuntimeModelIdentity<SenpiModelPort>[] = [],
 ): readonly string[] {
   const names = Array.from(new Set([...Object.keys(DEFAULT_CATEGORIES), ...Object.keys(config.categories ?? {})])).sort()
   if (availableModelIds === undefined) return names
   const userCategories = config.categories ?? {}
   return names.filter((name) => {
     const hasExplicitUserConfig = getOwnRecordValue(userCategories, name) !== undefined
-    const fallbackChain = effectiveCategoryFallbackChain(name, hasExplicitUserConfig, recommendations)
+    const fallbackChain = effectiveCategoryFallbackChain(name, hasExplicitUserConfig, recommendations, runtimeModels)
     return isCategoryGateSatisfied(name, hasExplicitUserConfig, availableModelIds)
       && isCategoryFallbackChainViable(fallbackChain, hasExplicitUserConfig, availableModelIds)
   })
@@ -206,10 +231,12 @@ function gatedAvailableCategories<TModel extends SenpiModelPort>(
   try {
     const parsed = parseAvailableModels<TModel>(senpiModelRegistry.getAvailable())
     if (!parsed.validContainer) return availableCategoryNames(config)
+    const runtimeModels = resolveRuntimeModelIdentities(senpiModelRegistry, parsed.parsedModels)
+    const automaticModels = filterAutomaticRuntimeModelIdentities(runtimeModels)
     const recommendations = parsed.completeIdentityInventory
       ? compileRegistryRecommendations(senpiModelRegistry, parsed.parsedModels)
       : undefined
-    return availableCategoryNames(config, modelIdsOf(parsed.models), recommendations)
+    return availableCategoryNames(config, runtimeModelIds(automaticModels), recommendations, automaticModels)
   } catch {
     return availableCategoryNames(config)
   }
@@ -235,27 +262,6 @@ function missingChainProviders(
     }
   }
   return missing
-}
-
-// A gateway provider re-publishes an upstream model under `<gateway>/<upstream-vendor>/<model-id>`
-// (e.g. `vercel/openai/gpt-5.6-sol`). Only these known upstream vendor prefixes are unwrapped, so an
-// unrelated model that merely ends in a gate model's name cannot open that gate.
-const GATEWAY_UPSTREAM_VENDOR_PREFIXES = ["openai", "anthropic", "google"] as const
-
-function modelIdsOf(models: readonly string[]): ReadonlySet<string> {
-  const ids = new Set<string>()
-  for (const entry of models) {
-    const modelId = entry.slice(entry.indexOf("/") + 1)
-    ids.add(modelId)
-    const separatorIndex = modelId.indexOf("/")
-    if (separatorIndex <= 0) continue
-    const vendor = modelId.slice(0, separatorIndex)
-    const upstreamId = modelId.slice(separatorIndex + 1)
-    if (!upstreamId.includes("/") && GATEWAY_UPSTREAM_VENDOR_PREFIXES.some((prefix) => prefix === vendor)) {
-      ids.add(upstreamId)
-    }
-  }
-  return ids
 }
 
 function getOwnRecordValue<TValue>(
@@ -291,6 +297,7 @@ function effectiveCategoryFallbackChain(
   categoryName: string,
   hasExplicitUserConfig: boolean,
   recommendations: CompiledOpenAiOnlyModelRecommendations | undefined,
+  runtimeModels: readonly ResolvedRuntimeModelIdentity<SenpiModelPort>[],
 ): readonly DelegateFallbackEntry[] | undefined {
   const builtinChain = getOwnRecordValue(CATEGORY_FALLBACK_CHAINS, categoryName)
   if (hasExplicitUserConfig) return builtinChain
@@ -298,8 +305,10 @@ function effectiveCategoryFallbackChain(
     ? undefined
     : getOwnRecordValue(recommendations.categories, categoryName)
   const recommendedRung = recommendationToFallbackEntry(recommendation)
-  if (recommendedRung === undefined) return builtinChain
-  return [recommendedRung, ...(builtinChain ?? [])]
+  const recommendedChain = recommendedRung === undefined
+    ? builtinChain
+    : [recommendedRung, ...(builtinChain ?? [])]
+  return projectVerifiedOpenAiAliases(recommendedChain, runtimeModels)
 }
 
 function isCategoryFallbackChainViable(
@@ -362,23 +371,49 @@ export function resolveCategory<TModel extends SenpiModelPort>(
 
   const config = { ...builtinConfig, ...userConfig }
   const availableModelsResult = parseAvailableModels<TModel>(senpiModelRegistry.getAvailable())
-  const availableModels = availableModelsResult.models
   if (!availableModelsResult.validContainer) {
     return {
       kind: "model_unavailable",
       category: categoryName,
       attemptedModel: config.model,
-      availableModels,
+      availableModels: availableModelsResult.models,
       availableCategories,
     }
   }
 
-  const availableModelIds = modelIdsOf(availableModels)
+  const runtimeModels = resolveRuntimeModelIdentities(senpiModelRegistry, availableModelsResult.parsedModels)
+  const automaticRuntimeModels = filterAutomaticRuntimeModelIdentities(runtimeModels)
+  const explicitlyNamedModels = explicitlyNamedCategoryModels(userConfig)
+  const explicitlyNamedRuntimeModels = runtimeModels.filter((model) =>
+    explicitlyNamedModels.has(formatModel(model))
+  )
+  // User-named primary models resolve through the exact registry.find boundary below. Fallback
+  // matching always receives the protected inventory so prompt-only config cannot authorize an
+  // unrelated nested gateway-looking route.
+  const resolutionRuntimeModels = [
+    ...automaticRuntimeModels,
+    ...explicitlyNamedRuntimeModels.filter((model) => !automaticRuntimeModels.includes(model)),
+  ]
+  const availableModels = resolutionRuntimeModels.map(formatModel).sort()
+  const availableModelIds = runtimeModelIds(resolutionRuntimeModels)
   const recommendations = availableModelsResult.completeIdentityInventory
     ? compileRegistryRecommendations(senpiModelRegistry, availableModelsResult.parsedModels)
     : undefined
-  const gatedCategories = availableCategoryNames(omoConfig, availableModelIds, recommendations)
-  const fallbackChain = effectiveCategoryFallbackChain(categoryName, userConfig !== undefined, recommendations)
+  const automaticRoutingModels = availableModelsResult.completeIdentityInventory && userConfig === undefined
+    ? automaticRuntimeModels
+    : []
+  const gatedCategories = availableCategoryNames(
+    omoConfig,
+    runtimeModelIds(automaticRuntimeModels),
+    recommendations,
+    automaticRuntimeModels,
+  )
+  const fallbackChain = effectiveCategoryFallbackChain(
+    categoryName,
+    userConfig !== undefined,
+    recommendations,
+    automaticRoutingModels,
+  )
   const chainDead = fallbackChain !== undefined
     && fallbackChain.length > 0
     && !fallbackChain.some((rung) => isCategoryChainRungResolvable(rung, availableModelIds))
