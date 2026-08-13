@@ -23,9 +23,13 @@ export const supervisorFixture = join(import.meta.dir, "worker", "memory-run-sup
 const tempDirs: string[] = []
 
 afterEach(() => {
+  console.error(`[facts-runner-trace] cleanup:start count=${tempDirs.length}`)
   for (const dir of tempDirs.splice(0)) {
+    console.error(`[facts-runner-trace] cleanup:remove:start dir=${dir}`)
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
+    console.error(`[facts-runner-trace] cleanup:remove:done dir=${dir}`)
   }
+  console.error("[facts-runner-trace] cleanup:done")
 })
 
 export async function fixture() {
