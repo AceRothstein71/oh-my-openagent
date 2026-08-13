@@ -2,14 +2,14 @@ import {
   resolveModelForDelegateTask,
   type DelegateFallbackEntry,
 } from "@oh-my-opencode/delegate-core"
-import type { CompiledOpenAiOnlyModelRecommendations } from "@oh-my-opencode/model-core"
+import type { CompiledOpenAiOnlyModelRecommendations } from "@oh-my-opencode/omo-config-core"
 
 import type { SenpiModelPort, SenpiModelRegistryPort } from "../category"
 import { buildRuntimeModelChain, chainRungCandidates } from "../model-chain"
 import {
   compileSenpiOpenAiOnlyModelRecommendations,
   filterAutomaticRuntimeModelIdentities,
-  projectVerifiedOpenAiAliases,
+  projectVerifiedUpstreamAliases,
   recommendationToFallbackEntry,
   resolveRuntimeModelIdentities,
   type ResolvedRuntimeModelIdentity,
@@ -163,7 +163,7 @@ export function resolveAgent<TModel extends SenpiModelPort>(
       buildRuntimeModelChain({
         candidates: directModels,
         selectedModel: candidate.model,
-        ...(availableModels !== undefined ? { availableModels: new Set(availableModels) } : {}),
+        ...(directAvailableModels !== undefined ? { availableModels: new Set(directAvailableModels) } : {}),
         source: "agent",
       }),
     )
@@ -221,7 +221,7 @@ function effectiveAgentFallbackChain(
     ? recommendations.agents[name]
     : undefined
   const recommendedRung = recommendationToFallbackEntry(recommendation)
-  if (recommendedRung === undefined) return projectVerifiedOpenAiAliases(builtinChain, runtimeModels)
+  if (recommendedRung === undefined) return projectVerifiedUpstreamAliases(builtinChain, runtimeModels)
   const alreadyFirst = builtinChain?.[0]
   if (
     alreadyFirst !== undefined
@@ -230,9 +230,9 @@ function effectiveAgentFallbackChain(
     && alreadyFirst.model === recommendedRung.model
     && alreadyFirst.variant === recommendedRung.variant
   ) {
-    return projectVerifiedOpenAiAliases(builtinChain, runtimeModels)
+    return projectVerifiedUpstreamAliases(builtinChain, runtimeModels)
   }
-  return projectVerifiedOpenAiAliases([recommendedRung, ...(builtinChain ?? [])], runtimeModels)
+  return projectVerifiedUpstreamAliases([recommendedRung, ...(builtinChain ?? [])], runtimeModels)
 }
 
 function agentPersona(name: string, definition: AgentDefinition): AgentPersona {

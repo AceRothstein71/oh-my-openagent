@@ -1,0 +1,22 @@
+{
+  "result": "PASS",
+  "surface": "OpenCode 1.18.18",
+  "plugin": "file://<worktree>/packages/omo-opencode/src/index.ts",
+  "checks": {
+    "isolated_xdg_paths": "PASS",
+    "local_worktree_plugin_resolved": "PASS",
+    "omo_primary_agent_visible": "PASS",
+    "explore_agent_visible": "PASS",
+    "librarian_agent_visible": "PASS",
+    "isolated_session_count_after": 0,
+    "real_opencode_db_before": "absent",
+    "real_opencode_db_after": "absent",
+    "focused_catalog_tests": "7/7 PASS",
+    "sandbox_cleanup": "PASS"
+  },
+  "observedAgents": [
+    "Sisyphus - ultraworker (primary)",
+    "explore (subagent)",
+    "librarian (subagent)"
+  ]
+}

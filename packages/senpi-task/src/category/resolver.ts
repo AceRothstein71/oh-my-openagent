@@ -3,9 +3,8 @@ import {
   type DelegateFallbackEntry,
 } from "@oh-my-opencode/delegate-core"
 import {
-  parseModelString,
   type CompiledOpenAiOnlyModelRecommendations,
-} from "@oh-my-opencode/model-core"
+} from "@oh-my-opencode/omo-config-core"
 import type {
   OmoCategoryConfig,
   OmoConfig,
@@ -26,7 +25,7 @@ import { buildRuntimeModelChain, chainRungCandidates, type ModelChainCandidate }
 import {
   compileSenpiOpenAiOnlyModelRecommendations,
   filterAutomaticRuntimeModelIdentities,
-  projectVerifiedOpenAiAliases,
+  projectVerifiedUpstreamAliases,
   recommendationToFallbackEntry,
   resolveRuntimeModelIdentities,
   runtimeModelIds,
@@ -147,10 +146,24 @@ function explicitlyNamedCategoryModels(config: OmoCategoryConfig | undefined): R
       : (typeof config.fallback_models === "string" ? [config.fallback_models] : config.fallback_models)
         .map((entry) => typeof entry === "string" ? entry : entry.model)),
   ]
-  return new Set(entries.map((entry) => {
-    const parsed = parseModelString(entry)
-    return parsed === undefined ? entry.trim() : `${parsed.providerID}/${parsed.modelID}`
-  }))
+  return new Set(entries.map((entry) => normalizeConfiguredModel(entry)))
+}
+
+function normalizeConfiguredModel(entry: string): string {
+  const trimmed = entry.trim()
+  const parenthesizedVariant = trimmed.match(/^(.*)\(([^()]+)\)\s*$/)
+  if (parenthesizedVariant?.[1] !== undefined) return parenthesizedVariant[1].trim()
+
+  const reasoningSeparator = trimmed.lastIndexOf(":")
+  if (reasoningSeparator > 0) {
+    const reasoning = trimmed.slice(reasoningSeparator + 1)
+    if (/^(?:off|minimal|low|medium|high|xhigh|max|auto)$/i.test(reasoning)) {
+      return trimmed.slice(0, reasoningSeparator).trim()
+    }
+  }
+
+  const spacedVariant = trimmed.match(/^(.*\S)\s+([a-z][a-z0-9_-]*)$/i)
+  return spacedVariant?.[1]?.trim() ?? trimmed
 }
 
 function categoryModelCandidates(config: OmoCategoryConfig): readonly ModelChainCandidate[] {
@@ -308,7 +321,7 @@ function effectiveCategoryFallbackChain(
   const recommendedChain = recommendedRung === undefined
     ? builtinChain
     : [recommendedRung, ...(builtinChain ?? [])]
-  return projectVerifiedOpenAiAliases(recommendedChain, runtimeModels)
+  return projectVerifiedUpstreamAliases(recommendedChain, runtimeModels)
 }
 
 function isCategoryFallbackChainViable(

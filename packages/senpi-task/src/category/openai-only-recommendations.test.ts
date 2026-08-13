@@ -209,25 +209,31 @@ describe("Senpi live OpenAI-only recommendations", () => {
     })
   })
 
-  test("#given a missing explicit primary and protected explicit fallback #when the fallback exists #then the named fallback can be promoted", () => {
-    const result = expectResolvedCategory(resolveCategory(
-      "deep",
-      {
-        categories: {
-          deep: {
-            model: "openai/missing-primary",
-            fallback_models: ["unrelated/openai/gpt-5.6-sol high"],
+  test("#given a missing explicit primary and protected explicit fallback #when the fallback exists #then every supported tuning suffix can be promoted", () => {
+    for (const configuredModel of [
+      "unrelated/openai/gpt-5.6-sol high",
+      "unrelated/openai/gpt-5.6-sol:high",
+      "unrelated/openai/gpt-5.6-sol(high)",
+    ]) {
+      const result = expectResolvedCategory(resolveCategory(
+        "deep",
+        {
+          categories: {
+            deep: {
+              model: "openai/missing-primary",
+              fallback_models: [configuredModel],
+            },
           },
         },
-      },
-      registry([model("unrelated", "openai/gpt-5.6-sol")]),
-    ))
+        registry([model("unrelated", "openai/gpt-5.6-sol")]),
+      ))
 
-    expect(result.spec).toMatchObject({
-      provider: "unrelated",
-      modelId: "openai/gpt-5.6-sol",
-      variant: "high",
-    })
+      expect(result.spec).toMatchObject({
+        provider: "unrelated",
+        modelId: "openai/gpt-5.6-sol",
+        variant: "high",
+      })
+    }
   })
 
   test("#given only a prompt override plus a nested fake route #when a builtin GPT category resolves #then prompt tuning cannot authorize that route", () => {
@@ -297,6 +303,26 @@ describe("Senpi live OpenAI-only recommendations", () => {
 
     expect(result.kind).toBe("model_unavailable")
     expect(result.availableCategories).not.toContain("architect")
+  })
+
+  test("#given a verified provider alias for Fable #when architect resolves #then the advertised gate has the same live route", () => {
+    for (const provider of ["codexlb", "vercel"]) {
+      const result = expectResolvedCategory(resolveCategory(
+        "architect",
+        {},
+        registry(
+          [model(provider, "fable-balanced")],
+          { [`${provider}/fable-balanced`]: "claude-fable-5" },
+        ),
+      ))
+
+      expect(result.spec).toMatchObject({
+        provider,
+        modelId: "fable-balanced",
+        variant: "xhigh",
+      })
+      expect(result.availableCategories).toContain("architect")
+    }
   })
 
 })

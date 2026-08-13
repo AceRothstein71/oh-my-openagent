@@ -46,11 +46,9 @@ describe("OpenAI-only model recommendations", () => {
   })
 
   test("#given only a subset of recommended models #when compiled #then unavailable recommendations are omitted", () => {
-    const result = compileOpenAiOnlyModelRecommendations([
+    expect(compileOpenAiOnlyModelRecommendations([
       { provider: "openai", modelId: "gpt-5.6-sol" },
-    ])
-
-    expect(result).toEqual({
+    ])).toEqual({
       agents: {},
       categories: {
         artistry: { model: "openai/gpt-5.6-sol", variant: "xhigh" },

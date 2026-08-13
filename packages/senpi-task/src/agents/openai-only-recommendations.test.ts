@@ -102,6 +102,34 @@ describe("Senpi live OpenAI-only curated-agent recommendations", () => {
     expect(result.model).toBe("unrelated/openai/gpt-5.6-luna-fast")
   })
 
+  test("#given an explicit agent chain with a protected nested fallback #when the primary resolves #then the user fallback remains in the runtime chain", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({
+        name: "explore",
+        models: [
+          "openai/gpt-5.6-terra",
+          "unrelated/openai/gpt-5.6-sol",
+        ],
+      }),
+      registry([
+        model("openai", "gpt-5.6-terra"),
+        model("unrelated", "openai/gpt-5.6-sol"),
+      ]),
+      { hasExplicitUserConfig: true },
+    )
+
+    expect(result.kind).toBe("resolved")
+    if (result.kind !== "resolved") throw new Error("Expected explicit agent chain to resolve")
+    expect(result.model).toBe("openai/gpt-5.6-terra")
+    expect(result.fallback_models).toEqual([{
+      source: "agent",
+      provider: "unrelated",
+      model_id: "openai/gpt-5.6-sol",
+      display: "unrelated/openai/gpt-5.6-sol",
+    }])
+  })
+
   test("#given an upstream alias plus an unparseable registry entry #when a curated agent resolves #then identity classification fails closed", () => {
     const valid = model("codexlb", "luna-priority")
     const models = {

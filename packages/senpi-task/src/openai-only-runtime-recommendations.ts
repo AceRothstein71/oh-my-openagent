@@ -5,7 +5,7 @@ import {
   type CompiledOpenAiOnlyModelRecommendations,
   type OpenAiOnlyModelRecommendation,
   type OpenAiRuntimeModelIdentity,
-} from "@oh-my-opencode/model-core"
+} from "@oh-my-opencode/omo-config-core"
 
 import type { SenpiModelPort, SenpiModelRegistryPort } from "./category"
 
@@ -72,7 +72,7 @@ export function runtimeModelIds<TModel extends SenpiModelPort>(
   return ids
 }
 
-export function projectVerifiedOpenAiAliases(
+export function projectVerifiedUpstreamAliases(
   chain: readonly DelegateFallbackEntry[] | undefined,
   models: readonly ResolvedRuntimeModelIdentity<SenpiModelPort>[],
 ): readonly DelegateFallbackEntry[] | undefined {
@@ -81,8 +81,8 @@ export function projectVerifiedOpenAiAliases(
   for (const entry of chain) {
     projected.push(entry)
     for (const model of models) {
-      if (model.canonicalOpenAiModelId !== entry.model) continue
-      if (model.provider === "vercel") continue
+      if (model.upstreamModelId !== entry.model) continue
+      if (model.provider === "vercel" && knownGatewayModelId(model) === entry.model) continue
       if (entry.providers.includes(model.provider) && model.modelId === entry.model) continue
       const alias = {
         providers: [model.provider],

@@ -1,7 +1,7 @@
 import {
   OPENAI_ONLY_AGENT_MODEL_RECOMMENDATIONS,
   OPENAI_ONLY_CATEGORY_MODEL_RECOMMENDATIONS,
-} from "@oh-my-opencode/model-core"
+} from "@oh-my-opencode/omo-config-core"
 
 import type { GeneratedOmoConfig, ProviderAvailability } from "./model-fallback-types"
 
