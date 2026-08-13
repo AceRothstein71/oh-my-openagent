@@ -1,16 +1,9 @@
-import type { AgentConfig, CategoryConfig, GeneratedOmoConfig, ProviderAvailability } from "./model-fallback-types"
+import {
+  OPENAI_ONLY_AGENT_MODEL_RECOMMENDATIONS,
+  OPENAI_ONLY_CATEGORY_MODEL_RECOMMENDATIONS,
+} from "@oh-my-opencode/model-core"
 
-const OPENAI_ONLY_AGENT_OVERRIDES: Record<string, AgentConfig> = {
-  explore: { model: "openai/gpt-5.6-luna-fast", variant: "low" },
-  librarian: { model: "openai/gpt-5.6-luna-fast", variant: "low" },
-}
-
-const OPENAI_ONLY_CATEGORY_OVERRIDES: Record<string, CategoryConfig> = {
-  artistry: { model: "openai/gpt-5.6-sol", variant: "xhigh" },
-  quick: { model: "openai/gpt-5.6-luna-fast" },
-  "visual-engineering": { model: "openai/gpt-5.6-sol", variant: "high" },
-  writing: { model: "openai/gpt-5.6-sol", variant: "medium" },
-}
+import type { GeneratedOmoConfig, ProviderAvailability } from "./model-fallback-types"
 
 export function isOpenAiOnlyAvailability(availability: ProviderAvailability): boolean {
   return (
@@ -34,11 +27,11 @@ export function applyOpenAiOnlyModelCatalog(config: GeneratedOmoConfig): Generat
     ...config,
     agents: {
       ...config.agents,
-      ...OPENAI_ONLY_AGENT_OVERRIDES,
+      ...OPENAI_ONLY_AGENT_MODEL_RECOMMENDATIONS,
     },
     categories: {
       ...config.categories,
-      ...OPENAI_ONLY_CATEGORY_OVERRIDES,
+      ...OPENAI_ONLY_CATEGORY_MODEL_RECOMMENDATIONS,
     },
   }
 }
