@@ -204,6 +204,7 @@ try {
   } else {
     if (args[0] === undefined) throw new TypeError("run directory is required")
     await runSupervisor(args[0])
+    process.exit(0)
   }
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
