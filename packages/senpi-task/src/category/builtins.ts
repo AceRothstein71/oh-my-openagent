@@ -54,9 +54,8 @@ export function isCategoryGateSatisfied(
   return availableModelIds.has(gateModel)
 }
 
-// Mirrors the kimi transform from model-core provider-model-id-transform.ts (kimi-k3 -> k3); the
-// other chain providers resolve by their bare model id. senpi-task cannot import model-core here
-// without adding a package dependency outside this task's scope (see fallback-chains.ts).
+// Mirrors the Kimi runtime transform (kimi-k3 -> k3); the other chain providers resolve by their
+// bare model id. This remains local because the Senpi chain carries adapter-specific provider ids.
 function transformChainModelId(provider: string, model: string): string {
   if (provider === "kimi-coding" || provider === "kimi-for-coding") {
     if (model === "kimi-k3") return "k3"

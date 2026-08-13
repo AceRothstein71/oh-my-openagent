@@ -1,8 +1,7 @@
 import type { DelegateFallbackEntry } from "@oh-my-opencode/delegate-core"
 
-// Source of truth mirrored from packages/model-core/src/category-model-requirements.ts.
-// senpi-task cannot import model-core here without adding a package dependency outside this task's scope.
-// senpi-only difference: kimi rungs carry BOTH provider ids ("kimi-coding" senpi registry id and the
+// Senpi projection of packages/model-core/src/category-model-requirements.ts. It stays local because
+// Kimi rungs carry BOTH provider ids ("kimi-coding" senpi registry id and the
 // "kimi-for-coding" models.dev/opencode id); model-core/omo-opencode carry "kimi-for-coding" only.
 export const CATEGORY_FALLBACK_CHAINS: Readonly<Record<string, readonly DelegateFallbackEntry[]>> = {
   "visual-engineering": [

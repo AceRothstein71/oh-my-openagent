@@ -20,6 +20,7 @@ export type SenpiModelPort = {
 export type SenpiModelRegistryPort<TModel extends SenpiModelPort> = {
   readonly getAvailable: () => readonly TModel[] | unknown
   readonly find: (provider: string, modelId: string) => TModel | unknown
+  getUpstreamModelId?(model: TModel): string | undefined
 }
 
 export type ResolvedChildSpec<TModel extends SenpiModelPort> = {
