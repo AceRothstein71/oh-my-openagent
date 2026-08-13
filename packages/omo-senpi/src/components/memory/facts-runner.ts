@@ -59,10 +59,14 @@ export class FactsExtractorRunner {
   }
 
   private async launchPendingOnce(signal?: AbortSignal): Promise<FactsLaunchResult> {
+    process.stderr.write("[facts-runner-trace] once:enter\n")
     const isAborted = (): boolean => signal?.aborted === true
     if (isAborted()) return { status: "skipped" }
-    if (await this.reconcileRuns()) return { status: "active" }
+    const reconciled = await this.reconcileRuns()
+    process.stderr.write(`[facts-runner-trace] once:reconciled:${reconciled}\n`)
+    if (reconciled) return { status: "active" }
     const entries = await this.queue.listPending()
+    process.stderr.write(`[facts-runner-trace] once:pending:${entries.length}\n`)
     if (isAborted()) return { status: "skipped" }
     if (entries.length === 0) return { status: "empty" }
     const loaded = this.options.loadConfig()
@@ -74,6 +78,7 @@ export class FactsExtractorRunner {
 
     const repo = new GitMemoryRepo({ dir: this.options.identity.paths.repo, agentId: this.options.identity.id })
     if (!existsSync(join(repo.dir, ".git"))) await repo.init({ seedFiles: buildDefaultSeedFiles() })
+    process.stderr.write("[facts-runner-trace] once:repo:ready\n")
     const batchId = (this.options.createBatchId ?? randomUUID)()
     const launchedAt = this.now().getTime()
     if (isAborted()) return { status: "skipped" }
@@ -85,9 +90,11 @@ export class FactsExtractorRunner {
       deadlineMs: this.options.deadlineMs,
       terminationGraceMs: this.options.terminationGraceMs,
     })
+    process.stderr.write(`[facts-runner-trace] once:reserved:${runDir ?? "none"}\n`)
     if (runDir === undefined) return { status: "active" }
     const runId = basename(runDir)
     const people = await readFactsPeoplePayload(repo.dir)
+    process.stderr.write("[facts-runner-trace] once:people:read\n")
     const payload: FactsPayload = {
       version: 1,
       identity: this.options.identity.id,
@@ -97,6 +104,7 @@ export class FactsExtractorRunner {
     }
     if (isAborted()) return { status: "skipped" }
     try {
+      process.stderr.write("[facts-runner-trace] once:child:start\n")
       const { child } = await launchFactsModelChain({
         runId,
         runDir,
@@ -117,14 +125,17 @@ export class FactsExtractorRunner {
         queued: queueKeys(entries),
         launchedAt,
       })
+      process.stderr.write(`[facts-runner-trace] once:child:done:${child.code}:${child.timedOut}\n`)
       if (child.timedOut || child.code !== 0) {
         await this.writeFinal(runDir, runId, "failed", child.stderr.trim() || "facts child failed")
         return { status: "failed", runId }
       }
     } catch (error) {
+      process.stderr.write(`[facts-runner-trace] once:child:error:${describe(error)}\n`)
       await this.writeFinal(runDir, runId, "failed", describe(error))
       return { status: "failed", runId }
     }
+    process.stderr.write("[facts-runner-trace] once:finalize:start\n")
     return this.finalizeRun(runDir, repo)
   }
 
