@@ -1,7 +1,7 @@
 import type { DelegateFallbackEntry } from "@oh-my-opencode/delegate-core"
 
-// Source of truth mirrored from packages/model-core/src/agent-model-requirements.ts.
-// senpi-task cannot import model-core here without adding a package dependency outside this task's scope.
+// Senpi projection of packages/model-core/src/agent-model-requirements.ts. It remains local because
+// adapter provider ids and available runtime aliases differ from the OpenCode catalog.
 export const AGENT_FALLBACK_CHAINS: Readonly<Record<string, readonly DelegateFallbackEntry[]>> = {
   explore: [
     { providers: ["openai"], model: "gpt-5.6-luna-fast", variant: "low" },

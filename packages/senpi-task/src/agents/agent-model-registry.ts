@@ -5,6 +5,10 @@ export type ParsedAgentModel = {
   readonly modelId: string
 }
 
+export type ParsedAgentRegistryModel<TModel extends SenpiModelPort> = ParsedAgentModel & {
+  readonly model: TModel
+}
+
 const SECRET_LIKE_MODEL_FIELD_NAMES: ReadonlySet<string> = new Set([
   "accesstoken", "apikey", "auth", "authorization",
   "bearertoken", "clientsecret", "password", "privatekey",
@@ -22,25 +26,31 @@ export function findExactAgentModel<TModel extends SenpiModelPort>(
 }
 
 export function parseAvailableAgentModels(models: unknown): readonly string[] | undefined {
-  if (!Array.isArray(models)) return undefined
-  return models
-    .map((model) => parseRegistryModel(model))
-    .filter((model) => model !== undefined)
-    .map((model) => `${model.provider}/${model.modelId}`)
+  return parseAvailableAgentRegistryModels(models)
+    ?.map((model) => `${model.provider}/${model.modelId}`)
     .sort()
 }
 
+export function parseAvailableAgentRegistryModels<TModel extends SenpiModelPort>(
+  models: unknown,
+): readonly ParsedAgentRegistryModel<TModel>[] | undefined {
+  if (!Array.isArray(models)) return undefined
+  return models
+    .map((model) => parseRegistryModel<TModel>(model))
+    .filter((model) => model !== undefined)
+}
+
 // Mirrors category/resolver.ts registry parsing so agent resolution preserves the same safe boundary.
-function parseRegistryModel(
+function parseRegistryModel<TModel extends SenpiModelPort>(
   model: unknown,
   expected?: ParsedAgentModel,
-): ParsedAgentModel | undefined {
+): ParsedAgentRegistryModel<TModel> | undefined {
   if (typeof model !== "object" || model === null || hasSecretLikeModelField(model)) return undefined
   const provider = ownStringDataProperty(model, "provider")
   const modelId = ownStringDataProperty(model, "id")
   if (!provider || !modelId) return undefined
   if (expected !== undefined && (provider !== expected.provider || modelId !== expected.modelId)) return undefined
-  return { provider, modelId }
+  return { model: model as TModel, provider, modelId }
 }
 
 function parseModel(model: string): ParsedAgentModel | undefined {

@@ -10,11 +10,15 @@ function model(provider: string, id: string, name?: string): FakeModel {
   return { provider, id, ...(name === undefined ? {} : { name }) }
 }
 
-function registry(models: readonly FakeModel[]): TaskModelRegistry {
+function registry(
+  models: readonly FakeModel[],
+  upstreamIds: Readonly<Record<string, string>> = {},
+): TaskModelRegistry {
   return {
     getAvailable: () => models,
     find: (provider, modelId) =>
       models.find((candidate) => candidate.provider === provider && candidate.id === modelId),
+    getUpstreamModelId: (candidate) => upstreamIds[`${candidate.provider}/${candidate.id}`],
   }
 }
 
@@ -168,6 +172,50 @@ describe("createTaskChildPlanner", () => {
       "lsp_symbols",
     ])
     expect(resolved.plan.agentExecutionMode).toBe("in-process")
+  })
+
+  test("#given an upstream-mapped OpenAI-only alias #when a builtin agent is planned #then the maintained recommendation targets the live alias", () => {
+    const planner = createTaskChildPlanner(
+      {},
+      BUILTIN_AGENTS,
+      () => registry(
+        [model("codexlb", "luna-priority")],
+        { "codexlb/luna-priority": "gpt-5.6-luna-fast" },
+      ),
+    )
+
+    const result = planner({
+      prompt: "Find the auth flow.",
+      parent_session_id: "parent-1",
+      depth: 0,
+      subagent_type: "explore",
+    })
+
+    const resolved = expectResolved(result)
+    expect(resolved.plan.model).toBe("codexlb/luna-priority")
+    expect(resolved.plan.variant).toBe("low")
+  })
+
+  test("#given an explicit agent entry #when an upstream alias qualifies #then planner skips the automatic recommendation", () => {
+    const planner = createTaskChildPlanner(
+      { agents: { explore: { prompt: "CUSTOM" } } },
+      BUILTIN_AGENTS,
+      () => registry(
+        [model("codexlb", "luna-priority")],
+        { "codexlb/luna-priority": "gpt-5.6-luna-fast" },
+      ),
+    )
+
+    const result = planner({
+      prompt: "Find the auth flow.",
+      parent_session_id: "parent-1",
+      depth: 0,
+      subagent_type: "explore",
+    })
+
+    expect(result.kind).toBe("error")
+    if (result.kind !== "error") throw new Error(`Expected error resolution, got ${result.kind}`)
+    expect(result.error.code).toBe("model_unavailable")
   })
 
   test("#given an explicit model with subagent_type and no registry #when planned #then the agent persona is kept and the model stays explicit", () => {
