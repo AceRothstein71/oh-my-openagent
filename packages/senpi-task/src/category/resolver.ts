@@ -249,7 +249,13 @@ function gatedAvailableCategories<TModel extends SenpiModelPort>(
     const recommendations = parsed.completeIdentityInventory
       ? compileRegistryRecommendations(senpiModelRegistry, parsed.parsedModels)
       : undefined
-    return availableCategoryNames(config, runtimeModelIds(automaticModels), recommendations, automaticModels)
+    const projectedModels = parsed.completeIdentityInventory ? automaticModels : []
+    return availableCategoryNames(
+      config,
+      runtimeModelIds(automaticModels, { includeUpstreamModelIds: parsed.completeIdentityInventory }),
+      recommendations,
+      projectedModels,
+    )
   } catch {
     return availableCategoryNames(config)
   }
@@ -313,8 +319,7 @@ function effectiveCategoryFallbackChain(
   runtimeModels: readonly ResolvedRuntimeModelIdentity<SenpiModelPort>[],
 ): readonly DelegateFallbackEntry[] | undefined {
   const builtinChain = getOwnRecordValue(CATEGORY_FALLBACK_CHAINS, categoryName)
-  if (hasExplicitUserConfig) return builtinChain
-  const recommendation = recommendations === undefined
+  const recommendation = hasExplicitUserConfig || recommendations === undefined
     ? undefined
     : getOwnRecordValue(recommendations.categories, categoryName)
   const recommendedRung = recommendationToFallbackEntry(recommendation)
@@ -408,18 +413,22 @@ export function resolveCategory<TModel extends SenpiModelPort>(
     ...explicitlyNamedRuntimeModels.filter((model) => !automaticRuntimeModels.includes(model)),
   ]
   const availableModels = resolutionRuntimeModels.map(formatModel).sort()
-  const availableModelIds = runtimeModelIds(resolutionRuntimeModels)
+  const availableModelIds = runtimeModelIds(resolutionRuntimeModels, {
+    includeUpstreamModelIds: availableModelsResult.completeIdentityInventory,
+  })
   const recommendations = availableModelsResult.completeIdentityInventory
     ? compileRegistryRecommendations(senpiModelRegistry, availableModelsResult.parsedModels)
     : undefined
-  const automaticRoutingModels = availableModelsResult.completeIdentityInventory && userConfig === undefined
+  const automaticRoutingModels = availableModelsResult.completeIdentityInventory
     ? automaticRuntimeModels
     : []
   const gatedCategories = availableCategoryNames(
     omoConfig,
-    runtimeModelIds(automaticRuntimeModels),
+    runtimeModelIds(automaticRuntimeModels, {
+      includeUpstreamModelIds: availableModelsResult.completeIdentityInventory,
+    }),
     recommendations,
-    automaticRuntimeModels,
+    availableModelsResult.completeIdentityInventory ? automaticRuntimeModels : [],
   )
   const fallbackChain = effectiveCategoryFallbackChain(
     categoryName,

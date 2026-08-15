@@ -2,6 +2,7 @@ import type { DelegateFallbackEntry } from "@oh-my-opencode/delegate-core"
 import {
   canonicalOpenAiRuntimeModelId,
   compileOpenAiOnlyModelRecommendations,
+  isOpenAiUpstreamModelId,
   type CompiledOpenAiOnlyModelRecommendations,
   type OpenAiOnlyModelRecommendation,
   type OpenAiRuntimeModelIdentity,
@@ -17,10 +18,23 @@ export type ParsedRuntimeModelIdentity<TModel extends SenpiModelPort> = {
 
 export type ResolvedRuntimeModelIdentity<TModel extends SenpiModelPort> = ParsedRuntimeModelIdentity<TModel> & {
   readonly upstreamModelId?: string
+  readonly upstreamIdentityInvalid?: boolean
   readonly canonicalOpenAiModelId?: string
 }
 
+type RuntimeUpstreamIdentity =
+  | { readonly kind: "absent" }
+  | { readonly kind: "invalid" }
+  | { readonly kind: "valid"; readonly modelId: string }
+
 const GATEWAY_UPSTREAM_VENDOR_PREFIXES: ReadonlySet<string> = new Set(["openai", "anthropic", "google"])
+const KNOWN_OPENAI_MODEL_PROVIDER_IDS: ReadonlySet<string> = new Set([
+  "github-copilot",
+  "openai",
+  "opencode",
+  "quotio-openai",
+  "vercel",
+])
 
 export function compileSenpiOpenAiOnlyModelRecommendations<TModel extends SenpiModelPort>(
   registry: SenpiModelRegistryPort<TModel>,
@@ -35,16 +49,18 @@ export function resolveRuntimeModelIdentities<TModel extends SenpiModelPort>(
   models: readonly ParsedRuntimeModelIdentity<TModel>[],
 ): readonly ResolvedRuntimeModelIdentity<TModel>[] {
   return models.map((model) => {
-    const upstreamModelId = readUpstreamModelId(registry, model.model)
+    const upstreamIdentity = readUpstreamIdentity(registry, model.model)
     const identity: OpenAiRuntimeModelIdentity = {
       provider: model.provider,
       modelId: model.modelId,
-      ...(upstreamModelId === undefined ? {} : { upstreamModelId }),
+      ...(upstreamIdentity.kind === "valid" ? { upstreamModelId: upstreamIdentity.modelId } : {}),
+      ...(upstreamIdentity.kind === "invalid" ? { upstreamIdentityInvalid: true } : {}),
     }
     const canonicalOpenAiModelId = canonicalOpenAiRuntimeModelId(identity)
     return {
       ...model,
-      ...(upstreamModelId === undefined ? {} : { upstreamModelId }),
+      ...(upstreamIdentity.kind === "valid" ? { upstreamModelId: upstreamIdentity.modelId } : {}),
+      ...(upstreamIdentity.kind === "invalid" ? { upstreamIdentityInvalid: true } : {}),
       ...(canonicalOpenAiModelId === undefined ? {} : { canonicalOpenAiModelId }),
     }
   })
@@ -56,18 +72,24 @@ export function resolveRuntimeModelIdentities<TModel extends SenpiModelPort>(
 export function filterAutomaticRuntimeModelIdentities<TModel extends SenpiModelPort>(
   models: readonly ResolvedRuntimeModelIdentity<TModel>[],
 ): readonly ResolvedRuntimeModelIdentity<TModel>[] {
-  return models.filter((model) => !isUnprovenNestedGatewayRoute(model))
+  // Automatic chains may trust only canonical or upstream-verified OpenAI identities. This rejects
+  // both copied bare IDs and copied `openai/...` routes on unrelated providers while explicit user
+  // model selections continue to resolve against the unfiltered inventory.
+  return models.filter((model) => !isUnprovenOpenAiRoute(model) && !isUnprovenNestedGatewayRoute(model))
 }
 
 export function runtimeModelIds<TModel extends SenpiModelPort>(
   models: readonly ResolvedRuntimeModelIdentity<TModel>[],
+  options: { readonly includeUpstreamModelIds?: boolean } = {},
 ): ReadonlySet<string> {
   const ids = new Set<string>()
   for (const model of models) {
     ids.add(model.modelId)
     const gatewayModelId = knownGatewayModelId(model)
     if (gatewayModelId !== undefined) ids.add(gatewayModelId)
-    if (model.upstreamModelId !== undefined) ids.add(model.upstreamModelId)
+    if (options.includeUpstreamModelIds !== false && model.upstreamModelId !== undefined) {
+      ids.add(model.upstreamModelId)
+    }
   }
   return ids
 }
@@ -108,24 +130,45 @@ export function recommendationToFallbackEntry(
   }
 }
 
-function readUpstreamModelId<TModel extends SenpiModelPort>(
+function isUnprovenOpenAiRoute(model: ResolvedRuntimeModelIdentity<SenpiModelPort>): boolean {
+  const localOpenAiModelId = localOpenAiModelIdCandidate(model.modelId)
+  if (localOpenAiModelId === undefined) return false
+  if (model.upstreamIdentityInvalid === true) return true
+  if (model.upstreamModelId !== undefined) {
+    return model.canonicalOpenAiModelId !== localOpenAiModelId
+  }
+  if (model.canonicalOpenAiModelId !== undefined) return false
+  return !KNOWN_OPENAI_MODEL_PROVIDER_IDS.has(model.provider)
+}
+
+function localOpenAiModelIdCandidate(modelId: string): string | undefined {
+  if (isOpenAiUpstreamModelId(modelId)) return modelId
+  if (!modelId.startsWith("openai/")) return undefined
+  const nestedModelId = modelId.slice("openai/".length)
+  return nestedModelId.length > 0 && !nestedModelId.includes("/") && isOpenAiUpstreamModelId(nestedModelId)
+    ? nestedModelId
+    : undefined
+}
+
+function readUpstreamIdentity<TModel extends SenpiModelPort>(
   registry: SenpiModelRegistryPort<TModel>,
   model: TModel,
-): string | undefined {
-  if (registry.getUpstreamModelId === undefined) return undefined
+): RuntimeUpstreamIdentity {
+  if (registry.getUpstreamModelId === undefined) return { kind: "absent" }
   try {
     const upstreamModelId = registry.getUpstreamModelId(model)
+    if (upstreamModelId === undefined) return { kind: "absent" }
     if (
       typeof upstreamModelId !== "string"
       || upstreamModelId.length === 0
       || upstreamModelId.length > 200
       || /[\u0000-\u001f\u007f-\u009f]/u.test(upstreamModelId)
     ) {
-      return undefined
+      return { kind: "invalid" }
     }
-    return upstreamModelId
+    return { kind: "valid", modelId: upstreamModelId }
   } catch {
-    return undefined
+    return { kind: "invalid" }
   }
 }
 

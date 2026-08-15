@@ -78,6 +78,16 @@ describe("Senpi live OpenAI-only curated-agent recommendations", () => {
     expect(result.kind).toBe("model_unavailable")
   })
 
+  test("#given a copied bare Luna id on an unrelated provider #when a curated agent resolves #then automatic routing rejects it", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({ name: "explore" }),
+      registry([model("unrelated", "gpt-5.6-luna-fast")]),
+    )
+
+    expect(result.kind).toBe("model_unavailable")
+  })
+
   test("#given only a prompt override plus a nested fake route #when a curated agent resolves #then prompt tuning cannot authorize that route", () => {
     const result = resolveAgent(
       "explore",
@@ -100,6 +110,19 @@ describe("Senpi live OpenAI-only curated-agent recommendations", () => {
     expect(result.kind).toBe("resolved")
     if (result.kind !== "resolved") throw new Error("Expected explicit nested model to resolve")
     expect(result.model).toBe("unrelated/openai/gpt-5.6-luna-fast")
+  })
+
+  test("#given an explicit copied bare agent model #when automatic routing would reject it #then the user model remains authoritative", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({ name: "explore", model: "unrelated/gpt-5.6-luna-fast" }),
+      registry([model("unrelated", "gpt-5.6-luna-fast")]),
+      { hasExplicitUserConfig: true },
+    )
+
+    expect(result.kind).toBe("resolved")
+    if (result.kind !== "resolved") throw new Error("Expected explicit copied bare model to resolve")
+    expect(result.model).toBe("unrelated/gpt-5.6-luna-fast")
   })
 
   test("#given an explicit agent chain with a protected nested fallback #when the primary resolves #then the user fallback remains in the runtime chain", () => {
@@ -130,6 +153,25 @@ describe("Senpi live OpenAI-only curated-agent recommendations", () => {
     }])
   })
 
+  test("#given a missing explicit primary and a copied bare fallback #when the fallback is available #then the explicit fallback is promoted", () => {
+    const result = resolveAgent(
+      "explore",
+      roster({
+        name: "explore",
+        models: [
+          "openai/gpt-5.6-terra",
+          "unrelated/gpt-5.6-luna-fast",
+        ],
+      }),
+      registry([model("unrelated", "gpt-5.6-luna-fast")]),
+      { hasExplicitUserConfig: true },
+    )
+
+    expect(result.kind).toBe("resolved")
+    if (result.kind !== "resolved") throw new Error("Expected explicit copied bare fallback to resolve")
+    expect(result.model).toBe("unrelated/gpt-5.6-luna-fast")
+  })
+
   test("#given an upstream alias plus an unparseable registry entry #when a curated agent resolves #then identity classification fails closed", () => {
     const valid = model("codexlb", "luna-priority")
     const models = {
@@ -143,7 +185,7 @@ describe("Senpi live OpenAI-only curated-agent recommendations", () => {
     expect(resolveAgent("explore", roster({ name: "explore" }), models).kind).toBe("model_unavailable")
   })
 
-  test("#given an explicit curated-agent entry #when an upstream alias qualifies #then the automatic recommendation is skipped", () => {
+  test("#given a prompt-only curated-agent entry #when an upstream alias qualifies #then builtin alias routing remains while the recommendation stays skipped", () => {
     const models = registry(
       [model("codexlb", "luna-priority")],
       { "codexlb/luna-priority": "gpt-5.6-luna-fast" },
@@ -156,7 +198,10 @@ describe("Senpi live OpenAI-only curated-agent recommendations", () => {
       { hasExplicitUserConfig: true },
     )
 
-    expect(result.kind).toBe("model_unavailable")
+    expect(result.kind).toBe("resolved")
+    if (result.kind !== "resolved") throw new Error("Expected builtin alias route to resolve")
+    expect(result.model).toBe("codexlb/luna-priority")
+    expect(result.resolved_model?.variant).toBe("low")
   })
 
   test("#given an explicit curated-agent model #when OpenAI recommendations are available #then the agent override wins", () => {

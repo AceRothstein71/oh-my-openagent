@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { resolveCategory } from "./index"
+import { resolveAvailableCategoryNames, resolveCategory } from "./index"
 
 type FakeModel = {
   readonly provider: string
@@ -123,6 +123,53 @@ describe("Senpi live OpenAI-only recommendations", () => {
     expect(quick.spec).toMatchObject({ provider: "codexlb", modelId: "luna-priority" })
   })
 
+  test("#given explicit upstream ids on canonical OpenAI aliases #when categories resolve #then actual registry aliases receive the recommendation", () => {
+    const models = registry(
+      [model("openai", "sol-balanced"), model("openai", "luna-priority")],
+      {
+        "openai/sol-balanced": "gpt-5.6-sol",
+        "openai/luna-priority": "gpt-5.6-luna-fast",
+      },
+    )
+
+    const artistry = expectResolvedCategory(resolveCategory("artistry", {}, models))
+    const quick = expectResolvedCategory(resolveCategory("quick", {}, models))
+
+    expect(artistry.spec).toMatchObject({ provider: "openai", modelId: "sol-balanced", variant: "xhigh" })
+    expect(quick.spec).toMatchObject({ provider: "openai", modelId: "luna-priority" })
+  })
+
+  test("#given a canonical OpenAI display id mapped to Fable #when an OpenAI category resolves #then upstream identity prevents automatic routing", () => {
+    const models = registry(
+      [model("openai", "gpt-5.6-sol")],
+      { "openai/gpt-5.6-sol": "claude-fable-5" },
+    )
+
+    expect(resolveCategory("visual-engineering", {}, models).kind).toBe("model_unavailable")
+  })
+
+  test("#given an invalid upstream lookup on a canonical OpenAI model #when an OpenAI category resolves #then lookup failure cannot recover display trust", () => {
+    const available = model("openai", "gpt-5.6-sol")
+    const invalidLookups = [
+      () => "",
+      () => "gpt-5.6-sol\u0000",
+      () => "g".repeat(201),
+      () => 42 as unknown as string,
+      () => { throw new Error("lookup failed") },
+    ] as const
+
+    for (const getUpstreamModelId of invalidLookups) {
+      const models = {
+        getAvailable: () => [available],
+        find: (provider: string, modelId: string) =>
+          provider === available.provider && modelId === available.id ? available : undefined,
+        getUpstreamModelId,
+      }
+
+      expect(resolveCategory("visual-engineering", {}, models).kind).toBe("model_unavailable")
+    }
+  })
+
   test("#given explicit upstream ids on provider aliases #when existing GPT categories resolve #then their maintained rungs target the aliases", () => {
     const models = registry(
       [model("codexlb", "sol-balanced"), model("codexlb", "terra-balanced")],
@@ -168,6 +215,21 @@ describe("Senpi live OpenAI-only recommendations", () => {
     }
   })
 
+  test("#given copied bare OpenAI ids on an unrelated provider #when builtin GPT categories resolve #then automatic routing rejects them", () => {
+    const cases = [
+      { category: "quick", modelId: "gpt-5.6-luna-fast" },
+      { category: "deep", modelId: "gpt-5.6-sol" },
+    ] as const
+
+    for (const entry of cases) {
+      const models = registry([model("unrelated", entry.modelId)])
+      const result = resolveCategory(entry.category, {}, models)
+
+      expect(result.kind).toBe("model_unavailable")
+      expect(result.availableCategories).not.toContain(entry.category)
+    }
+  })
+
   test("#given an explicit nested route #when the automatic route would reject it #then the user category model remains authoritative", () => {
     const models = registry([model("unrelated", "openai/gpt-5.6-sol")])
     const result = expectResolvedCategory(resolveCategory(
@@ -180,6 +242,59 @@ describe("Senpi live OpenAI-only recommendations", () => {
       provider: "unrelated",
       modelId: "openai/gpt-5.6-sol",
       variant: "low",
+    })
+  })
+
+  test("#given an explicit copied bare route #when automatic routing would reject it #then the user category model remains authoritative", () => {
+    const models = registry([model("unrelated", "gpt-5.6-sol")])
+    const result = expectResolvedCategory(resolveCategory(
+      "deep",
+      { categories: { deep: { model: "unrelated/gpt-5.6-sol", variant: "low" } } },
+      models,
+    ))
+
+    expect(result.spec).toMatchObject({
+      provider: "unrelated",
+      modelId: "gpt-5.6-sol",
+      variant: "low",
+    })
+  })
+
+  test("#given a prompt-only category entry and a verified provider alias #when a builtin chain resolves #then the alias route remains available without recommendation tuning", () => {
+    const models = registry(
+      [model("codexlb", "sol-balanced")],
+      { "codexlb/sol-balanced": "gpt-5.6-sol" },
+    )
+    const result = expectResolvedCategory(resolveCategory(
+      "deep",
+      { categories: { deep: { prompt_append: "CUSTOM" } } },
+      models,
+    ))
+
+    expect(result.spec).toMatchObject({
+      provider: "codexlb",
+      modelId: "sol-balanced",
+      variant: "medium",
+      prompt_append: expect.stringContaining("CUSTOM"),
+    })
+  })
+
+  test("#given a prompt-only quick entry and a verified Luna alias #when the builtin chain resolves #then recommendation-only tuning is not injected", () => {
+    const models = registry(
+      [model("codexlb", "luna-priority")],
+      { "codexlb/luna-priority": "gpt-5.6-luna-fast" },
+    )
+    const result = expectResolvedCategory(resolveCategory(
+      "quick",
+      { categories: { quick: { prompt_append: "CUSTOM" } } },
+      models,
+    ))
+
+    expect(result.spec).toMatchObject({
+      provider: "codexlb",
+      modelId: "luna-priority",
+      variant: "low",
+      prompt_append: expect.stringContaining("CUSTOM"),
     })
   })
 
@@ -323,6 +438,47 @@ describe("Senpi live OpenAI-only recommendations", () => {
       })
       expect(result.availableCategories).toContain("architect")
     }
+  })
+
+  test("#given a verified alias plus a malformed registry entry #when gated categories are listed and resolved #then both paths fail closed", () => {
+    const cases = [
+      { category: "architect", alias: "fable-balanced", upstreamModelId: "claude-fable-5" },
+      { category: "deep", alias: "sol-balanced", upstreamModelId: "gpt-5.6-sol" },
+    ] as const
+
+    for (const entry of cases) {
+      const valid = model("codexlb", entry.alias)
+      const models = {
+        getAvailable: () => [valid, { provider: "broken" }],
+        find: (provider: string, modelId: string) =>
+          provider === valid.provider && modelId === valid.id ? valid : undefined,
+        getUpstreamModelId: (candidate: FakeModel) =>
+          candidate === valid ? entry.upstreamModelId : undefined,
+      }
+
+      expect(resolveAvailableCategoryNames({}, models)).not.toContain(entry.category)
+      const result = resolveCategory(entry.category, {}, models)
+      expect(result.kind).toBe("model_unavailable")
+      expect(result.availableCategories).not.toContain(entry.category)
+    }
+  })
+
+  test("#given a canonical OpenAI model plus a malformed registry entry #when a builtin category resolves #then concrete fallback routing remains available", () => {
+    const valid = model("openai", "gpt-5.6-sol")
+    const models = {
+      getAvailable: () => [valid, { provider: "broken" }],
+      find: (provider: string, modelId: string) =>
+        provider === valid.provider && modelId === valid.id ? valid : undefined,
+      getUpstreamModelId: () => undefined,
+    }
+
+    expect(resolveAvailableCategoryNames({}, models)).toContain("deep")
+    const result = expectResolvedCategory(resolveCategory("deep", {}, models))
+    expect(result.spec).toMatchObject({
+      provider: "openai",
+      modelId: "gpt-5.6-sol",
+      variant: "medium",
+    })
   })
 
 })

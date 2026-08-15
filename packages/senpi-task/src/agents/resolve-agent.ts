@@ -132,7 +132,7 @@ export function resolveAgent<TModel extends SenpiModelPort>(
     ?.map((model) => `${model.provider}/${model.modelId}`)
   const completeIdentityInventory = Array.isArray(rawAvailableModels)
     && availableRegistryModels?.length === rawAvailableModels.length
-  const automaticRoutingModels = completeIdentityInventory && options.hasExplicitUserConfig !== true
+  const automaticRoutingModels = completeIdentityInventory
     ? filterAutomaticRuntimeModelIdentities(runtimeModels ?? [])
     : []
   const recommendations = !completeIdentityInventory || options.hasExplicitUserConfig === true

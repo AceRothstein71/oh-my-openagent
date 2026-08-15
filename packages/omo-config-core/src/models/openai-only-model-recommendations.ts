@@ -7,6 +7,7 @@ export type OpenAiRuntimeModelIdentity = {
   readonly provider: string
   readonly modelId: string
   readonly upstreamModelId?: string
+  readonly upstreamIdentityInvalid?: boolean
 }
 
 export type CompiledOpenAiOnlyModelRecommendations = {
@@ -28,6 +29,10 @@ export const OPENAI_ONLY_CATEGORY_MODEL_RECOMMENDATIONS = {
 
 const OPENAI_GATEWAY_PROVIDER_IDS: ReadonlySet<string> = new Set(["vercel"])
 const OPENAI_UPSTREAM_MODEL_ID = /^(?:gpt-|o[1-9](?:-|$)|codex-)/i
+
+export function isOpenAiUpstreamModelId(modelId: string): boolean {
+  return OPENAI_UPSTREAM_MODEL_ID.test(modelId)
+}
 
 export function isOpenAiOnlyRuntimeInventory(inventory: readonly OpenAiRuntimeModelIdentity[]): boolean {
   return inventory.length > 0 && inventory.every((model) => canonicalOpenAiRuntimeModelId(model) !== undefined)
@@ -87,16 +92,18 @@ function modelIdFromRecommendation(model: string): string | undefined {
   return model.slice(separatorIndex + 1)
 }
 
-// Canonical `openai` and the maintained Vercel gateway shape are first-party identities. For any
-// other transport, only an explicit runtime upstream mapping is provenance; compatible protocol or
-// a copied display id alone is deliberately insufficient.
+// A runtime upstream mapping is the request identity and therefore outranks every display/provider
+// shape. Without one, canonical `openai` and the maintained Vercel gateway shape are first-party
+// identities; compatible protocol or a copied display id alone is deliberately insufficient.
 export function canonicalOpenAiRuntimeModelId(model: OpenAiRuntimeModelIdentity): string | undefined {
+  if (model.upstreamIdentityInvalid === true) return undefined
+  if (model.upstreamModelId !== undefined) {
+    return isOpenAiUpstreamModelId(model.upstreamModelId) ? model.upstreamModelId : undefined
+  }
   if (model.provider === "openai") return model.modelId
   if (OPENAI_GATEWAY_PROVIDER_IDS.has(model.provider) && model.modelId.startsWith("openai/")) {
     const modelId = model.modelId.slice("openai/".length)
     return modelId.length > 0 && !modelId.includes("/") ? modelId : undefined
   }
-  return model.upstreamModelId !== undefined && OPENAI_UPSTREAM_MODEL_ID.test(model.upstreamModelId)
-    ? model.upstreamModelId
-    : undefined
+  return undefined
 }

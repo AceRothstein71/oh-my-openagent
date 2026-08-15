@@ -196,7 +196,7 @@ describe("createTaskChildPlanner", () => {
     expect(resolved.plan.variant).toBe("low")
   })
 
-  test("#given an explicit agent entry #when an upstream alias qualifies #then planner skips the automatic recommendation", () => {
+  test("#given a prompt-only agent entry #when an upstream alias qualifies #then planner keeps builtin alias routing", () => {
     const planner = createTaskChildPlanner(
       { agents: { explore: { prompt: "CUSTOM" } } },
       BUILTIN_AGENTS,
@@ -213,9 +213,9 @@ describe("createTaskChildPlanner", () => {
       subagent_type: "explore",
     })
 
-    expect(result.kind).toBe("error")
-    if (result.kind !== "error") throw new Error(`Expected error resolution, got ${result.kind}`)
-    expect(result.error.code).toBe("model_unavailable")
+    const resolved = expectResolved(result)
+    expect(resolved.plan.model).toBe("codexlb/luna-priority")
+    expect(resolved.plan.variant).toBe("low")
   })
 
   test("#given an explicit model with subagent_type and no registry #when planned #then the agent persona is kept and the model stays explicit", () => {

@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "opencodeVersion": "1.18.18",
+  "checks": {
+    "agent_list_exit_zero": "PASS",
+    "current_source_plugin_loaded": "PASS",
+    "sisyphus_present": "PASS",
+    "explore_present": "PASS",
+    "librarian_present": "PASS",
+    "isolated_session_count_zero": "PASS",
+    "real_user_database_absent_before_after": "PASS",
+    "focused_catalog_tests_7_of_7": "PASS",
+    "temporary_paths_removed": "PASS"
+  }
+}

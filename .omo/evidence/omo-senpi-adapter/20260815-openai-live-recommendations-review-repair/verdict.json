@@ -1,0 +1,123 @@
+{
+  "result": "PASS",
+  "senpiBinary": "<isolated Senpi 2026.8.14>",
+  "scenarios": [
+    {
+      "result": "PASS",
+      "scenario": "automatic",
+      "checks": {
+        "exit_zero": "PASS",
+        "artistry_model": "PASS",
+        "artistry_variant": "PASS",
+        "artistry_completed": "PASS",
+        "writing_model": "PASS",
+        "writing_variant": "PASS",
+        "writing_completed": "PASS",
+        "visual-engineering_model": "PASS",
+        "visual-engineering_variant": "PASS",
+        "visual-engineering_completed": "PASS",
+        "quick_model": "PASS",
+        "quick_variant": "PASS",
+        "quick_completed": "PASS",
+        "explore_model": "PASS",
+        "explore_variant": "PASS",
+        "explore_completed": "PASS",
+        "librarian_model": "PASS",
+        "librarian_variant": "PASS",
+        "librarian_completed": "PASS",
+        "architect_unavailable": "PASS",
+        "child_models_exercised": "PASS",
+        "sandbox_project_config_unchanged": "PASS",
+        "real_agent_credentials_unchanged": "PASS",
+        "real_omo_config_unchanged": "PASS",
+        "sandbox_cleanup": "PASS"
+      },
+      "observed": {
+        "artistry": {
+          "model": "openai/gpt-5.6-sol",
+          "variant": "xhigh",
+          "status": "completed"
+        },
+        "writing": {
+          "model": "openai/gpt-5.6-sol",
+          "variant": "medium",
+          "status": "completed"
+        },
+        "visual-engineering": {
+          "model": "openai/gpt-5.6-sol",
+          "variant": "high",
+          "status": "completed"
+        },
+        "quick": {
+          "model": "openai/gpt-5.6-luna-fast",
+          "variant": null,
+          "status": "completed"
+        },
+        "explore": {
+          "model": "openai/gpt-5.6-luna-fast",
+          "variant": "low",
+          "status": "completed"
+        },
+        "librarian": {
+          "model": "openai/gpt-5.6-luna-fast",
+          "variant": "low",
+          "status": "completed"
+        }
+      },
+      "childCaptures": [
+        {
+          "child": true,
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "child": true,
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "child": true,
+          "model": "gpt-5.6-sol"
+        },
+        {
+          "child": true,
+          "model": "gpt-5.6-luna-fast"
+        },
+        {
+          "child": true,
+          "model": "gpt-5.6-luna-fast"
+        },
+        {
+          "child": true,
+          "model": "gpt-5.6-luna-fast"
+        }
+      ]
+    },
+    {
+      "result": "PASS",
+      "scenario": "explicit-override",
+      "checks": {
+        "exit_zero": "PASS",
+        "override_model": "PASS",
+        "override_variant": "PASS",
+        "override_completed": "PASS",
+        "one_child_exercised": "PASS",
+        "sandbox_project_config_unchanged": "PASS",
+        "real_agent_credentials_unchanged": "PASS",
+        "real_omo_config_unchanged": "PASS",
+        "sandbox_cleanup": "PASS"
+      },
+      "observed": {
+        "writing": {
+          "model": "openai/gpt-5.6-terra",
+          "variant": "low",
+          "status": "completed"
+        }
+      },
+      "childCaptures": [
+        {
+          "child": true,
+          "model": "gpt-5.6-terra"
+        }
+      ]
+    }
+  ]
+}

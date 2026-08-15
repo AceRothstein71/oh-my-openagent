@@ -1,0 +1,28 @@
+{
+  "result": "PASS",
+  "scenario": "explicit-override",
+  "checks": {
+    "exit_zero": "PASS",
+    "override_model": "PASS",
+    "override_variant": "PASS",
+    "override_completed": "PASS",
+    "one_child_exercised": "PASS",
+    "sandbox_project_config_unchanged": "PASS",
+    "real_agent_credentials_unchanged": "PASS",
+    "real_omo_config_unchanged": "PASS",
+    "sandbox_cleanup": "PASS"
+  },
+  "observed": {
+    "writing": {
+      "model": "openai/gpt-5.6-terra",
+      "variant": "low",
+      "status": "completed"
+    }
+  },
+  "childCaptures": [
+    {
+      "child": true,
+      "model": "gpt-5.6-terra"
+    }
+  ]
+}

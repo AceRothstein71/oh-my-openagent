@@ -125,6 +125,46 @@ describe("OpenAI-only model recommendations", () => {
     })
   })
 
+  test("#given explicit upstream identities on canonical OpenAI aliases #when compiled #then upstream identity remains authoritative", () => {
+    const inventory = [
+      { provider: "openai", modelId: "sol-balanced", upstreamModelId: "gpt-5.6-sol" },
+      { provider: "openai", modelId: "luna-priority", upstreamModelId: "gpt-5.6-luna-fast" },
+    ]
+
+    expect(isOpenAiOnlyRuntimeInventory(inventory)).toBe(true)
+    expect(compileOpenAiOnlyModelRecommendations(inventory)).toEqual({
+      agents: {
+        explore: { model: "openai/luna-priority", variant: "low" },
+        librarian: { model: "openai/luna-priority", variant: "low" },
+      },
+      categories: {
+        artistry: { model: "openai/sol-balanced", variant: "xhigh" },
+        quick: { model: "openai/luna-priority" },
+        "visual-engineering": { model: "openai/sol-balanced", variant: "high" },
+        writing: { model: "openai/sol-balanced", variant: "medium" },
+      },
+    })
+  })
+
+  test("#given a canonical OpenAI display id mapped to a non-OpenAI upstream #when compiled #then the display id cannot enable the overlay", () => {
+    const inventory = [
+      { provider: "openai", modelId: "gpt-5.6-sol", upstreamModelId: "claude-fable-5" },
+    ]
+
+    expect(isOpenAiOnlyRuntimeInventory(inventory)).toBe(false)
+    expect(compileOpenAiOnlyModelRecommendations(inventory)).toBeUndefined()
+  })
+
+  test("#given an invalid upstream identity signal on a first-party display shape #when compiled #then provider shape cannot recover trust", () => {
+    for (const inventory of [
+      [{ provider: "openai", modelId: "gpt-5.6-sol", upstreamIdentityInvalid: true }],
+      [{ provider: "vercel", modelId: "openai/gpt-5.6-sol", upstreamIdentityInvalid: true }],
+    ]) {
+      expect(isOpenAiOnlyRuntimeInventory(inventory)).toBe(false)
+      expect(compileOpenAiOnlyModelRecommendations(inventory)).toBeUndefined()
+    }
+  })
+
   test("#given canonical and aliased copies of a recommended model #when compiled #then canonical OpenAI wins regardless of inventory order", () => {
     const result = compileOpenAiOnlyModelRecommendations([
       { provider: "codexlb", modelId: "sol-balanced", upstreamModelId: "gpt-5.6-sol" },
