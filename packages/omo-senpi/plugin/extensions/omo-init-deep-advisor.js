@@ -1,4 +1,4 @@
-// omo:vtSisZstqyFOgwppkUuc1s-yCnc2lDKn7gf5dyunAvs:5cmFRuDjNihhfV-Nfk6jiyzYrBe8U4jiB7vE2nJVtEc
+// omo:lrcOUYYyaTrar6hL9Pq1ORwMuYhKUDW_iFWc4vXGcJA:VVjkbun-V25s2LvAE4wfUIKLqA5oX1sp7hyiC67Himc
 import{execFileSync as mu}from"node:child_process";import{fileURLToPath as Ft}from"node:url";var W={name:"explore",description:'Contextual grep for codebases. Answers "Where is X?", "Which file has Y?", "Find the code that does Z". Fire multiple in parallel for broad searches. Specify thoroughness: "quick" for basic, "medium" for moderate, "very thorough" for comprehensive analysis.',mode:"subagent",executionMode:"in-process",prompt:`You are a codebase search specialist. Your job: find files and code, return actionable results.
 
 ## Your Mission
@@ -167,6 +167,19 @@ Confirm:
 
 ---
 
+## PHASE 0.5: CONSTRAINT SWEEP (EVERY intent type)
+
+Check the request once for unstated constraints the plan forks on, across four axes: budget / paid-service spend, mandated stack or framework, expected scale (users, data, traffic), target-audience or compliance restrictions.
+
+For each such axis the user never stated:
+- Repo evidence answers it -> cite it in Pre-Analysis Findings
+- A defensible default exists -> emit MUST: adopt <default> for <axis> (reversible: yes/no) in Directives
+- It is an owner decision (real spend, irreversible, compliance) -> top of Questions for User
+
+If no axis forks, say so in one line. Sweep results route into those existing sections - add no new output sections.
+
+---
+
 ## PHASE 1: INTENT-SPECIFIC ANALYSIS
 
 ### IF REFACTORING
@@ -248,8 +261,7 @@ Confirm:
 
 **Questions to Ask**:
 1. What problem are you trying to solve? (not what solution you want)
-2. What constraints exist? (time, tech stack, team skills)
-3. What trade-offs are acceptable? (speed vs quality vs cost)
+2. What trade-offs are acceptable? (speed vs quality vs cost)
 
 **Directives for the Planner**:
 - MUST: Record all user decisions in "Key Decisions" section
@@ -270,9 +282,7 @@ Advise the planner to delegate an advisory-only architecture consultation to the
 
 **Questions to Ask**:
 1. What's the expected lifespan of this design?
-2. What scale/load should it handle?
-3. What are the non-negotiable constraints?
-4. What existing systems must this integrate with?
+2. What existing systems must this integrate with?
 
 **AI-Slop Guardrails for Architecture**:
 - MUST NOT: Over-engineer for hypothetical future requirements
