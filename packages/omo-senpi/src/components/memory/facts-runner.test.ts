@@ -71,7 +71,9 @@ describe("quick-pinned facts launch", () => {
     // given
     const { root, identity, queue } = await fixture()
     await enqueue(queue, identity, "session-2", "m2", "The project uses TypeScript.")
-    const runner = new FactsExtractorRunner(runnerOptions(root, identity, queue, "fact"))
+    const runner = new FactsExtractorRunner(runnerOptions(root, identity, queue, "fact", {
+      createBatchId: () => "11111111-1111-4111-8111-111111111111",
+    }))
 
     // when
     const result = await runner.launchPending()
@@ -240,7 +242,10 @@ describe("quick-pinned facts launch", () => {
     expect(JSON.parse(await readFile(join(firstRun, "ledger.json"), "utf8")).applyRecovery).toBeUndefined()
 
     await rm(join(identity.paths.repo, "foreign.md"))
-    const retried = await new FactsExtractorRunner(runnerOptions(root, identity, queue, "fact")).launchPending()
+    // The blocked run recorded a one-minute backoff; the retry clock clears that window.
+    const retried = await new FactsExtractorRunner(runnerOptions(root, identity, queue, "fact", {
+      now: () => new Date("2026-08-10T12:01:00.000Z"),
+    })).launchPending()
 
     expect(retried.status).toBe("committed")
     expect(await queue.listPending()).toHaveLength(0)
