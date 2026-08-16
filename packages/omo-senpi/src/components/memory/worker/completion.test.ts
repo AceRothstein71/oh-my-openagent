@@ -24,6 +24,12 @@ import { realpathSync } from "node:fs"
 const roots: string[] = []
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }))))
 
+// Relative to now: consumePendingReflectionCompletions silently consumes records
+// older than 7 days, so a hardcoded finishedAt turns into a time bomb the day the
+// wall clock passes fixture + 7d (it did - see the 2026-08-16 dev CI red).
+const RECORD_STARTED_AT = new Date(Date.now() - 60_000).toISOString()
+const RECORD_FINISHED_AT = new Date(Date.now() - 59_000).toISOString()
+
 function record(): ReflectionCompletionRecord {
   return {
     schemaVersion: 1,
@@ -36,8 +42,8 @@ function record(): ReflectionCompletionRecord {
     trigger: "dream",
     origin: "shutdown",
     outcome: "merged",
-    startedAt: "2026-08-09T12:00:00.000Z",
-    finishedAt: "2026-08-09T12:00:01.000Z",
+    startedAt: RECORD_STARTED_AT,
+    finishedAt: RECORD_FINISHED_AT,
     delivery: { status: "pending" },
   }
 }
@@ -128,7 +134,7 @@ describe("reflection completion flow", () => {
       trigger: "dream",
       origin: "shutdown",
       outcome: "merged",
-      finishedAt: "2026-08-09T12:00:01.000Z",
+      finishedAt: RECORD_FINISHED_AT,
     })
   })
 
@@ -146,7 +152,7 @@ describe("reflection completion flow", () => {
     expect(reflection.outcomes).toEqual([{
       runId: "run-offline",
       outcome: "merged",
-      finishedAt: "2026-08-09T12:00:01.000Z",
+      finishedAt: RECORD_FINISHED_AT,
     }])
   })
 
