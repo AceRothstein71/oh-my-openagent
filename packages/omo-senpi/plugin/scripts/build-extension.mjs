@@ -15,6 +15,10 @@ import {
 
 export { toPortableBuildPath }
 
+export function resolveBunExecutable(platform = process.platform) {
+  return platform === "win32" ? "bun.exe" : "bun"
+}
+
 // Keep this list byte-for-byte aligned with senpi loader.ts lines 145-165.
 export const SENPI_LOADER_ALIASES = [
   "@earendil-works/pi-coding-agent",
@@ -113,7 +117,7 @@ async function buildEntry(entry, output, buildDefines) {
   await mkdir(dirname(output), { recursive: true })
   const metafile = `${output}.meta.json`
   try {
-    run("bun", [
+    run(resolveBunExecutable(), [
       "build", entry, "--target", "node", "--format", "esm", "--outfile", output,
       "--minify", `--metafile=${metafile}`,
       ...Object.entries(buildDefines).flatMap(([name, value]) => ["--define", `${name}=${JSON.stringify(value)}`]),
@@ -211,7 +215,6 @@ export async function checkExtensionCurrent(options = {}) {
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: repoRoot,
-    shell: process.platform === "win32",
     stdio: "inherit",
   })
   if (result.error !== undefined) throw result.error
