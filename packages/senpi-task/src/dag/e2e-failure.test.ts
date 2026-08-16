@@ -51,6 +51,7 @@ const cleanupRoots: string[] = []
 const parentSessionId = "session-e2e-failure-parent"
 const rootSessionId = "session-e2e-failure-root"
 const sampleParameters = createReadToolDefinition(process.cwd()).parameters
+const WINDOWS_DAG_E2E_TIMEOUT = process.platform === "win32" ? 30_000 : 5_000
 
 afterEach(() => {
   for (const root of cleanupRoots.splice(0)) {
@@ -719,7 +720,7 @@ for (let seq = 1; seq <= stopAt; seq += 1) {
     expect(fixture.events(result.runId).filter((event) =>
       event.type === "dag.node.transitioned" && event.to === "failed",
     )).toHaveLength(0)
-  })
+  }, WINDOWS_DAG_E2E_TIMEOUT)
 
   test("#given expired terminal artifacts and equally old live artifacts #when retention runs #then events, results, and skills are pruned only for the terminal run", () => {
     // given
