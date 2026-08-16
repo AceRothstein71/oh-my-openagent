@@ -1,4 +1,4 @@
-// omo:TGWAWhRCOogH8IVqVQZKrmioKB0DZnwsHZ9CE5LF01o:5cmFRuDjNihhfV-Nfk6jiyzYrBe8U4jiB7vE2nJVtEc
+// omo:zJ_-hyG_7e4ilY541NwdHgEjRvmDVvD7BIzafSXMvmU:5cmFRuDjNihhfV-Nfk6jiyzYrBe8U4jiB7vE2nJVtEc
 import{execFileSync as mu}from"node:child_process";import{fileURLToPath as Ft}from"node:url";var W={name:"explore",description:'Contextual grep for codebases. Answers "Where is X?", "Which file has Y?", "Find the code that does Z". Fire multiple in parallel for broad searches. Specify thoroughness: "quick" for basic, "medium" for moderate, "very thorough" for comprehensive analysis.',mode:"subagent",executionMode:"in-process",prompt:`You are a codebase search specialist. Your job: find files and code, return actionable results.
 
 ## Your Mission

@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url"
 import {
   buildExtension,
   checkExtensionCurrent,
-  resolveBunExecutable,
   toPortableBuildPath,
 } from "./build-extension.mjs"
+import { resolveBunExecutable } from "./bun-executable.mjs"
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const pluginRoot = join(scriptDir, "..")

@@ -12,12 +12,9 @@ import {
   normalizeBuiltinImports,
   toPortableBuildPath,
 } from "./build-artifact.mjs"
+import { resolveBunExecutable } from "./bun-executable.mjs"
 
 export { toPortableBuildPath }
-
-export function resolveBunExecutable(platform = process.platform) {
-  return platform === "win32" ? "bun.exe" : "bun"
-}
 
 // Keep this list byte-for-byte aligned with senpi loader.ts lines 145-165.
 export const SENPI_LOADER_ALIASES = [
