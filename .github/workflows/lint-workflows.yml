@@ -19,7 +19,16 @@ jobs:
 
       - name: Install actionlint
         run: |
-          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.10/scripts/download-actionlint.bash)
+          set -euo pipefail
+          # Download the pinned release binary directly instead of piping the
+          # raw.githubusercontent install script into bash. Raw content fetches
+          # get 429-rate-limited under CI load, which makes bash try to execute
+          # the error page (see 2026-08-17 Lint Workflows outage).
+          curl -sSfL -o actionlint.tar.gz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.10/actionlint_1.7.10_linux_amd64.tar.gz
+          echo "f4c76b71db5755a713e6055cbb0857ed07e103e028bda117817660ebadb4386f  actionlint.tar.gz" | sha256sum -c -
+          tar -xzf actionlint.tar.gz actionlint
+          rm actionlint.tar.gz
 
       - name: Run actionlint
         run: ./actionlint -color -shellcheck=""
