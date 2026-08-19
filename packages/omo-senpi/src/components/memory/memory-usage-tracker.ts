@@ -12,6 +12,9 @@ const DEBOUNCE_MS = 500
 /**
  * Extracts the repo-relative path from a file read, returning undefined when
  * the path does not resolve inside the memory repo or is under system/, .git, or .tmp.
+ * The returned path uses forward slashes so the ledger key is byte-identical across
+ * platforms; on Windows `path.relative` would otherwise yield backslash-separated keys
+ * that no cross-platform consumer of the ledger can match.
  */
 export function extractMemoryUsagePath(repoDir: string, rawPath: string): string | undefined {
   if (rawPath.length === 0 || rawPath.includes("\0")) return undefined
@@ -22,7 +25,7 @@ export function extractMemoryUsagePath(repoDir: string, rawPath: string): string
   // Exclude system/ (always projected), .git, .tmp
   if (segments[0] === "system" || segments[0] === ".git" || segments[0] === ".tmp") return undefined
   if (segments[0] === ".") return undefined
-  return rel
+  return segments.join("/")
 }
 
 /** Debounces memory-file reads and persists each pending batch under the ledger lock. */
