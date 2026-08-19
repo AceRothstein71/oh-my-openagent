@@ -188,7 +188,12 @@ describe("/doctor", () => {
     const { identity, pi, ctx } = await harness()
     const completions = join(identity.identityPaths.reflection, "completions")
     await mkdir(completions, { recursive: true })
+    // Dates must stay relative to now: REFLECTION_HEALTH_STALE_MS (7d) retires streaks whose
+    // newest failure is older, so hardcoded calendar dates would age this test into streak 0.
+    const failureStartMs = Date.now() - 24 * 60 * 60_000
     for (let index = 0; index < 3; index += 1) {
+      const startedAt = new Date(failureStartMs + index * 60_000).toISOString()
+      const finishedAt = new Date(failureStartMs + index * 60_000 + 1_000).toISOString()
       await writeFile(join(completions, `run-${index}.json`), `${JSON.stringify({
         schemaVersion: 1,
         runId: `run-${index}`,
@@ -199,8 +204,8 @@ describe("/doctor", () => {
         outcome: "failed",
         reason: "model-not-found",
         detail: "configured model unavailable",
-        startedAt: `2026-08-12T0${index}:00:00.000Z`,
-        finishedAt: `2026-08-12T0${index}:01:00.000Z`,
+        startedAt,
+        finishedAt,
         delivery: { status: index === 2 ? "pending" : "consumed" },
       })}\n`)
     }
