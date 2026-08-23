@@ -153,9 +153,10 @@ describe("delegation_completed projection", () => {
       },
     })
 
-    // then
+    // then: provider is custom (unknown), but model_id is unmasked because "claude-opus-5" is a
+    // known public model name — model ids are not PII and should be visible regardless of routing provider
     expect(props.provider).toBe("custom")
-    expect(props.model_id).toBe("custom")
+    expect(props.model_id).toBe("claude-opus-5")
     expect(props.model_source).toBe("explicit")
   })
 

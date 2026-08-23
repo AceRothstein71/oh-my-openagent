@@ -43,3 +43,10 @@ export const KNOWN_MODELS = Object.freeze({
 
 export type KnownProvider = keyof typeof KNOWN_MODELS
 export const KNOWN_PROVIDERS = Object.freeze(Object.keys(KNOWN_MODELS) as KnownProvider[])
+
+// Flat set of every model id known across ALL providers. Used to unmask model_id even when the
+// provider itself is not in the vocabulary (e.g. OpenRouter, LiteLLM, or a self-hosted gateway
+// proxying a standard model). Model ids are public product names, not PII.
+export const ALL_KNOWN_MODEL_IDS: ReadonlySet<string> = Object.freeze(
+  new Set(Object.values(KNOWN_MODELS).flat()),
+)
