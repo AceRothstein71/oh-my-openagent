@@ -1,0 +1,19 @@
+collapse-recovery-e2e: PASS
+{
+  "exitStatus": 0,
+  "exitOk": true,
+  "persistedShrunkBubble": true,
+  "unshrunkAbortedBubble": false,
+  "ttsrNudgeCount": 1,
+  "recoveryContextCount": 1,
+  "recoveryHidden": true,
+  "retryRequestsCaptured": true,
+  "retryCarriedDedupContext": true,
+  "retryCarriedHeadExcerpt": true,
+  "retryCarriedTailExcerpt": true,
+  "retryStillCariedGarbledBody": false,
+  "sandboxAgentDir": "/tmp/omo-senpi-collapse-qa-WwugCZ/agent",
+  "realAgentDirUntouched": true,
+  "entries": 16,
+  "result": "PASS"
+}

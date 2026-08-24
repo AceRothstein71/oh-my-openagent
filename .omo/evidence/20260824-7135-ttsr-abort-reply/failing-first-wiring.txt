@@ -1,0 +1,39 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-senpi/src/extension/collapse-recovery-wiring.test.ts:
+17 | // collapse-recovery so a TTSR-truncated abort shrinks the persisted bubble and
+18 | // sends exactly one hidden dedup-context message toward the nudge retry turn.
+19 | describe("collapse-recovery production wiring", () => {
+20 |   it("#given the production component list #when components are created #then collapse-recovery is registered ahead of the tool components", () => {
+21 |     const names = createOmoSenpiComponents(stubTaskComponent).map((component) => component.name)
+22 |     expect(names).toContain("collapse-recovery")
+                       ^
+error: expect(received).toContain(expected)
+
+Expected to contain: "collapse-recovery"
+Received: [
+  "config-startup", "native-badge", "onboarding", "init-deep-advisor", "telemetry", "ultrawork",
+  "skill-pointers", "start-work-continuation", "ulw-loop", "todo-fanout-reminder", "git-master-attribution",
+  "fallback-architect", "comment-checker", "ast-grep", "lsp", "task", "memory", "config-watch"
+]
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7135/packages/omo-senpi/src/extension/collapse-recovery-wiring.test.ts:22:19)
+(fail) collapse-recovery production wiring > #given the production component list #when components are created #then collapse-recovery is registered ahead of the tool components [6.68ms]
+27 |     // given the component resolved from the real production list, not a fresh factory call
+28 |     const pi = new FakeExtensionAPI()
+29 |     const component = createOmoSenpiComponents(stubTaskComponent).find(
+30 |       (candidate) => candidate.name === "collapse-recovery",
+31 |     )
+32 |     expect(component).toBeDefined()
+                           ^
+error: expect(received).toBeDefined()
+
+Received: undefined
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7135/packages/omo-senpi/src/extension/collapse-recovery-wiring.test.ts:32:23)
+(fail) collapse-recovery production wiring > #given the production collapse-recovery component #when a ttsr-truncated abort settles #then the bubble shrinks to the marker and one hidden dedup context rides to the retry turn [1.03ms]
+
+ 0 pass
+ 2 fail
+ 2 expect() calls
+Ran 2 tests across 1 file. [4.43s]

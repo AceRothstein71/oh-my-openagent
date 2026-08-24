@@ -1,5 +1,6 @@
 import { createAstGrepComponent } from "../components/ast-grep"
 import { createCommentCheckerComponent } from "../components/comment-checker"
+import { createCollapseRecoveryComponent } from "../components/collapse-recovery"
 import { createConfigStartupComponent } from "../components/config-startup"
 import { createConfigWatchComponent } from "../components/config-watch"
 import { createFallbackArchitectComponent } from "../components/fallback-architect"
@@ -31,6 +32,7 @@ export function createOmoSenpiComponents(taskComponent: OmoSenpiComponent): OmoS
     createTodoFanoutReminderComponent(),
     createGitMasterAttributionComponent(),
     createFallbackArchitectComponent(),
+    createCollapseRecoveryComponent(),
     createCommentCheckerComponent(),
     createAstGrepComponent(),
     createLspComponent(),
