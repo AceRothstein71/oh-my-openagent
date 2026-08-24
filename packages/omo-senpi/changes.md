@@ -1,3 +1,17 @@
+## 2026-08-24 — Keep Cursor CLI tool protocol frames out of assistant text
+
+The pinned senpi engine's `cursor-cli-oauth` provider serializes every started and completed
+Cursor tool event as a `<cursor-cli-tool>{...}</cursor-cli-tool>` text delta, so provider-internal
+JSON landed in assistant prose and persisted session history (issue #7169; the upstream fix,
+senpi PR #1107, is not yet released, so the exact pin cannot be bumped). The new
+`cursor-tool-frame-filter` component replaces the finalized assistant message at the
+`message_end` boundary, which senpi applies before session persistence: frames are stripped from
+text blocks, blocks that held only frames are dropped, and the frames are never converted to host
+tool calls because Cursor already executed them in its own subprocess. Stripping skips fenced
+code blocks and requires a brace payload (valid JSON or the upstream `...[truncated]` shape), so
+prose and code examples that merely resemble the protocol survive byte-identical. Gated by
+`omo-senpi-cursor-tool-frame-filter-disabled`.
+
 ## 2026-08-22 — One exception-free keyword table for every ULW skill pointer
 
 The mass-ulw and ulw-skill-pointers components were the same mechanism written twice, and the

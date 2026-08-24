@@ -2,6 +2,7 @@ import { createAstGrepComponent } from "../components/ast-grep"
 import { createCommentCheckerComponent } from "../components/comment-checker"
 import { createConfigStartupComponent } from "../components/config-startup"
 import { createConfigWatchComponent } from "../components/config-watch"
+import { createCursorToolFrameFilterComponent } from "../components/cursor-tool-frame-filter"
 import { createFallbackArchitectComponent } from "../components/fallback-architect"
 import { createGitMasterAttributionComponent } from "../components/git-master"
 import { createInitDeepAdvisorComponent } from "../components/init-deep-advisor"
@@ -31,6 +32,7 @@ export function createOmoSenpiComponents(taskComponent: OmoSenpiComponent): OmoS
     createTodoFanoutReminderComponent(),
     createGitMasterAttributionComponent(),
     createFallbackArchitectComponent(),
+    createCursorToolFrameFilterComponent(),
     createCommentCheckerComponent(),
     createAstGrepComponent(),
     createLspComponent(),
