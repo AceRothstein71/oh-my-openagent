@@ -66,8 +66,8 @@ describe("background task description redaction", () => {
       unsafeTestValue(createToolContext()),
     )
 
-    // then
-    expect(launchedDescription).toBe("Sisyphus-Junior background task")
+    // then - the category is a validated config key, so it stays visible even though the prompt summary is redacted (issue #6854)
+    expect(launchedDescription).toBe("Sisyphus-Junior background task (category: quick)")
     expect(launchedDescription).not.toContain("SECRET_TOKEN")
   })
 
@@ -169,8 +169,8 @@ describe("background task description redaction", () => {
       "test-model",
     )
 
-    // then
-    expect(launchedDescription).toBe("sisyphus-junior background task")
+    // then - the category stays visible while the prompt summary stays redacted (issue #6854)
+    expect(launchedDescription).toBe("sisyphus-junior background task (category: quick)")
     expect(launchedDescription).not.toContain("SECRET_TOKEN")
   })
 })

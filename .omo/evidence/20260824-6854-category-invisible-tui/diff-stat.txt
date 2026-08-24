@@ -1,0 +1,6 @@
+ .../src/tools/delegate-task/background-task-description.ts |  5 ++++-
+ .../src/tools/delegate-task/description-redaction.test.ts  |  8 ++++----
+ .../src/tools/delegate-task/tool-argument-preparation.ts   |  8 ++++++++
+ .../omo-opencode/src/tools/delegate-task/tools.test.ts     | 14 +++++++-------
+ packages/shared-skills/upstreams/designpowers              |  0
+ 5 files changed, 23 insertions(+), 12 deletions(-)

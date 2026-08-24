@@ -1,0 +1,66 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-opencode/src/tools/delegate-task/tool-argument-preparation.test.ts:
+31 | 
+32 |     // then - routing stays on sisyphus-junior, but every display string carries the category
+33 |     expect(result.subagent_type).toBe("Sisyphus-Junior")
+34 |     expect(result.category).toBe("quick")
+35 |     expect(result.descriptionSource).toBe("generated")
+36 |     expect(result.description).toBe("fix the flaky login (category: quick)")
+                                    ^
+error: expect(received).toBe(expected)
+
+Expected: "fix the flaky login (category: quick)"
+Received: "fix the flaky login"
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6854/packages/omo-opencode/src/tools/delegate-task/tool-argument-preparation.test.ts:36:32)
+(fail) prepareDelegateTaskArgs > #given a category-only delegation without an explicit description #when args are prepared #then the generated description and the TUI title surface the category so it is not invisible (issue #6854) [62.70ms]
+46 |       { prompt: "do work", description: "Refactor auth module", category: "deep", load_skills: [] },
+47 |       ctx,
+48 |     )
+49 | 
+50 |     // then
+51 |     expect(result.description).toBe("Refactor auth module (category: deep)")
+                                    ^
+error: expect(received).toBe(expected)
+
+Expected: "Refactor auth module (category: deep)"
+Received: "Refactor auth module"
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6854/packages/omo-opencode/src/tools/delegate-task/tool-argument-preparation.test.ts:51:32)
+(fail) prepareDelegateTaskArgs > #given an explicit description with a category #when args are prepared #then the explicit description carries the category suffix [0.35ms]
+
+packages/omo-opencode/src/tools/delegate-task/description-redaction.test.ts:
+65 |       },
+66 |       unsafeTestValue(createToolContext()),
+67 |     )
+68 | 
+69 |     // then - the category is a validated config key, so it stays visible even though the prompt summary is redacted (issue #6854)
+70 |     expect(launchedDescription).toBe("Sisyphus-Junior background task (category: quick)")
+                                     ^
+error: expect(received).toBe(expected)
+
+Expected: "Sisyphus-Junior background task (category: quick)"
+Received: "Sisyphus-Junior background task"
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6854/packages/omo-opencode/src/tools/delegate-task/description-redaction.test.ts:70:33)
+(fail) background task description redaction > #given task tool omits description #when launching in background #then generated prompt summary is not persisted [2841.26ms]
+168 |       undefined,
+169 |       "test-model",
+170 |     )
+171 | 
+172 |     // then - the category stays visible while the prompt summary stays redacted (issue #6854)
+173 |     expect(launchedDescription).toBe("sisyphus-junior background task (category: quick)")
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: "sisyphus-junior background task (category: quick)"
+Received: "sisyphus-junior background task"
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6854/packages/omo-opencode/src/tools/delegate-task/description-redaction.test.ts:173:33)
+(fail) background task description redaction > #given generated description contains prompt text #when unstable task is forced into background #then persisted task description is agent-only [1.33ms]
+
+ 2 pass
+ 4 fail
+ 12 expect() calls
+Ran 6 tests across 2 files. [3.79s]

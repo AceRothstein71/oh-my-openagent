@@ -1640,8 +1640,8 @@ describe("sisyphus-task", () => {
         // execution may fail due to incomplete mocks — we only care about the title
       }
 
-      // then — description auto-generated from first 4 words of prompt
-      expect(capturedTitle).toBe("Fix the broken unit")
+      // then — description auto-generated from first 4 words of prompt, category surfaced (issue #6854)
+      expect(capturedTitle).toBe("Fix the broken unit (category: quick)")
     })
 
     test("#given empty description #when executing #then auto-generates description from prompt", async () => {
@@ -1687,7 +1687,7 @@ describe("sisyphus-task", () => {
       }
 
       // then
-      expect(capturedTitle).toBe("Refactor authentication module completely")
+      expect(capturedTitle).toBe("Refactor authentication module completely (category: quick)")
     })
 
     test("#given explicit description #when executing #then preserves provided description", async () => {
@@ -1732,8 +1732,8 @@ describe("sisyphus-task", () => {
         // execution may fail due to incomplete mocks
       }
 
-      // then — explicit description preserved
-      expect(capturedTitle).toBe("my-custom-task-name-sentinel")
+      // then - explicit description preserved with the category surfaced (issue #6854)
+      expect(capturedTitle).toBe("my-custom-task-name-sentinel (category: quick)")
     })
 
     test("#given explicit run_in_background=false #when executing #then sync execution succeeds", async () => {
@@ -4668,8 +4668,8 @@ describe("sisyphus-task", () => {
         toolContext
       )
 
-      // then - title should follow OpenCode format
-      expect(createBody.title).toBe("Implement feature X (@Sisyphus-Junior subagent)")
+      // then - title should follow OpenCode format with the category visible (issue #6854)
+      expect(createBody.title).toBe("Implement feature X (category: quick) (@Sisyphus-Junior subagent)")
     }, { timeout: 10000 })
 
     test("sync task output includes <task_metadata> block with session_id", async () => {

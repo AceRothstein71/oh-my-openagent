@@ -27,6 +27,14 @@ export async function prepareDelegateTaskArgs(args: Record<string, unknown>, ctx
     descriptionSource = "generated"
   }
 
+  // Issue #6854: the TUI renders the task header from subagent_type (forced to
+  // sisyphus-junior for category delegation), so the category must ride the
+  // description to stay visible in titles. Display-only; routing still
+  // resolves from `category`, never from this string.
+  if (category) {
+    description = `${description} (category: ${category})`
+  }
+
   await ctx.metadata?.({
     title: description,
   })
