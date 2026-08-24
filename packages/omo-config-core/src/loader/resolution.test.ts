@@ -159,4 +159,115 @@ describe("resolveOmoConfigView", () => {
     expect(result.diagnostics).toHaveLength(1)
     expect(result.diagnostics[0]).toMatchObject({ kind: "profile", path: "profiles.ghost" })
   })
+
+  test("#given an opencode block with shared setting keys #when resolving the senpi view #then one compatibility diagnostic names the ignored keys", () => {
+    // given
+    const config = {
+      categories: { quick: { model: "top-level-model" } },
+      "[opencode]": {
+        agents: { explore: { model: "opencode-only-agent" } },
+        background_task: { enabled: true },
+      },
+    }
+
+    // when
+    const result = resolveOmoConfigView({ config, harness: "senpi" })
+
+    // then
+    expect(result.config).toEqual({ categories: { quick: { model: "top-level-model" } } })
+    expect(result.diagnostics).toHaveLength(1)
+    expect(result.diagnostics[0]).toMatchObject({ kind: "compatibility", path: "(merged omo config)" })
+    expect(result.diagnostics[0].message).toContain("agents")
+    expect(result.diagnostics[0].message).not.toContain("background_task")
+    expect(result.diagnostics[0].message).toContain("[senpi]")
+  })
+
+  test("#given an opencode block with shared setting keys #when resolving the codex view #then the compatibility diagnostic fires as well", () => {
+    // given
+    const config = {
+      "[opencode]": {
+        models: { sol: { model: "openai/gpt-5.6-sol" } },
+      },
+    }
+
+    // when
+    const result = resolveOmoConfigView({ config, harness: "codex" })
+
+    // then
+    expect(result.config).toEqual({})
+    expect(result.diagnostics).toHaveLength(1)
+    expect(result.diagnostics[0]).toMatchObject({ kind: "compatibility", path: "(merged omo config)" })
+    expect(result.diagnostics[0].message).toContain("models")
+  })
+
+  test("#given an opencode block with only plugin-specific keys #when resolving the senpi view #then no compatibility diagnostic is emitted", () => {
+    // given
+    const config = {
+      "[opencode]": {
+        background_task: { enabled: true },
+        monitor: { enabled: false },
+      },
+    }
+
+    // when
+    const result = resolveOmoConfigView({ config, harness: "senpi" })
+
+    // then
+    expect(result.diagnostics).toEqual([])
+  })
+
+  test("#given an opencode block with shared keys #when resolving the opencode view #then no compatibility diagnostic is emitted and the block applies", () => {
+    // given
+    const config = {
+      "[opencode]": {
+        agents: { explore: { model: "opencode-only-agent" } },
+      },
+    }
+
+    // when
+    const result = resolveOmoConfigView({ config, harness: "opencode" })
+
+    // then
+    expect(result.config).toEqual({ agents: { explore: { model: "opencode-only-agent" } } })
+    expect(result.diagnostics).toEqual([])
+  })
+
+  test("#given an active profile whose opencode block carries shared keys #when resolving the senpi view #then the compatibility diagnostic fires for the profile block", () => {
+    // given
+    const config = {
+      profiles: {
+        opus: {
+          "[opencode]": {
+            teams: { alpha: { members: [] } },
+          },
+        },
+      },
+    }
+
+    // when
+    const result = resolveOmoConfigView({ config, harness: "senpi", profile: "opus" })
+
+    // then
+    expect(result.diagnostics).toHaveLength(1)
+    expect(result.diagnostics[0]).toMatchObject({ kind: "compatibility", path: "(merged omo config)" })
+    expect(result.diagnostics[0].message).toContain("teams")
+  })
+
+  test("#given a senpi block carrying a nested $schema annotation #when resolving the senpi view #then the annotation is stripped from the merged view", () => {
+    // given
+    const config = {
+      "[senpi]": {
+        $schema: "https://example.com/some.schema.json",
+        agents: { explore: { model: "senpi-agent" } },
+      },
+    }
+
+    // when
+    const result = resolveOmoConfigView({ config, harness: "senpi" })
+
+    // then
+    expect(result.config).toEqual({ agents: { explore: { model: "senpi-agent" } } })
+    expect("$schema" in result.config).toBe(false)
+    expect(result.diagnostics).toEqual([])
+  })
 })

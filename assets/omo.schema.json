@@ -11776,6 +11776,9 @@
     "[senpi]": {
       "type": "object",
       "properties": {
+        "$schema": {
+          "type": "string"
+        },
         "categories": {
           "type": "object",
           "propertyNames": {
@@ -13377,6 +13380,9 @@
     "[codex]": {
       "type": "object",
       "properties": {
+        "$schema": {
+          "type": "string"
+        },
         "categories": {
           "type": "object",
           "propertyNames": {
@@ -26517,6 +26523,9 @@
           "[senpi]": {
             "type": "object",
             "properties": {
+              "$schema": {
+                "type": "string"
+              },
               "categories": {
                 "type": "object",
                 "propertyNames": {
@@ -28118,6 +28127,9 @@
           "[codex]": {
             "type": "object",
             "properties": {
+              "$schema": {
+                "type": "string"
+              },
               "categories": {
                 "type": "object",
                 "propertyNames": {

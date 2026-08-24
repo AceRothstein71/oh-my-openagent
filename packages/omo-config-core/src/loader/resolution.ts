@@ -1,4 +1,10 @@
-import { HARNESS_IDS, OMO_CONFIG_HARNESS_IDS, type HarnessId, type OmoHarnessId } from "../schema"
+import {
+  HARNESS_IDS,
+  OMO_CONFIG_HARNESS_IDS,
+  TYPED_HARNESS_SETTING_KEYS,
+  type HarnessId,
+  type OmoHarnessId,
+} from "../schema"
 import { mergeOmoConfigRecords } from "./merge"
 import type { OmoConfigDiagnostic, OmoConfigEnv } from "./types"
 
@@ -20,6 +26,9 @@ export type ResolveOmoConfigViewResult = {
 }
 
 const HARNESS_KEYS = [...new Set([...HARNESS_IDS, ...OMO_CONFIG_HARNESS_IDS])].map((harness) => `[${harness}]`)
+
+const MERGED_OMO_CONFIG_DIAGNOSTIC_PATH = "(merged omo config)"
+const OPENCODE_HARNESS_KEY = "[opencode]"
 
 function profileName(value: string | undefined): string | undefined {
   return value === "" ? undefined : value
@@ -54,7 +63,31 @@ function withoutControlKeys(config: Readonly<Record<string, unknown>>): Record<s
 
 function harnessLayer(config: Readonly<Record<string, unknown>>, harness?: OmoHarnessId | HarnessId): Record<string, unknown> {
   if (harness === undefined) return {}
-  return toRecord(config[`[${harness}]`]) ?? {}
+  const layer = toRecord(config[`[${harness}]`])
+  if (layer === undefined) return {}
+  const settings: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(layer)) {
+    if (key === "$schema") continue
+    settings[key] = value
+  }
+  return settings
+}
+
+function opencodeCompatibilityDiagnostics(
+  config: Readonly<Record<string, unknown>>,
+  profile: Record<string, unknown> | undefined,
+  harness?: OmoHarnessId | HarnessId,
+): OmoConfigDiagnostic[] {
+  if (harness === undefined || harness === "opencode") return []
+  const blocks = [toRecord(config[OPENCODE_HARNESS_KEY]), profile === undefined ? undefined : toRecord(profile[OPENCODE_HARNESS_KEY])]
+  const ignoredKeys = TYPED_HARNESS_SETTING_KEYS.filter((key) => blocks.some((block) => block !== undefined && Object.hasOwn(block, key)))
+  if (ignoredKeys.length === 0) return []
+  return [{
+    kind: "compatibility",
+    message: `Ignored ${OPENCODE_HARNESS_KEY} settings under the ${harness} view: ${ignoredKeys.join(", ")}. `
+      + `Move shared settings to the top level or the [${harness}] block; ${OPENCODE_HARNESS_KEY} applies only to the OpenCode edition.`,
+    path: MERGED_OMO_CONFIG_DIAGNOSTIC_PATH,
+  }]
 }
 
 export function resolveOmoConfigView(options: ResolveOmoConfigViewOptions): ResolveOmoConfigViewResult {
@@ -80,7 +113,10 @@ export function resolveOmoConfigView(options: ResolveOmoConfigViewOptions): Reso
   const resolvedProfile = options.profile !== undefined && profile !== undefined ? options.profile : undefined
   return {
     config: withoutControlKeys(config),
-    diagnostics,
+    diagnostics: [
+      ...opencodeCompatibilityDiagnostics(options.config, profile, options.harness),
+      ...diagnostics,
+    ],
     ...(resolvedProfile === undefined ? {} : { profile: resolvedProfile }),
   }
 }

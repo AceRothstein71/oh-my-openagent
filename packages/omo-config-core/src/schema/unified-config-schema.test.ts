@@ -99,6 +99,37 @@ describe("unified omo config schema", () => {
     expect(result.data.profiles.focused?.["[codex]"]?.models?.sol).toEqual({ reasoning: "minimal" })
   })
 
+  test("#given a senpi block carrying a nested $schema annotation #when parsed #then the annotation is tolerated next to typed settings", () => {
+    // given
+    const config = {
+      "[senpi]": {
+        $schema: "https://example.com/some.schema.json",
+        agents: {
+          oracle: { model: "sol" },
+        },
+      },
+    }
+
+    // when
+    const result = OmoConfigSchema.safeParse(config)
+
+    // then
+    expect(result.success).toBe(true)
+    if (!result.success) throw new Error(result.error.message)
+    expect(result.data["[senpi]"]?.agents?.oracle?.model).toBe("sol")
+  })
+
+  test("#given an unknown key inside a senpi block #when parsed #then the strict schema still rejects it", () => {
+    // given
+    const config = { "[senpi]": { unknown_key: 1 } }
+
+    // when
+    const result = OmoConfigSchema.safeParse(config)
+
+    // then
+    expect(result.success).toBe(false)
+  })
+
   test("#given unknown root and profile overlay keys #when parsed #then the strict schema rejects both", () => {
     // given
     const unknownRoot = { unknown_key: 1 }

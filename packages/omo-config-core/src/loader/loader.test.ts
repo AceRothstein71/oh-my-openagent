@@ -263,6 +263,63 @@ describe("loadOmoConfig", () => {
     expect(result.config.task?.default_concurrency).toBe(3)
     expect(result.config.$schema).toBe(schemaUrl)
   })
+
+  test("#given a user config with migrated agents under a senpi block carrying a nested $schema #when loading the senpi view #then the layer loads cleanly and the settings apply", () => {
+    // given
+    const fixture = makeFixture()
+    const userPath = join(fixture.homeDir, ".omo", "omo.jsonc")
+    writeJsonc(
+      userPath,
+      `{
+        "[senpi]": {
+          "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/omo.schema.json",
+          "agents": { "explore": { "model": "kimi-coding/kimi-for-coding-highspeed" } }
+        }
+      }`,
+    )
+
+    // when
+    const result = loadOmoConfig({
+      cwd: fixture.cwd,
+      env: { HOME: fixture.homeDir },
+      harness: "senpi",
+      platform: "linux",
+    })
+
+    // then
+    expect(result.diagnostics).toEqual([])
+    expect(result.sources[0]).toEqual({ exists: true, loaded: true, path: userPath, scope: "user" })
+    expect(result.config.agents?.explore?.model).toBe("kimi-coding/kimi-for-coding-highspeed")
+  })
+
+  test("#given a user config keeping agent models under an opencode block #when loading the senpi view #then a compatibility diagnostic names the ignored keys", () => {
+    // given
+    const fixture = makeFixture()
+    writeJsonc(
+      join(fixture.homeDir, ".omo", "omo.jsonc"),
+      `{
+        "[opencode]": {
+          "agents": { "explore": { "model": "kimi-coding/kimi-for-coding-highspeed" } },
+          "categories": { "quick": { "model": "kimi-coding/kimi-for-coding-highspeed-unlocked" } }
+        }
+      }`,
+    )
+
+    // when
+    const result = loadOmoConfig({
+      cwd: fixture.cwd,
+      env: { HOME: fixture.homeDir },
+      harness: "senpi",
+      platform: "linux",
+    })
+
+    // then
+    expect(result.config.agents?.explore).toBeUndefined()
+    expect(result.diagnostics).toHaveLength(1)
+    expect(result.diagnostics[0]).toMatchObject({ kind: "compatibility", path: "(merged omo config)" })
+    expect(result.diagnostics[0].message).toContain("agents")
+    expect(result.diagnostics[0].message).toContain("categories")
+  })
 })
 
 test("#given cwd outside home #when loading #then ancestor project configs are read", () => {

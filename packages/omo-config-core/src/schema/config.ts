@@ -17,6 +17,7 @@ export { OmoHarnessIdSchema }
 export const OmoOpenCodeHarnessConfigSchema = z.record(z.string(), z.unknown())
 
 export const OmoTypedHarnessConfigSchema = z.object({
+  $schema: z.string().optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
   codegraph: OmoCodegraphSettingsLayerSchema.optional(),
@@ -27,6 +28,8 @@ export const OmoTypedHarnessConfigSchema = z.object({
   memory: OmoMemorySettingsLayerSchema.optional(),
   telemetry: OmoTelemetrySettingsLayerSchema.optional(),
 }).strict()
+
+export const TYPED_HARNESS_SETTING_KEYS = Object.keys(OmoTypedHarnessConfigSchema.shape).filter((key) => key !== "$schema")
 
 export const OmoConfigProfileSchema = z.object({
   categories: OmoCategoriesConfigSchema.optional(),
