@@ -76,7 +76,7 @@ describe("resolveClaudeNativeBinary", () => {
   describe("#given a nested global install with the binary under the engine's private node_modules", () => {
     describe("#when the resolver runs", () => {
       test("#then it still resolves the nested binary first", () => {
-        const { modulesRoot, senpiRoot } = nestedEngineTree()
+        const { senpiRoot } = nestedEngineTree()
         const binaryPath = installClaudeBinary(join(senpiRoot, "node_modules"), "darwin", "arm64")
 
         const resolved = resolveClaudeNativeBinary({ senpiRoot, env: {}, platform: "darwin", arch: "arm64" })
