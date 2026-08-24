@@ -8,7 +8,7 @@ import { resolveValidUltraworkVariant } from "./ultrawork-variant-availability"
 
 const CODE_BLOCK = /```[\s\S]*?```/g
 const INLINE_CODE = /`[^`]+`/g
-const ULTRAWORK_PATTERN = /\b(ultrawork|ulw)\b/i
+const ULTRAWORK_PATTERN = /\b(?:ultrawork|ulw(?!-(?:plan|research)))\b/i
 
 export function detectUltrawork(text: string): boolean {
   const clean = text.replace(CODE_BLOCK, "").replace(INLINE_CODE, "")

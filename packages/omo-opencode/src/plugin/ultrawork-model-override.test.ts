@@ -38,6 +38,14 @@ describe("detectUltrawork", () => {
     expect(detectUltrawork("ulw fix the bug")).toBe(true)
   })
 
+  test("should not detect compound skill keyword ulw-research", () => {
+    expect(detectUltrawork("please run ulw-research on this topic")).toBe(false)
+  })
+
+  test("should not detect compound skill keyword ulw-plan", () => {
+    expect(detectUltrawork("ulw-plan 해줘")).toBe(false)
+  })
+
   test("should be case insensitive", () => {
     expect(detectUltrawork("ULTRAWORK do something")).toBe(true)
   })

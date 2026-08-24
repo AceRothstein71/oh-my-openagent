@@ -547,6 +547,54 @@ describe("keyword-detector word boundary", () => {
     expect(output.message.variant).toBeUndefined()
     expect(toastCalls).not.toContain("Ultrawork Mode Activated")
   })
+
+  test("should NOT trigger ultrawork when prose contains the 'ulw-research' skill keyword", async () => {
+    // given - message whose only 'ulw' occurrence is the compound skill keyword ulw-research
+    setMainSession(undefined)
+
+    const toastCalls: string[] = []
+    const hook = createKeywordDetectorHook(createMockPluginInput({ toastCalls }))
+    const output = {
+      message: {} as Record<string, unknown>,
+      parts: [{ type: "text", text: "please run ulw-research on this topic" }],
+    }
+
+    // when - message containing ulw-research is processed
+    await hook["chat.message"](
+      { sessionID: "any-session" },
+      output
+    )
+
+    // then - ultrawork mode prompt must not be injected; ulw-research routes to its own skill
+    expect(output.message.variant).toBeUndefined()
+    expect(toastCalls).not.toContain("Ultrawork Mode Activated")
+    const text = expectTextPartText(output.parts)
+    expect(text).not.toContain("<ultrawork-mode>")
+  })
+
+  test("should NOT trigger ultrawork when prose contains the 'ulw-plan' skill keyword", async () => {
+    // given - message whose only 'ulw' occurrence is the compound skill keyword ulw-plan
+    setMainSession(undefined)
+
+    const toastCalls: string[] = []
+    const hook = createKeywordDetectorHook(createMockPluginInput({ toastCalls }))
+    const output = {
+      message: {} as Record<string, unknown>,
+      parts: [{ type: "text", text: "ulw-plan 해줘" }],
+    }
+
+    // when - message containing ulw-plan is processed
+    await hook["chat.message"](
+      { sessionID: "any-session" },
+      output
+    )
+
+    // then - ultrawork mode prompt must not be injected; ulw-plan routes to its own skill
+    expect(output.message.variant).toBeUndefined()
+    expect(toastCalls).not.toContain("Ultrawork Mode Activated")
+    const text = expectTextPartText(output.parts)
+    expect(text).not.toContain("<ultrawork-mode>")
+  })
 })
 
 describe("keyword-detector system-reminder filtering", () => {
