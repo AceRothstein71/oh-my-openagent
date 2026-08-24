@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { canonicalAgentDir } from "./agent-dir.js"
-import { packageManifest, packageRoot, readJson, resolveSenpi } from "./package-paths.js"
+import { packageManifest, packageRoot, readJson, resolveClaudeNativeBinary, resolveSenpi } from "./package-paths.js"
 import { needsSetupSuggestion } from "./setup-detect.js"
 
 const artifacts = [
@@ -85,6 +85,16 @@ export function runDoctor(inventory) {
       }
     } catch (error) {
       fail(lines, `senpi version: ${error.message}`)
+      failed = true
+    }
+
+    // A turn that picks a Claude model spawns exactly this executable; a missing one must fail
+    // diagnostics instead of surfacing as a broken session later.
+    try {
+      const claude = resolveClaudeNativeBinary({ senpiRoot: senpi.packageRoot })
+      pass(lines, `claude native binary: ${claude.path}`)
+    } catch (error) {
+      fail(lines, `claude native binary: ${error.message}`)
       failed = true
     }
   }

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs"
+import { createRequire } from "node:module"
 import { basename, dirname, join, parse } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -44,6 +45,59 @@ export function resolveSenpi() {
     throw new Error(`senpi CLI is missing at ${cliPath}; reinstall with: ${updateTarget().command}`)
   }
   return { cliPath, packageRoot: dirname(dirname(indexPath)) }
+}
+
+function isMuslLinuxRuntime(platform) {
+  if (platform !== "linux" || typeof process.report?.getReport !== "function") return false
+  const report = process.report.getReport()
+  if (report === null || typeof report !== "object" || !("header" in report)) return false
+  const header = report.header
+  return typeof header !== "object" || header === null || header.glibcVersionRuntime === undefined
+}
+
+// Mirrors the engine's claudeCodeExecutableCandidates so diagnostics name exactly the binary a
+// turn would spawn.
+function claudeNativeBinaryCandidates(platform, arch, preferMusl) {
+  const ext = platform === "win32" ? ".exe" : ""
+  if (platform === "linux") {
+    const glibc = `@anthropic-ai/claude-agent-sdk-linux-${arch}/claude${ext}`
+    const musl = `@anthropic-ai/claude-agent-sdk-linux-${arch}-musl/claude${ext}`
+    return preferMusl ? [musl, glibc] : [glibc, musl]
+  }
+  return [`@anthropic-ai/claude-agent-sdk-${platform}-${arch}/claude${ext}`]
+}
+
+export function resolveClaudeNativeBinary(options = {}) {
+  const {
+    senpiRoot = resolveSenpi().packageRoot,
+    env = process.env,
+    platform = process.platform,
+    arch = process.arch,
+    preferMusl = isMuslLinuxRuntime(platform),
+  } = options
+
+  const override = env.CLAUDE_CODE_EXECUTABLE
+  if (override) {
+    if (!existsSync(override)) {
+      throw new Error(`CLAUDE_CODE_EXECUTABLE points at ${override}, which does not exist; fix the path or unset it to fall back to the engine tree`)
+    }
+    return { path: override, source: "override" }
+  }
+
+  // Rooting resolution at the engine package lets Node's own ancestor walk cover hoisted global
+  // layouts, where platform packages land in the parent node_modules instead of omo-ai/node_modules.
+  const engineRequire = createRequire(join(senpiRoot, "package.json"))
+  for (const candidate of claudeNativeBinaryCandidates(platform, arch, preferMusl)) {
+    try {
+      return { path: engineRequire.resolve(candidate), source: "engine-tree" }
+    } catch {
+      // try next candidate
+    }
+  }
+  throw new Error(
+    `Claude native binary not found for ${platform}-${arch} under the pinned engine at ${senpiRoot}; `
+    + `reinstall with: ${updateTarget().command}, or set CLAUDE_CODE_EXECUTABLE to the claude binary inside @anthropic-ai/claude-agent-sdk-${platform}-${arch}`,
+  )
 }
 
 export function nearestNodeBin(startPath) {

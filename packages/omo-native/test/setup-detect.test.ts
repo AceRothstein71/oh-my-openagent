@@ -136,6 +136,14 @@ function createLauncherFixture(fixture: Fixture): string {
   }))
   write(join(senpiRoot, "dist", "index.js"), "export const fixture = true\n")
   write(join(senpiRoot, "dist", "cli.js"), "process.exit(0)\n")
+  const claudeExt = process.platform === "win32" ? ".exe" : ""
+  const claudePkgDir = join(
+    packageRoot, "node_modules", "@anthropic-ai", `claude-agent-sdk-${process.platform}-${process.arch}`,
+  )
+  write(join(claudePkgDir, "package.json"), JSON.stringify({
+    name: `@anthropic-ai/claude-agent-sdk-${process.platform}-${process.arch}`, version: "0.3.220",
+  }))
+  write(join(claudePkgDir, `claude${claudeExt}`), "fixture\n")
   for (const artifact of [
     "plugin/package.json", "plugin/extensions/omo.js", "plugin/runtime/lsp-daemon/dist/cli.js",
     "plugin/runtime/agent-toolkit/cli.js",

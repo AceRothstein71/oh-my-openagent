@@ -1,0 +1,9 @@
+PASS plugin manifest: plugin/package.json
+PASS extension: plugin/extensions/omo.js
+PASS lsp-daemon runtime: plugin/runtime/lsp-daemon/dist/cli.js
+PASS agent-toolkit runtime: plugin/runtime/agent-toolkit/cli.js
+PASS senpi CLI: /tmp/opencode/omo7063-e2e/hoisted-prefix/lib/node_modules/@code-yeongyu/senpi/dist/cli.js
+PASS senpi version 2026.8.23
+PASS claude native binary: /tmp/opencode/omo7063-e2e/override-claude
+INFO omo 5.0.0-0.beta.18 (engine: senpi 2026.8.23)
+exit=0

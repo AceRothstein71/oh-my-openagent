@@ -42,6 +42,18 @@ function createFixture(): Fixture {
   }))
   writeFile(join(senpiRoot, "dist", "index.js"), "export const fixture = true\n")
   writeFile(join(senpiRoot, "dist", "cli.js"), "process.exit(0)\n")
+  const claudeExt = process.platform === "win32" ? ".exe" : ""
+  const claudePkgDir = join(
+    packageRoot,
+    "node_modules",
+    "@anthropic-ai",
+    `claude-agent-sdk-${process.platform}-${process.arch}`,
+  )
+  writeFile(join(claudePkgDir, "package.json"), JSON.stringify({
+    name: `@anthropic-ai/claude-agent-sdk-${process.platform}-${process.arch}`,
+    version: "0.3.220",
+  }))
+  writeFile(join(claudePkgDir, `claude${claudeExt}`))
   for (const [, artifact] of artifacts) writeFile(join(packageRoot, artifact))
   const agentDir = join(root, "agent")
   mkdirSync(agentDir, { recursive: true })
@@ -69,8 +81,32 @@ describe("omo doctor", () => {
         for (const [label] of artifacts) expect(result.stdout).toContain(`PASS ${label}`)
         expect(result.stdout).toContain("PASS senpi CLI")
         expect(result.stdout).toContain("PASS senpi version 2026.8.9")
+        expect(result.stdout).toContain("PASS claude native binary: ")
         expect(result.stdout).not.toContain("FAIL")
       })
+    })
+  })
+
+  describe("#given the Claude native binary is missing from the engine tree", () => {
+    test("#then diagnostics fail closed and name the override and reinstall command", () => {
+      const fixture = createFixture()
+      rmSync(join(fixture.packageRoot, "node_modules", "@anthropic-ai"), { recursive: true, force: true })
+      const result = run(fixture)
+      expect(result.status).toBe(1)
+      expect(result.stdout).toContain("FAIL claude native binary")
+      expect(result.stdout).toContain("CLAUDE_CODE_EXECUTABLE")
+      expect(result.stdout).toContain("omo-ai@beta")
+    })
+  })
+
+  describe("#given CLAUDE_CODE_EXECUTABLE points at an existing binary", () => {
+    test("#then diagnostics report the override path as the one a turn would spawn", () => {
+      const fixture = createFixture()
+      const overridePath = join(fixture.root, "override", "claude")
+      writeFile(overridePath)
+      const result = run(fixture, { CLAUDE_CODE_EXECUTABLE: overridePath })
+      expect(result.status).toBe(0)
+      expect(result.stdout).toContain(`PASS claude native binary: ${overridePath}`)
     })
   })
 

@@ -1,0 +1,9 @@
+PASS plugin manifest: plugin/package.json
+PASS extension: plugin/extensions/omo.js
+PASS lsp-daemon runtime: plugin/runtime/lsp-daemon/dist/cli.js
+PASS agent-toolkit runtime: plugin/runtime/agent-toolkit/cli.js
+PASS senpi CLI: /tmp/opencode/omo7063-e2e/hoisted-prefix/lib/node_modules/@code-yeongyu/senpi/dist/cli.js
+PASS senpi version 2026.8.23
+FAIL claude native binary: Claude native binary not found for linux-x64 under the pinned engine at /tmp/opencode/omo7063-e2e/hoisted-prefix/lib/node_modules/@code-yeongyu/senpi; reinstall with: npm i -g omo-ai@beta, or set CLAUDE_CODE_EXECUTABLE to the claude binary inside @anthropic-ai/claude-agent-sdk-linux-x64
+INFO omo 5.0.0-0.beta.18 (engine: senpi 2026.8.23)
+exit=1
