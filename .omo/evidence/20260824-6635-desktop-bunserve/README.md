@@ -1,4 +1,4 @@
-# 20260824-6635-bun-serve-regression — evidence
+# 20260824-6635-desktop-bunserve - evidence
 
 Issue: code-yeongyu/oh-my-openagent#6635 (v4.x plugin silently fails to load on OpenCode Desktop's Node sidecar)
 Branch: issue/6635-desktop-bun-serve-regression (base dev @8833800ae)
@@ -56,3 +56,16 @@ GREEN (after fix: lazy `get template()` accessors in the six modules; loader fai
 - No live OpenCode Desktop (Electron/Windows) run: not available in this environment. The Node-sidecar load path is exercised via the repo's own audit subprocess instead; residual risk is limited to Desktop-specific path resolution inside app.asar, which the fix makes non-fatal for module load regardless.
 - Environment quirk documented: `bun install` prepare -> `bun run build` fails at build:materialize because git cannot resolve the pinned revision of the packages/shared-skills/upstreams/open-design submodule in this sandbox (pre-existing, unrelated). Only the index bundle + node-require-shim were built directly using the exact commands from script/build.ts's build graph. dist/skills was intentionally left absent to prove the fix removes the evaluation-time filesystem dependency.
 - No secrets, tokens, or env dumps are included; logs contain only test-runner output and file paths inside this worktree.
+
+## RE-VERIFICATION (crash recovery, 2026-08-24)
+
+The implementing session crashed after committing the fix (c108d8c) but before push. A recovery pass independently re-ran every gate on the committed tree before pushing:
+
+- `bun test packages/skills-loader-core` -> 232 pass / 0 fail / 548 expect() calls
+- `bun test packages/omo-opencode/src/features/builtin-skills/` -> 37 pass / 0 fail
+- `bun test packages/omo-opencode/src/shared/dist-bundle-bun-globals.test.ts` -> 5 pass / 0 fail (Node ESM import of dist/index.js with dist/skills absent)
+- `bun run typecheck` (tsgo root + script + all packages) -> exit 0
+- Source audit: `grep -rn "template:\s*loadSharedSkillTemplate(" packages/ --include="*.ts"` outside test files -> zero matches
+- `git merge-base HEAD origin/dev` -> 8833800ae (branch is exactly one commit ahead of the stated base)
+
+Evidence directory renamed from `20260824-6635-bun-serve-regression` to `20260824-6635-desktop-bunserve` to match the task spec slug; content unchanged apart from this title and section.
