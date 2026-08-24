@@ -9,6 +9,7 @@ import {
   buildSandboxTransform,
   SandboxUnavailableError,
   type SandboxPolicy,
+  type SandboxUsability,
 } from "./sandbox"
 
 const roots: string[] = []
@@ -62,6 +63,7 @@ function spawnArgs(worktree: string): ReflectionSpawnArgs {
 function build(policy: SandboxPolicy, options: {
   readonly platform?: NodeJS.Platform
   readonly which?: (command: string) => string | undefined
+  readonly probe?: (executable: string) => SandboxUsability
 } = {}) {
   const setup = fixture()
   return {
@@ -75,6 +77,7 @@ function build(policy: SandboxPolicy, options: {
       env: { PATH: process.env.PATH },
       platform: options.platform,
       which: options.which,
+      probe: options.probe,
     }),
   }
 }
@@ -276,5 +279,83 @@ describe("reflection worker OS sandbox", () => {
     expect(transformed).toBe(original)
     expect(transform.wasSandboxed).toBe(false)
     expect(transform.warning).toBeUndefined()
+  }, 30_000)
+
+  test("#given Linux with a bwrap that exists but cannot start a sandbox #when auto policy is used #then spawn arguments pass through with an explicit degradation warning", () => {
+    // given: bubblewrap is installed but its user-namespace setup fails (AppArmor restriction),
+    // which the issue reporter hit as `bwrap: setting up uid map: Permission denied` on every run.
+    const { setup, transform } = build("auto", {
+      platform: "linux",
+      which: () => "/usr/bin/bwrap",
+      probe: () => ({ usable: false, reason: "smoke test exited 1: setting up uid map: Permission denied" }),
+    })
+    const original = spawnArgs(setup.worktree)
+
+    // when
+    const transformed = transform(original)
+
+    // then
+    expect(transformed).toBe(original)
+    expect(transform.wasSandboxed).toBe(false)
+    expect(transform.warning).toContain("bwrap cannot start a sandbox")
+    expect(transform.warning).toContain("setting up uid map: Permission denied")
+    expect(transform.warning).toContain("running unsandboxed because policy is auto")
+  }, 30_000)
+
+  test("#given Linux with a bwrap that cannot start a sandbox #when required policy is used #then a typed unavailable error fails closed", () => {
+    // given
+    const setup = fixture()
+
+    // when
+    const buildRequired = () => buildSandboxTransform({
+      policy: "required",
+      worktreeDir: setup.worktree,
+      gitCommonDir: setup.gitCommonDir,
+      payloadPaths: setup.payloadPaths,
+      command: "/bin/sh",
+      env: { PATH: process.env.PATH },
+      platform: "linux",
+      which: () => "/usr/bin/bwrap",
+      probe: () => ({ usable: false, reason: "smoke test exited 1: setting up uid map: Permission denied" }),
+    })
+
+    // then
+    expect(buildRequired).toThrow(SandboxUnavailableError)
+    expect(buildRequired).toThrow("bwrap cannot start a sandbox")
+    expect(buildRequired).toThrow("setting up uid map: Permission denied")
+  }, 30_000)
+
+  test("#given Linux with a bwrap that passes the usability smoke test #when spawn arguments are transformed #then the sandbox still wraps the child", () => {
+    // given: guards against over-degrading; a healthy bwrap must keep sandboxing.
+    const { setup, transform } = build("auto", {
+      platform: "linux",
+      which: () => "/usr/bin/bwrap",
+      probe: () => ({ usable: true }),
+    })
+
+    // when
+    const transformed = transform(spawnArgs(setup.worktree))
+
+    // then
+    expect(transform.wasSandboxed).toBe(true)
+    expect(transform.warning).toBeUndefined()
+    expect(transformed.command).toBe("/usr/bin/bwrap")
+  }, 30_000)
+
+  test("#given off policy with a probe present #when the transform is built #then the probe never runs", () => {
+    // given
+    const { setup, transform } = build("off", {
+      platform: "linux",
+      which: () => "/usr/bin/bwrap",
+      probe: () => { throw new Error("must not probe") },
+    })
+    const original = spawnArgs(setup.worktree)
+
+    // when
+    const transformed = transform(original)
+
+    // then
+    expect(transformed).toBe(original)
+    expect(transform.wasSandboxed).toBe(false)
   }, 30_000)
 })

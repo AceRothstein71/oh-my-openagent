@@ -1,8 +1,56 @@
+import { spawnSync } from "node:child_process"
 import { accessSync, constants, existsSync, mkdirSync, realpathSync } from "node:fs"
 import { basename, delimiter, dirname, isAbsolute, join } from "node:path"
 
 import type { FactsSpawnArgs, ReflectionSpawnArgs } from "./worker/spawn"
 import { SandboxUnavailableError, type SandboxPolicy } from "./sandbox-contracts"
+
+export type SandboxUsability =
+  | { readonly usable: true }
+  | { readonly usable: false; readonly reason: string }
+
+interface BwrapSmokeResult {
+  readonly exitCode: number | null
+  readonly timedOut: boolean
+  readonly errorMessage?: string
+  readonly stderr: string
+}
+
+const BWRAP_SMOKE_TIMEOUT_MS = 10_000
+const BWRAP_SMOKE_REASON_STDERR_CHARS = 200
+// One verdict per absolute executable path per process: the probe spawns a real child, so the
+// facts surface (which rebuilds its transform per launch) must not pay it every time.
+const bwrapUsabilityCache = new Map<string, SandboxUsability>()
+
+export function classifyBwrapSmoke(result: BwrapSmokeResult): SandboxUsability {
+  if (!result.timedOut && result.exitCode === 0) return { usable: true }
+  const cause = result.timedOut
+    ? `smoke test timed out after ${BWRAP_SMOKE_TIMEOUT_MS}ms`
+    : result.errorMessage !== undefined
+      ? `smoke test failed to run: ${result.errorMessage}`
+      : `smoke test exited ${result.exitCode ?? "unknown"}`
+  const stderrTail = result.stderr.trimEnd().slice(-BWRAP_SMOKE_REASON_STDERR_CHARS)
+  return { usable: false, reason: stderrTail === "" ? cause : `${cause}: ${stderrTail}` }
+}
+
+export function probeBwrapUsability(executable: string): SandboxUsability {
+  const cached = bwrapUsabilityCache.get(executable)
+  if (cached !== undefined) return cached
+  const smoked = spawnSync(
+    executable,
+    ["--ro-bind", "/", "/", "--dev-bind", "/dev", "/dev", "--tmpfs", "/tmp", "true"],
+    { timeout: BWRAP_SMOKE_TIMEOUT_MS, encoding: "utf8", windowsHide: true },
+  )
+  const errorCode = smoked.error !== undefined && "code" in smoked.error ? smoked.error.code : undefined
+  const usability = classifyBwrapSmoke({
+    exitCode: smoked.status,
+    timedOut: errorCode === "ETIMEDOUT" || (smoked.status === null && smoked.signal !== null),
+    ...(smoked.error === undefined ? {} : { errorMessage: smoked.error.message }),
+    stderr: typeof smoked.stderr === "string" ? smoked.stderr : "",
+  })
+  bwrapUsabilityCache.set(executable, usability)
+  return usability
+}
 
 export interface PathSandboxInput {
   readonly surface: "reflection" | "facts"
@@ -22,6 +70,12 @@ export interface PathSandboxInput {
   readonly errorRethrow?: (error: SandboxUnavailableError) => never
   readonly platform?: NodeJS.Platform
   readonly which?: (command: string) => string | undefined
+  /**
+   * Verifies the resolved sandbox executable can actually start a sandbox, not merely that it
+   * exists. Defaults to the real bwrap smoke test only when `which` is not injected, so tests
+   * that fake executable resolution keep their existence-only semantics.
+   */
+  readonly probe?: (executable: string) => SandboxUsability
 }
 
 export interface GenericSandboxTransform<T> {
@@ -61,6 +115,19 @@ export function buildPathSandboxTransform<T extends ReflectionSpawnArgs | FactsS
   }
 
   const writableDirs = input.writableDirs.map(canonicalPath)
+  if (platform === "linux") {
+    const probe = input.probe ?? (input.which === undefined ? probeBwrapUsability : undefined)
+    const usability = probe?.(executable)
+    if (usability !== undefined && !usability.usable) {
+      const reason = `bwrap cannot start a sandbox: ${usability.reason}`
+      if (input.policy === "required") {
+        const error = new SandboxUnavailableError(platform, reason)
+        if (input.errorRethrow !== undefined) input.errorRethrow(error)
+        throw error
+      }
+      return identityTransform(`${input.surface} sandbox unavailable on ${platform}: ${reason}; running unsandboxed because policy is auto`)
+    }
+  }
   if (platform === "darwin") {
     const payloads = input.payloadPaths.map(canonicalPath)
     const foreignRoots = (input.foreignRoots ?? []).map(canonicalPath)

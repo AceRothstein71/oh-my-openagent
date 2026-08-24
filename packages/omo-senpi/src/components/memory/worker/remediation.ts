@@ -23,5 +23,10 @@ export function reflectionRemediation(reason: string | undefined, detail: string
   if (combined.includes("api key") || combined.includes("auth_missing")) {
     return "run /login <provider>"
   }
+  // Bubblewrap died during its own sandbox setup, before the reflection child started; run-dir
+  // cleanup may already have removed child-stderr.log, so point at the config escape hatch instead.
+  if (combined.includes("bwrap") || combined.includes("bubblewrap") || combined.includes("setting up uid map")) {
+    return "bubblewrap cannot start a sandbox on this host; set memory.reflection.sandbox to \"off\" in omo.json or restore unprivileged user namespace access"
+  }
   return "inspect runtime/reflection-sessions/<runId>/child-stderr.log"
 }

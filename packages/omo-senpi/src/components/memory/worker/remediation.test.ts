@@ -44,6 +44,21 @@ describe("reflectionRemediation", () => {
     })
   })
 
+  describe("#given a bubblewrap setup failure", () => {
+    // bwrap dies before the reflection child starts (AppArmor blocking unprivileged user
+    // namespaces), and cleanup may already have removed the run directory, so the generic
+    // child-stderr.log pointer would reference a file that no longer exists.
+    test("#when remediated #then it names the sandbox escape hatch instead of the removed child log", () => {
+      // when
+      const hint = reflectionRemediation("child_exit", "bwrap: setting up uid map: Permission denied")
+
+      // then
+      expect(hint).toContain("memory.reflection.sandbox")
+      expect(hint).toContain("bubblewrap")
+      expect(hint).not.toContain("child-stderr.log")
+    })
+  })
+
   describe("#given the pre-existing failure taxonomies", () => {
     test("#when the child could not see the model #then the category/model hint is kept", () => {
       expect(reflectionRemediation("child_exit", "Model not found: apitopia/kimi")).toContain("memory.reflection")

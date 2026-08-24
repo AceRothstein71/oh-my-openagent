@@ -7,13 +7,14 @@ import {
   type SandboxPolicy,
   type SandboxTransform,
 } from "./sandbox-contracts"
-import { buildPathSandboxTransform } from "./sandbox-platform"
+import { buildPathSandboxTransform, type SandboxUsability } from "./sandbox-platform"
 
 export {
   SandboxUnavailableError,
   type SandboxPolicy,
   type SandboxTransform,
 } from "./sandbox-contracts"
+export type { SandboxUsability } from "./sandbox-platform"
 
 export function buildSandboxTransform(input: {
   readonly policy: SandboxPolicy
@@ -27,6 +28,7 @@ export function buildSandboxTransform(input: {
   readonly errorRethrow?: (error: SandboxUnavailableError) => never
   readonly platform?: NodeJS.Platform
   readonly which?: (command: string) => string | undefined
+  readonly probe?: (executable: string) => SandboxUsability
 }): SandboxTransform {
   return buildPathSandboxTransform({
     surface: "reflection",
@@ -44,6 +46,7 @@ export function buildSandboxTransform(input: {
     errorRethrow: input.errorRethrow,
     platform: input.platform,
     which: input.which,
+    probe: input.probe,
   })
 }
 
