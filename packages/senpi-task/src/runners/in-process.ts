@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import { createAgentSession, SessionManager, type CreateAgentSessionOptions, type ToolDefinition } from "@code-yeongyu/senpi"
 
 import type { ResolvedModelRecord } from "../state"
+import type { ChildServiceTier } from "../senpi/service-tier"
 import { createChildHandle, createRestoredChildHandle, type ChildHandle, type ChildSession } from "./in-process/child-handle"
 import { buildChildSessionOptions, requireChildSessionDir, resolveMemberScopedToolNames } from "./in-process/child-options"
 import { RunnerError } from "./in-process/runner-error"
@@ -46,6 +47,10 @@ export type ChildSpec = {
   readonly modelRuntime?: CreateAgentSessionOptions["modelRuntime"]
   readonly model?: CreateAgentSessionOptions["model"]
   readonly thinkingLevel?: CreateAgentSessionOptions["thinkingLevel"]
+  // The parent session's effective service tier at spawn time (issue #6795). When set, the child
+  // gets a single-injection extension that puts `service_tier` on the wire for codex/openai
+  // responses models - children load no discovered extensions, so nothing else would.
+  readonly serviceTier?: ChildServiceTier
   readonly selectedModel?: string
   readonly requestedModel?: ResolvedModelRecord
   readonly fallbackModels?: readonly ResolvedModelRecord[]

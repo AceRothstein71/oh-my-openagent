@@ -63,6 +63,8 @@ export {
 } from "./progress"
 export { createMinimalSenpiResourceLoader } from "./senpi/minimal-resource-loader"
 export type { MinimalSenpiResourceLoaderOptions } from "./senpi/minimal-resource-loader"
+export { createChildServiceTierExtension, resolveParentServiceTier } from "./senpi/service-tier"
+export type { ChildServiceTier, ParentServiceTierContext } from "./senpi/service-tier"
 export {
   MEMBER_IDENTITY_ENV,
   SenpiTeamSpecError,

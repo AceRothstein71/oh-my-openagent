@@ -1,14 +1,19 @@
-import type { ChildModelRegistry, ParentState } from "@oh-my-opencode/senpi-task"
+import type { ChildModelRegistry, ChildServiceTier, ParentState } from "@oh-my-opencode/senpi-task"
 
 // Structural slice of senpi's ExtensionContext the task runtime reads. ExtensionContext satisfies it;
 // tests pass a tiny fake. `ui` lives on ExtensionContext (event/command contexts), NOT ExtensionAPI,
 // so it is captured here on entry and cleared on switch/shutdown (the todo-18 bridge constraint).
 // modelRegistry is the CONCRETE senpi ModelRegistry: the planner reads it through its structural port,
 // and in-process children reuse this exact instance so they inherit the parent's live provider set.
+// The service-tier facts (agentDir/model/serviceTier/isProjectTrusted) feed issue #6795 inheritance:
+// children resolve the parent's effective tier from the same state the senpi service-tier extension
+// reads, at spawn time.
 export interface LiveTaskContext {
   readonly cwd?: string
+  readonly agentDir?: string
   readonly modelRegistry?: ChildModelRegistry
   readonly model?: unknown
+  readonly serviceTier?: ChildServiceTier
   readonly ui?: CapturedUi
   readonly mode?: string
   readonly hasUI?: boolean
@@ -17,6 +22,7 @@ export interface LiveTaskContext {
     getSessionFile?(): string | undefined
   }
   isIdle?(): boolean
+  isProjectTrusted?(): boolean
 }
 
 // The slice of senpi's ExtensionUIContext the task component drives (setStatus/setWidget power the
@@ -46,6 +52,10 @@ export class TaskRuntimeContext {
   #sessionId: string | undefined
   #sessionFile: string | undefined
   #mode: string | undefined
+  #agentDir: string | undefined
+  #model: unknown
+  #serviceTier: ChildServiceTier | undefined
+  #isProjectTrusted: (() => boolean) | undefined
 
   constructor(cwd: string) {
     this.#cwd = cwd
@@ -61,6 +71,10 @@ export class TaskRuntimeContext {
       this.#sessionFile = ctx.sessionManager.getSessionFile?.()
     }
     if (typeof ctx.isIdle === "function") this.#idle = ctx.isIdle()
+    if (typeof ctx.agentDir === "string" && ctx.agentDir.length > 0) this.#agentDir = ctx.agentDir
+    if (ctx.model !== undefined) this.#model = ctx.model
+    if (ctx.serviceTier !== undefined) this.#serviceTier = ctx.serviceTier
+    if (typeof ctx.isProjectTrusted === "function") this.#isProjectTrusted = ctx.isProjectTrusted
   }
 
   clearUi(): void {
@@ -75,8 +89,24 @@ export class TaskRuntimeContext {
     return this.#cwd
   }
 
+  agentDir(): string | undefined {
+    return this.#agentDir
+  }
+
   modelRegistry(): ChildModelRegistry | undefined {
     return this.#modelRegistry
+  }
+
+  model(): unknown {
+    return this.#model
+  }
+
+  serviceTier(): ChildServiceTier | undefined {
+    return this.#serviceTier
+  }
+
+  isProjectTrusted(): (() => boolean) | undefined {
+    return this.#isProjectTrusted
   }
 
   ui(): CapturedUi | undefined {

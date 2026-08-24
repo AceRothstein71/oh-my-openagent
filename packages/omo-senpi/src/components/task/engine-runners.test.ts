@@ -12,7 +12,7 @@ import {
   type ChildSpec,
 } from "@oh-my-opencode/senpi-task"
 
-import { DEFAULT_RUNNER_FACTORIES, TASK_CHILD_UI_ONLY_TOOL_NAMES } from "./engine-runners"
+import { DEFAULT_RUNNER_FACTORIES, resolveRuntimeServiceTier, TASK_CHILD_UI_ONLY_TOOL_NAMES } from "./engine-runners"
 import { TaskRuntimeContext } from "./runtime-context"
 
 // The adapter keeps the main Senpi entry type-only, so the stub tools below carry a local schema
@@ -123,5 +123,40 @@ describe("task child memory tool exclusion", () => {
 
     // then
     expect(typeof runner.start).toBe("function")
+  })
+})
+
+describe("resolveRuntimeServiceTier", () => {
+  test("#given a runtime whose captured parent model is remembered as priority #when the tier is resolved #then priority comes back", async () => {
+    // given
+    const { SettingsManager } = await import("@code-yeongyu/senpi")
+    const root = mkdtempSync(join(tmpdir(), "omo-senpi-tier-"))
+    tempDirs.push(root)
+    const agentDir = join(root, "agent")
+    await import("node:fs").then((fs) => fs.mkdirSync(agentDir, { recursive: true }))
+    const settings = SettingsManager.create(root, agentDir)
+    settings.setModelServiceTier("openai-codex", "gpt-5.6-luna", "priority")
+    await settings.flush()
+
+    const runtime = new TaskRuntimeContext(root)
+    runtime.captureFrom({
+      cwd: root,
+      agentDir,
+      model: { api: "openai-codex-responses", provider: "openai-codex", id: "gpt-5.6-luna" },
+    })
+
+    // when
+    const tier = resolveRuntimeServiceTier(runtime)
+
+    // then
+    expect(tier).toBe("priority")
+  })
+
+  test("#given a runtime with no captured model #when the tier is resolved #then nothing is inherited", () => {
+    // given
+    const runtime = new TaskRuntimeContext("/project")
+
+    // when / then
+    expect(resolveRuntimeServiceTier(runtime)).toBeUndefined()
   })
 })

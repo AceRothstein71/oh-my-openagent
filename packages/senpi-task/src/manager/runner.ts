@@ -2,6 +2,7 @@ import type { CreateAgentSessionOptions } from "@code-yeongyu/senpi"
 
 import type { ChildHandle as InProcessChildHandle } from "../runners/in-process/child-handle"
 import { RunnerError, type ChildSpec } from "../runners/in-process"
+import type { ChildServiceTier } from "../senpi/service-tier"
 import { resolveChildSessionDir } from "../runners/rpc/spawn"
 import type { RpcChildHandle, RpcRunnerSpec } from "../runners/types"
 import { adaptInProcessHandle, adaptRpcHandle, type ManagedChildHandle } from "./child-handle"
@@ -16,6 +17,7 @@ export type InProcessSessionContext = {
   readonly modelRuntime?: ChildSpec["modelRuntime"]
   readonly model?: CreateAgentSessionOptions["model"]
   readonly thinkingLevel?: CreateAgentSessionOptions["thinkingLevel"]
+  readonly serviceTier?: ChildServiceTier
 }
 
 export type ResumeSessionContextResult =
@@ -95,6 +97,7 @@ function toChildSpec(spec: ManagedStartSpec, context: InProcessSessionContext): 
     ...(context.modelRuntime !== undefined ? { modelRuntime: context.modelRuntime } : {}),
     ...(context.model !== undefined ? { model: context.model } : {}),
     ...(context.thinkingLevel !== undefined ? { thinkingLevel: context.thinkingLevel } : {}),
+    ...(context.serviceTier !== undefined ? { serviceTier: context.serviceTier } : {}),
     ...(spec.model !== undefined ? { selectedModel: spec.model } : {}),
     ...(spec.requestedModel !== undefined ? { requestedModel: spec.requestedModel } : {}),
     ...(spec.fallbackModels !== undefined ? { fallbackModels: spec.fallbackModels } : {}),

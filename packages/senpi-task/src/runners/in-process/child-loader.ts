@@ -1,6 +1,7 @@
 import { createExtensionRuntime, type ResourceLoader } from "@code-yeongyu/senpi"
 
 import { createMinimalSenpiResourceLoader } from "../../senpi/minimal-resource-loader"
+import { createChildServiceTierExtension, type ChildServiceTier } from "../../senpi/service-tier"
 
 // CHILD EXTENSION SUPPRESSION.
 //
@@ -16,6 +17,16 @@ import { createMinimalSenpiResourceLoader } from "../../senpi/minimal-resource-l
 // v1 tradeoff: children run WITHOUT senpi builtin extensions (no compaction / goal / todo tools
 // inside children); the core read/bash/edit tools plus the injected customTools remain. Skills
 // and context per spec are still delivered through prompt injection.
-export function createChildResourceLoader(): ResourceLoader {
-  return createMinimalSenpiResourceLoader({ runtime: createExtensionRuntime() })
+export function createChildResourceLoader(input?: {
+  readonly cwd: string
+  readonly serviceTier?: ChildServiceTier
+}): ResourceLoader {
+  return createMinimalSenpiResourceLoader({
+    runtime: createExtensionRuntime(),
+    ...(input?.serviceTier !== undefined && {
+      extensions: [
+        createChildServiceTierExtension({ registrationCwd: input.cwd, serviceTier: input.serviceTier }),
+      ],
+    }),
+  })
 }

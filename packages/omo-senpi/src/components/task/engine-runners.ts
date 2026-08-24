@@ -10,7 +10,9 @@ import {
   createRpcManagedRunner,
   mapOmoConfigAgents,
   parseExtensionEntries,
+  resolveParentServiceTier,
   type AgentDefinition,
+  type ChildServiceTier,
   type ManagedRunner,
 } from "@oh-my-opencode/senpi-task"
 
@@ -57,8 +59,26 @@ function buildInProcessRunner(build: RunnerBuildContext): ManagedRunner {
     uiOnlyToolNames: TASK_CHILD_UI_ONLY_TOOL_NAMES,
     depthPolicy: { maxDepth: Math.max(build.settings.max_depth + 1, 1) },
   })
-  const context = createParentRegistrySessionContext(() => build.runtime.modelRegistry())
+  const context = createParentRegistrySessionContext(
+    () => build.runtime.modelRegistry(),
+    () => resolveRuntimeServiceTier(build.runtime),
+  )
   return createInProcessManagedRunner(inProcess, context)
+}
+
+/**
+ * The parent's effective service tier resolved from the captured live-context facts (issue #6795).
+ * The remembered per-model tier is read FRESH at spawn time, so an in-session `/fast` toggle is
+ * honored even though the context snapshot was taken earlier.
+ */
+export function resolveRuntimeServiceTier(runtime: TaskRuntimeContext): ChildServiceTier | undefined {
+  return resolveParentServiceTier({
+    cwd: runtime.cwd(),
+    ...(runtime.agentDir() !== undefined && { agentDir: runtime.agentDir() }),
+    model: runtime.model(),
+    ...(runtime.serviceTier() !== undefined && { serviceTier: runtime.serviceTier() }),
+    ...(runtime.isProjectTrusted() !== undefined && { isProjectTrusted: runtime.isProjectTrusted() }),
+  })
 }
 
 function buildProcessRunner(_build: RunnerBuildContext): ManagedRunner {

@@ -331,3 +331,72 @@ describe("resolveResumeContext", () => {
     }
   })
 })
+
+describe("createParentRegistrySessionContext service-tier resolver", () => {
+  test("#given a tier resolver #when a start context is built #then the resolved tier rides the context", () => {
+    // given
+    const registry = registryWithMockProvider()
+    const spec = baseSpec({ model: "omo-mock/mock-1" })
+    const provide = createParentRegistrySessionContext(
+      () => registry,
+      () => "priority",
+    )
+
+    // when
+    const context = provide(spec)
+
+    // then
+    expect(context.serviceTier).toBe("priority")
+  })
+
+  test("#given a tier resolver returning undefined #when a start context is built #then no tier key is set", () => {
+    // given
+    const registry = registryWithMockProvider()
+    const spec = baseSpec({ model: "omo-mock/mock-1" })
+    const provide = createParentRegistrySessionContext(() => registry, () => undefined)
+
+    // when
+    const context = provide(spec)
+
+    // then
+    expect("serviceTier" in context).toBe(false)
+  })
+
+  test("#given no tier resolver at all #when a start context is built #then no tier key is set", () => {
+    // given
+    const registry = registryWithMockProvider()
+    const spec = baseSpec({ model: "omo-mock/mock-1" })
+    const provide = createParentRegistrySessionContext(() => registry)
+
+    // when
+    const context = provide(spec)
+
+    // then
+    expect("serviceTier" in context).toBe(false)
+  })
+
+  test("#given a tier resolver #when a resume context resolves #then the tier rides the resumed child's context too", () => {
+    // given
+    const registry = registryWithMockProvider()
+    const resolvedModel: ResolvedModelRecord = {
+      provider: "omo-mock",
+      model_id: "mock-1",
+      display: "Mock 1",
+      source: "explicit",
+    }
+    const spec = baseSpec({ resolvedModel })
+
+    // when
+    const result = resolveResumeContext(
+      () => registry,
+      spec,
+      () => "priority",
+    )
+
+    // then
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.context.serviceTier).toBe("priority")
+    }
+  })
+})

@@ -87,7 +87,10 @@ export function buildChildSessionOptions(input: BuildChildSessionOptionsInput): 
   return {
     cwd: spec.cwd,
     sessionManager,
-    resourceLoader: createChildResourceLoader(),
+    resourceLoader: createChildResourceLoader({
+      cwd: spec.cwd,
+      ...(spec.serviceTier !== undefined && { serviceTier: spec.serviceTier }),
+    }),
     customTools,
     ...(spec.agentDir !== undefined && { agentDir: spec.agentDir }),
     ...(spec.authStorage !== undefined && { authStorage: spec.authStorage }),

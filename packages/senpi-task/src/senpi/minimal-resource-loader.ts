@@ -1,4 +1,5 @@
 import type {
+  Extension,
   ExtensionRuntime,
   LoadExtensionsResult,
   ResourceLoader,
@@ -6,11 +7,13 @@ import type {
 
 export type MinimalSenpiResourceLoaderOptions = {
   readonly runtime: ExtensionRuntime
+  /** The ONLY extensions a child may load - deliberately empty by default (child suppression). */
+  readonly extensions?: readonly Extension[]
 }
 
 export function createMinimalSenpiResourceLoader(options: MinimalSenpiResourceLoaderOptions): ResourceLoader {
   const extensionsResult: LoadExtensionsResult = {
-    extensions: [],
+    extensions: [...(options.extensions ?? [])],
     errors: [],
     runtime: options.runtime,
   }

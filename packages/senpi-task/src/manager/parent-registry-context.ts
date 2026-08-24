@@ -1,6 +1,7 @@
 import type { CreateAgentSessionOptions } from "@code-yeongyu/senpi"
 
 import { asSenpiThinkingLevel } from "../senpi/thinking-level"
+import type { ChildServiceTier } from "../senpi/service-tier"
 import type {
   InProcessSessionContext,
   InProcessSessionContextProvider,
@@ -24,32 +25,43 @@ type ModelFinder<TModel> = {
   readonly find: (provider: string, modelId: string) => TModel | undefined
 }
 
+// Returns undefined before the first live context so no tier is inherited from stale facts.
+export type ParentServiceTierResolver = () => ChildServiceTier | undefined
+
 /**
  * Build the per-child in-process session context provider that threads the PARENT session's model
  * registry (and the auth storage bound to it) into every in-process child, then resolves the plan's
  * `provider/modelId` model reference to a concrete Model against that same registry. This closes the
  * W2-V gap where a child created with the parent's default agent-dir resolution never saw a provider
  * registered on the live parent session and failed with "No API key found".
+ *
+ * `resolveServiceTier` (issue #6795) threads the parent's effective service tier onto every child
+ * context - start AND resume - so an in-process child request carries the same `service_tier` the
+ * parent would put on the wire.
  */
 export function createParentRegistrySessionContext(
   resolveRegistry: ParentModelRegistryResolver,
+  resolveServiceTier?: ParentServiceTierResolver,
 ): InProcessSessionContextProvider {
+  const serviceTier = resolveServiceTier ?? (() => undefined)
   const provide = (spec: ManagedStartSpec): InProcessSessionContext => {
     const registry = resolveRegistry()
     if (registry === undefined) return {}
     const model = spec.model === undefined ? undefined : findModelReference(registry, spec.model)
     const modelRuntime = registry.modelRuntime
     const thinkingLevel = asSenpiThinkingLevel(spec.variant)
+    const tier = serviceTier()
     return {
       modelRegistry: registry,
       authStorage: registry.authStorage,
       ...(modelRuntime !== undefined && { modelRuntime }),
       ...(model !== undefined && { model }),
       ...(thinkingLevel !== undefined && { thinkingLevel }),
+      ...(tier !== undefined && { serviceTier: tier }),
     }
   }
   return Object.assign(provide, {
-    resolveResumeContext: (spec: ManagedStartSpec) => resolveResumeContext(resolveRegistry, spec),
+    resolveResumeContext: (spec: ManagedStartSpec) => resolveResumeContext(resolveRegistry, spec, serviceTier),
   })
 }
 
@@ -75,6 +87,7 @@ export function findModelReference<TModel>(registry: ModelFinder<TModel>, modelR
 export function resolveResumeContext(
   resolveRegistry: ParentModelRegistryResolver,
   spec: ManagedStartSpec,
+  resolveServiceTier?: ParentServiceTierResolver,
 ): ResumeContextResult {
   const registry = resolveRegistry()
   if (registry === undefined) {
@@ -98,12 +111,14 @@ export function resolveResumeContext(
 
   const modelRuntime = registry.modelRuntime
   const thinkingLevel = asSenpiThinkingLevel(spec.variant)
+  const tier = resolveServiceTier?.()
   const context: InProcessSessionContext = {
     modelRegistry: registry,
     authStorage: registry.authStorage,
     ...(modelRuntime !== undefined && { modelRuntime }),
     model,
     ...(thinkingLevel !== undefined && { thinkingLevel }),
+    ...(tier !== undefined && { serviceTier: tier }),
   }
   return { ok: true, context }
 }
