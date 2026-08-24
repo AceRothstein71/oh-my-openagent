@@ -169,6 +169,44 @@ Each sub-task message must include:
 
 The 9 ultraqa classes are trigger-mapped: new input parsing → malformed input; untrusted external text → prompt injection; resumable or long-running flows → cancel/resume; generated or cached artifacts → stale state; uncommitted user files in scope → dirty worktree; long external commands → hung or long commands; new or timing-sensitive tests → flaky tests; log-based success claims → misleading success output; mid-operation interrupts → repeated interruptions. A class applies when its trigger fact holds. Probe each applicable class; record the rest as not-applicable with a one-line reason.
 
+### Mutation capability routing (restricted-mutation repositories)
+
+Some repositories restrict which tools may mutate product files (for example a `MUTATION_POLICY.md` permitting only `apply_patch`). Delegated workers do not necessarily inherit the parent session's builtin tools (in-process task children load no builtin extensions at all), so a worker can lack `apply_patch` entirely while policy forbids `edit`/`write`: that lane has zero legal mutation paths and ends BLOCKED no matter how often it is re-prompted. Route around it instead of retrying blind:
+
+1. **Probe capability before the first implementation dispatch**, and again whenever a worker reports being blocked without a legal mutator: ask the worker to list the file-mutating tools it actually has. Never assume it holds your tool surface.
+2. **Route by what the probe returns.** A worker holding policy-legal `edit`/`write` implements directly. In an apply_patch-only repository whose worker lacks `apply_patch`, run the **patch-broker flow**: the worker authors a PatchProposal as message text (touched paths, base commit, test patch, production patch), you reject any path outside the task's scope, then apply the patch VERBATIM with `git apply` inside the task worktree, and the SAME worker proves the test patch RED and the production patch GREEN plus its QA channels. You applying a worker-authored patch verbatim is delivery mechanics, not implementation: you never author, edit, extend, or repair a single hunk yourself.
+3. **Fail the broker closed.** An apply failure or a stale base commit goes back to the SAME worker for regeneration with the exact failure output; you never hand-repair a stale proposal. Only the same worker's verified GREEN closes the lane.
+
+<!-- start-work-mutation-capability-contract -->
+```json
+{
+  "schema_version": 1,
+  "capability_probe": {
+    "when": ["before_first_implementation_dispatch", "on_worker_blocked_without_legal_mutator"],
+    "method": "worker_reports_its_actual_mutating_tool_names",
+    "known_mutating_tools": ["edit", "write", "apply_patch"]
+  },
+  "routing": [
+    { "flow": "edit_write", "when": "worker_has_edit_or_write_and_repo_policy_permits_them" },
+    { "flow": "patch_broker", "when": "repo_policy_permits_only_apply_patch_and_worker_lacks_apply_patch" }
+  ],
+  "patch_broker": {
+    "proposal_fields": ["paths", "base_commit", "test_patch", "production_patch"],
+    "author": "worker",
+    "applier": "orchestrator",
+    "apply_is_verbatim": true,
+    "scope_check": "reject_paths_outside_task_scope_before_apply",
+    "on_apply_failure": "return_to_same_worker_for_regeneration",
+    "on_stale_base": "never_repaired_by_orchestrator_regenerate_with_worker",
+    "verification": "same_worker_proves_test_patch_red_then_production_patch_green"
+  },
+  "forbidden": [
+    "orchestrator_authors_or_edits_product_content",
+    "orchestrator_repairs_a_stale_proposal"
+  ]
+}
+```
+
 ## Phase 4: Verify and record evidence
 
 For each checkbox, complete all five gates before marking it done:
