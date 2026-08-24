@@ -13,6 +13,7 @@ The memory architecture - the git-backed memory filesystem, the memory tool sema
 | `index.ts` | Component factory: capability checks, config latch, session binding (`senpi-memory.session-binding`), fail-closed resume conflicts, supervisor refcount, shutdown cleanup. |
 | `wiring.ts` | Registration surface: prompt handler, journal routing, tools, guard, skills scope, commands, trigger wiring, completion renderer/consumption, policy registration, status refresh. |
 | `identity-runtime.ts` | Per-identity reflection assembly: reservation store (trigger engine), worker runner, lazy OS-sandbox transform. |
+| `reflection-run-id.ts` | Mints reflection run ids as one past the highest id still on disk (completion records, run directories, live reservation state), the facts lane's attempt-sequence precedent. A per-process counter restarted at 1 each launch and re-minted retired ids whose durable completion records then collided ("Reflection completion record mismatch"), wedging launch, reconcile, and finalization permanently. |
 | `prompt.ts` | Per-run compiled-memory injection via `before_agent_start`; composes the incoming prompt, sentinel-delimited block, (template,HEAD) cache. |
 | `tools.ts` | `memory` + `memory_apply_patch` ToolDefinitions over the core engines under the `memory-write` cross-process lock; execute-time activation gating. |
 | `journal-wiring.ts` | `agent_settled` branch-delta scan + `session_start` crash reconcile into per-session transcript journals (v3_assistant_steps cursor). |
