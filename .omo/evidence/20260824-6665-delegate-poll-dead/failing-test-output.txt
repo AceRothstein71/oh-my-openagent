@@ -1,0 +1,35 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-opencode/src/tools/delegate-task/sync-session-poller.stall-detection.test.ts:
+89 |             stallWindowMs: 50,
+90 |           })
+91 |         })
+92 | 
+93 |         // then: resolved via the stall path, not the 30-min/5s inactivity timeout
+94 |         expect(result).toContain("stalled")
+                            ^
+error: expect(received).toContain(expected)
+
+Expected to contain: "stalled"
+Received: "Poll inactivity timeout reached after 5000ms without active OpenCode status for session ses_stall"
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6665/packages/omo-opencode/src/tools/delegate-task/sync-session-poller.stall-detection.test.ts:94:24)
+(fail) pollSyncSession stall detection (#6665) > #given an idle session whose last assistant message has finish "unknown" and no deliverable > #when the transcript stays frozen past the stall window > #then the poll fails fast with a stalled-subagent error instead of the inactivity timeout [4687.92ms]
+132 |             stallWindowMs: 50,
+133 |           })
+134 |         })
+135 | 
+136 |         // then
+137 |         expect(result).toBeNull()
+                             ^
+error: expect(received).toBeNull()
+
+Received: "Poll inactivity timeout reached after 5000ms without active OpenCode status for session ses_deliverable"
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6665/packages/omo-opencode/src/tools/delegate-task/sync-session-poller.stall-detection.test.ts:137:24)
+(fail) pollSyncSession stall detection (#6665) > #given finish "unknown" but a substantive text deliverable exists > #when the transcript stays frozen past the stall window > #then the poll resolves as complete and returns the deliverable path (null) [3341.90ms]
+
+ 4 pass
+ 2 fail
+ 11 expect() calls
+Ran 6 tests across 1 file. [21.48s]

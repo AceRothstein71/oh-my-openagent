@@ -1,7 +1,7 @@
 import type { ToolContextWithMetadata, OpencodeClient } from "./types"
 import type { SessionMessage } from "./executor-types"
 import { getDefaultSyncPollTimeoutMs, getTimingConfig } from "./timing"
-import { getTerminalSessionError, isSessionComplete } from "./sync-session-turns"
+import { getTerminalSessionError, isSessionComplete, isStallEligibleTurn } from "./sync-session-turns"
 import { log } from "../../shared/logger"
 import { normalizeSDKResponse } from "../../shared"
 
@@ -9,6 +9,7 @@ export { isSessionComplete } from "./sync-session-turns"
 
 const ACTIVE_SESSION_STATUSES = new Set(["busy", "retry", "running"])
 const CHILD_WAKE_GRACE_MS = 5_000
+const DEFAULT_STALL_WINDOW_MS = 30_000
 
 function wait(milliseconds: number): Promise<void> {
   const sharedBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT)
@@ -54,6 +55,7 @@ export async function pollSyncSession(
     hasActiveChildBackgroundTasks?: (sessionID: string) => boolean
     hasPendingParentWake?: (sessionID: string) => boolean
     childWakeGraceMs?: number
+    stallWindowMs?: number
   },
   timeoutMs?: number
 ): Promise<string | null> {
@@ -69,6 +71,9 @@ export async function pollSyncSession(
   const childSettleMs = input.childWakeGraceMs ?? CHILD_WAKE_GRACE_MS
   let childWaitAssistantId: string | undefined
   let childSettleStartedAt = 0
+  const stallWindowMs = input.stallWindowMs ?? DEFAULT_STALL_WINDOW_MS
+  let stallObservedSignature: string | undefined
+  let stallStartedAt = 0
   // A sync subagent can end its turn and then be re-woken by a parent-wake
   // notification once its background children finish. The task is only truly done
   // when no direct child work remains AND no wake is queued/in-flight for this
@@ -166,6 +171,8 @@ export async function pollSyncSession(
 
     if (isActiveSessionStatus(sessionStatus)) {
       inactiveStart = Date.now()
+      stallObservedSignature = undefined
+      stallStartedAt = 0
       continue
     }
 
@@ -233,6 +240,45 @@ export async function pollSyncSession(
         pollCount,
       })
       break
+    }
+
+    // Issue #6665: an inactive session whose last assistant turn carries finish
+    // "unknown" (or none) may never produce a terminal signal, e.g. when the model
+    // stream was interrupted mid-turn. Once the transcript stops changing for a
+    // bounded stall window, resolve immediately instead of waiting out the full
+    // inactivity timeout: return the deliverable when one exists, fail fast otherwise.
+    if (isStallEligibleTurn(messages)) {
+      const lastMessageId = messages[messages.length - 1]?.info?.id
+      const stallSignature = `${messages.length}:${lastMessageId ?? ""}`
+      if (stallSignature !== stallObservedSignature) {
+        stallObservedSignature = stallSignature
+        stallStartedAt = Date.now()
+      } else if (Date.now() - stallStartedAt >= stallWindowMs) {
+        if (isAwaitingChildContinuation(lastAssistant?.info?.id)) {
+          continue
+        }
+        const stalledFinish = lastAssistant?.info?.finish ?? "none"
+        if (hasAssistantText) {
+          log("[task] Poll resolved - stalled session still holds a deliverable", {
+            sessionID: input.sessionID,
+            pollCount,
+            finish: stalledFinish,
+          })
+          break
+        }
+        log("[task] Poll detected dead subagent - no deliverable and no progress", {
+          sessionID: input.sessionID,
+          pollCount,
+          finish: stalledFinish,
+          stallWindowMs,
+        })
+        abortSyncSession(client, input.sessionID, "stalled_subagent")
+        if (input.toastManager && input.taskId) input.toastManager.removeTask(input.taskId)
+        return `Subagent session stalled: no new messages for ${stallWindowMs}ms while the session was inactive and its last assistant message never completed (finish reason: ${stalledFinish}, likely an interrupted stream). Session ID: ${input.sessionID}`
+      }
+    } else {
+      stallObservedSignature = undefined
+      stallStartedAt = 0
     }
   }
 

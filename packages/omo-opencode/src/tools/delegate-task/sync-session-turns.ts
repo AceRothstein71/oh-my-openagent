@@ -61,3 +61,13 @@ export function getTerminalSessionError(messages: readonly SessionMessage[]): st
   const errorMessage = extractErrorMessage(lastAssistant.info.error)
   return errorMessage && errorMessage.length > 0 ? errorMessage : "Session error"
 }
+
+export function isStallEligibleTurn(messages: readonly SessionMessage[]): boolean {
+  const { lastAssistant } = getLastSessionTurns(messages)
+  if (!lastAssistant?.info) return false
+  const finish = lastAssistant.info.finish
+  if (finish !== undefined && finish !== "unknown") return false
+  const hasPendingToolParts =
+    lastAssistant.parts?.some((part) => part.type !== undefined && PENDING_TOOL_PART_TYPES.has(part.type)) ?? false
+  return !hasPendingToolParts
+}
