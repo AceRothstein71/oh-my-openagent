@@ -1,0 +1,14 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/utils/src/process-sweep/exec.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+SyntaxError: Export named 'resolveWindowsSystemBinary' not found in module '/home/viprix/projects/oom-wt-6747/packages/utils/src/process-sweep/exec.ts'.
+-------------------------------
+
+
+ 0 pass
+ 1 fail
+ 1 error
+Ran 1 test across 1 file. [1127.00ms]
