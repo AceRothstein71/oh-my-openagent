@@ -1,6 +1,12 @@
 import { reportBestEffortCleanupError } from "./cleanup-errors.js";
-import { INIT_TIMEOUT_MS, REQUEST_TIMEOUT_MS, STOP_HARD_KILL_TIMEOUT_MS, STOP_SIGKILL_GRACE_MS } from "./constants.js";
-import { LspConnectionClosedError, LspProcessExitedError, LspRequestTimeoutError } from "./errors.js";
+import {
+	INIT_TIMEOUT_MS,
+	REQUEST_TIMEOUT_MS,
+	resolveStartTimeoutMs,
+	STOP_HARD_KILL_TIMEOUT_MS,
+	STOP_SIGKILL_GRACE_MS,
+} from "./constants.js";
+import { LspConnectionClosedError, LspProcessExitedError, LspRequestTimeoutError, LspStartTimeoutError } from "./errors.js";
 import { JsonRpcConnection } from "./json-rpc-connection.js";
 import { type SpawnedProcess, spawnProcess } from "./process.js";
 import { createLspSpawnEnv, parseConfigurationItems, parseDiagnosticsParams } from "./transport-protocol.js";
@@ -12,6 +18,7 @@ export { createLspSpawnEnv } from "./transport-protocol.js";
 export interface LspClientTimeoutOptions {
 	requestTimeoutMs?: number;
 	initializeTimeoutMs?: number;
+	startTimeoutMs?: number;
 }
 
 type WorkspaceApplyEditHandler = (params: unknown) => Promise<WorkspaceApplyEditResponse>;
@@ -35,6 +42,7 @@ export class LspClientTransport {
 	protected readonly diagnosticsStore = new Map<string, Diagnostic[]>();
 	protected readonly requestTimeoutMs: number;
 	protected readonly initializeTimeoutMs: number;
+	protected readonly startTimeoutMs: number;
 	private workspaceApplyEditHandler: WorkspaceApplyEditHandler | null = null;
 	private diagnosticPullSupported = false;
 
@@ -45,6 +53,7 @@ export class LspClientTransport {
 	) {
 		this.requestTimeoutMs = timeouts.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
 		this.initializeTimeoutMs = timeouts.initializeTimeoutMs ?? INIT_TIMEOUT_MS;
+		this.startTimeoutMs = timeouts.startTimeoutMs ?? resolveStartTimeoutMs();
 	}
 
 	pid(): number | undefined {
@@ -139,6 +148,31 @@ export class LspClientTransport {
 				this.stderrBuffer.shift();
 			}
 		});
+	}
+
+	protected createStartGuard(): { readonly signal: AbortSignal; readonly dispose: () => void } {
+		const controller = new AbortController();
+		let disposed = false;
+		const deadline = setTimeout(() => {
+			if (disposed || controller.signal.aborted) return;
+			controller.abort(new LspStartTimeoutError(this.server.id, this.root, this.startTimeoutMs));
+		}, this.startTimeoutMs);
+		if (typeof deadline.unref === "function") deadline.unref();
+		const proc = this.proc;
+		if (proc) {
+			void proc.exited.then((code) => {
+				if (disposed || controller.signal.aborted) return;
+				const stderrTail = this.stderrBuffer.slice(-10).join("\n") || undefined;
+				controller.abort(new LspProcessExitedError(this.server.id, this.root, code, stderrTail));
+			});
+		}
+		return {
+			signal: controller.signal,
+			dispose() {
+				disposed = true;
+				clearTimeout(deadline);
+			},
+		};
 	}
 
 	private isConnectionClosedError(error: unknown): error is Error {

@@ -1,0 +1,7 @@
+bun test v1.3.14 (0d9b296a)
+[lsp] ignored shutdown request failure during cleanup: LSP server workspace-edit-fixture at /tmp/lsp-apply-edit-vm06zb exited with code 0
+
+ 105 pass
+ 0 fail
+ 305 expect() calls
+Ran 105 tests across 24 files. [8.08s]

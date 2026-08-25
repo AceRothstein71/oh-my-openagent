@@ -1,4 +1,5 @@
 import type { ServerLookupResult } from "./types.js";
+import { START_TIMEOUT_ENV_VAR } from "./constants.js";
 
 export type FailedServerLookupResult = Exclude<ServerLookupResult, { status: "found" }>;
 
@@ -37,6 +38,21 @@ export class LspRequestTimeoutError extends Error {
 	) {
 		const stderrSuffix = stderrTail ? `\nrecent stderr: ${stderrTail}` : "";
 		super(`LSP request timeout (method: ${method})${stderrSuffix}`);
+	}
+}
+
+export class LspStartTimeoutError extends Error {
+	override readonly name = "LspStartTimeoutError";
+
+	constructor(
+		readonly serverId: string,
+		readonly root: string,
+		readonly timeoutMs: number,
+	) {
+		super(
+			`LSP server ${serverId} at ${root} did not complete start and initialize within ${timeoutMs}ms ` +
+				`(raise ${START_TIMEOUT_ENV_VAR} if this server is legitimately slow to start)`,
+		);
 	}
 }
 

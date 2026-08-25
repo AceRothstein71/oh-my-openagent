@@ -1,0 +1,13 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/lsp-core/src/lsp/transport-start-fast-fail.test.ts:
+(fail) LSP start fast-fail (#6486) > #given a spawned server that consumes the initialize write and then exits without responding #when starting and initializing #then rejects with LspProcessExitedError within seconds instead of blocking for the init ceiling [10000.63ms]
+  ^ this test timed out after 10000ms.
+killed 1 dangling process
+(fail) LSP start fast-fail (#6486) > #given an alive server that never answers initialize #when starting and initializing #then rejects with a start timeout at the short deadline instead of the init ceiling [10000.96ms]
+  ^ this test timed out after 10000ms.
+
+ 1 pass
+ 2 fail
+ 2 expect() calls
+Ran 3 tests across 1 file. [20.40s]

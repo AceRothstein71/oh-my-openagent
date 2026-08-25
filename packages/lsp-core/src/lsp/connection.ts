@@ -14,62 +14,67 @@ function supportsDiagnosticPull(capabilities: InitializeCapabilities | undefined
 export class LspClientConnection extends LspClientTransport {
 	async initialize(): Promise<void> {
 		const rootUri = pathToFileURL(this.root).href;
-		const result = await this.sendRequest<{ readonly capabilities?: InitializeCapabilities }>(
-			"initialize",
-			{
-				processId: process.pid,
-				rootUri,
-				rootPath: this.root,
-				workspaceFolders: [{ uri: rootUri, name: "workspace" }],
-				capabilities: {
-					textDocument: {
-						hover: { contentFormat: ["markdown", "plaintext"] },
-						definition: { linkSupport: true },
-						references: {},
-						documentSymbol: { hierarchicalDocumentSymbolSupport: true },
-						publishDiagnostics: {},
-						rename: {
-							prepareSupport: true,
-							prepareSupportDefaultBehavior: 1,
-						},
-						codeAction: {
-							codeActionLiteralSupport: {
-								codeActionKind: {
-									valueSet: [
-										"quickfix",
-										"refactor",
-										"refactor.extract",
-										"refactor.inline",
-										"refactor.rewrite",
-										"source",
-										"source.organizeImports",
-										"source.fixAll",
-									],
+		const startGuard = this.createStartGuard();
+		let result: { readonly capabilities?: InitializeCapabilities } | undefined;
+		try {
+			result = await this.sendRequest<{ readonly capabilities?: InitializeCapabilities }>(
+				"initialize",
+				{
+					processId: process.pid,
+					rootUri,
+					rootPath: this.root,
+					workspaceFolders: [{ uri: rootUri, name: "workspace" }],
+					capabilities: {
+						textDocument: {
+							hover: { contentFormat: ["markdown", "plaintext"] },
+							definition: { linkSupport: true },
+							references: {},
+							documentSymbol: { hierarchicalDocumentSymbolSupport: true },
+							publishDiagnostics: {},
+							rename: {
+								prepareSupport: true,
+								prepareSupportDefaultBehavior: 1,
+							},
+							codeAction: {
+								codeActionLiteralSupport: {
+									codeActionKind: {
+										valueSet: [
+											"quickfix",
+											"refactor.extract",
+											"refactor.inline",
+											"refactor.rewrite",
+											"source",
+											"source.organizeImports",
+											"source.fixAll",
+										],
+									},
+								},
+								isPreferredSupport: true,
+								disabledSupport: true,
+								dataSupport: true,
+								resolveSupport: {
+									properties: ["edit", "command"],
 								},
 							},
-							isPreferredSupport: true,
-							disabledSupport: true,
-							dataSupport: true,
-							resolveSupport: {
-								properties: ["edit", "command"],
+						},
+						workspace: {
+							symbol: {},
+							workspaceFolders: true,
+							configuration: true,
+							...(this.hasWorkspaceApplyEditHandler() ? { applyEdit: true } : {}),
+							workspaceEdit: {
+								documentChanges: true,
+								resourceOperations: ["create", "rename", "delete"],
 							},
 						},
 					},
-					workspace: {
-						symbol: {},
-						workspaceFolders: true,
-						configuration: true,
-						...(this.hasWorkspaceApplyEditHandler() ? { applyEdit: true } : {}),
-						workspaceEdit: {
-							documentChanges: true,
-							resourceOperations: ["create", "rename", "delete"],
-						},
-					},
+					initializationOptions: this.server.initialization,
 				},
-				initializationOptions: this.server.initialization,
-			},
-			{ timeoutMs: this.initializeTimeoutMs },
-		);
+				{ timeoutMs: this.initializeTimeoutMs, signal: startGuard.signal },
+			);
+		} finally {
+			startGuard.dispose();
+		}
 		this.setDiagnosticPullSupported(supportsDiagnosticPull(result?.capabilities));
 		await this.sendNotification("initialized", {});
 		await this.sendNotification("workspace/didChangeConfiguration", {
