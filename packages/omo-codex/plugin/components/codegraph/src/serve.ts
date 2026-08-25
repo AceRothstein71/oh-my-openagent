@@ -36,8 +36,16 @@ import {
 import { shouldExcludeCodegraphProject } from "../../../../../utils/src/codegraph/workspace.ts";
 import { getCodexOmoConfig, type CodexOmoConfig } from "../../../shared/src/config-loader.ts";
 import type { CodegraphConfig } from "./hook.js";
-import { runBridgedCodegraphProcess } from "./mcp-bridge.js";
+import { runBridgedCodegraphProcess, type SecondaryRepoSyncHooks } from "./mcp-bridge.js";
 import { runUnavailableCodegraphMcpServer } from "./mcp-unavailable.js";
+import {
+	createSecondaryRepoSyncFn,
+	DEFAULT_SECONDARY_SYNC_DEBOUNCE_MS,
+} from "./secondary-sync.js";
+import {
+	waitForInitialCodegraphGraph,
+	type InitialGraphReadiness,
+} from "./serve-readiness.js";
 import { SESSION_START_CWD_ENV } from "./session-start-worker.js";
 export { resolveServeProcessInvocation } from "./serve-invocation.js";
 
@@ -51,6 +59,7 @@ export interface CodegraphServeProcessOptions {
 	readonly stderr: CodegraphServeStderr;
 	readonly stdio: ServeStdio;
 	readonly parentWatchdog?: ParentWatchdogConfig;
+	readonly secondaryRepoSync?: SecondaryRepoSyncHooks;
 }
 
 export type CodegraphServeProcessRunner = (
@@ -73,8 +82,13 @@ export interface RunCodegraphServeOptions {
 	readonly cwd?: string;
 	readonly env?: Record<string, string | undefined>;
 	readonly homeDir?: string;
+	readonly initialReadinessTimeoutMs?: number;
 	readonly managedInstallExists?: (installDir: string) => boolean;
+	readonly pollIntervalMs?: number;
 	readonly resolveManagedBin?: (installDir: string) => string | null;
+	readonly secondaryRepoSync?: SecondaryRepoSyncHooks;
+	readonly secondarySyncDebounceMs?: number;
+	readonly secondarySyncTimeoutMs?: number;
 	readonly stdin?: Readable;
 	readonly stdout?: Writable;
 	readonly nodeVersion?: string;
@@ -82,6 +96,7 @@ export interface RunCodegraphServeOptions {
 	readonly runProcess?: CodegraphServeProcessRunner;
 	readonly stderr?: CodegraphServeStderr;
 	readonly ensureProvisioned?: CodegraphProvisioner;
+	readonly waitForInitialGraph?: (projectRoot: string) => Promise<InitialGraphReadiness>;
 	// Test seam: production callers leave this unset so the bridge and the
 	// unavailable facade use the watchdog defaults (parentPid = process.ppid,
 	// 30s poll).
@@ -163,6 +178,23 @@ export async function runCodegraphServe(options: RunCodegraphServeOptions = {}):
 	const runProcess = options.runProcess ?? runBridgedCodegraphProcess;
 	const codegraphEnv = codegraphEnvForConfig(trustedInstallDir, homeDir, codegraphConfig.daemon !== false, options.buildEnv);
 	const mergedEnv = buildCodegraphChildEnv({ ambientEnv: env, codegraphEnv, runtimeEnv: env });
+	const readiness = options.waitForInitialGraph === undefined
+		? await waitForInitialCodegraphGraph(projectCwd, {
+			homeDir,
+			...(options.pollIntervalMs === undefined ? {} : { pollIntervalMs: options.pollIntervalMs }),
+			...(options.initialReadinessTimeoutMs === undefined ? {} : { timeoutMs: options.initialReadinessTimeoutMs }),
+		})
+		: await options.waitForInitialGraph(projectCwd);
+	if (readiness !== "ready") writeReadinessDebug(readiness);
+	const secondaryRepoSync: SecondaryRepoSyncHooks = options.secondaryRepoSync ?? {
+		defaultProjectRoot: projectCwd,
+		debounceMs: options.secondarySyncDebounceMs ?? DEFAULT_SECONDARY_SYNC_DEBOUNCE_MS,
+		syncProject: createSecondaryRepoSyncFn({
+			command: resolution.command,
+			env: mergedEnv,
+			...(options.secondarySyncTimeoutMs === undefined ? {} : { timeoutMs: options.secondarySyncTimeoutMs }),
+		}),
+	};
 	return runProcess(resolution.command, [...resolution.argsPrefix, "serve", "--mcp"], {
 		cwd: projectCwd,
 		env: mergedEnv,
@@ -171,7 +203,13 @@ export async function runCodegraphServe(options: RunCodegraphServeOptions = {}):
 		stderr: options.stderr ?? processStderr,
 		stdio: "pipe",
 		parentWatchdog: options.parentWatchdog ?? {},
+		secondaryRepoSync,
 	});
+}
+
+function writeReadinessDebug(readiness: InitialGraphReadiness): void {
+	if (processEnv["OMO_CODEGRAPH_DEBUG"] !== "1") return;
+	processStderr.write(`[codegraph-serve] initial graph readiness: ${readiness}\n`);
 }
 
 async function runUnavailableMcp(reason: string, options: RunCodegraphServeOptions): Promise<number> {

@@ -1,4 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 
 import {
@@ -37,6 +39,17 @@ const CODEGRAPH_CONTAINER_OUTLINE_GUIDANCE =
 	"Container symbols intentionally return structural outlines with members. For source, request a specific member symbol or call codegraph_node in file mode with symbolsOnly=false plus offset/limit around the symbol location.";
 
 const SIGKILL_ESCALATION_MS = 2_000;
+
+export interface SecondaryRepoSyncHooks {
+	readonly debounceMs: number;
+	readonly defaultProjectRoot: string;
+	readonly syncProject: (projectRoot: string) => Promise<void>;
+}
+
+interface SecondarySyncStateEntry {
+	readonly inflight?: Promise<void>;
+	readonly lastAttemptAt: number;
+}
 
 export async function runBridgedCodegraphProcess(
 	command: string,
@@ -96,6 +109,7 @@ export async function runBridgedCodegraphProcess(
 			defaultResponseMode = mode;
 		},
 		() => parentWatchdogFired,
+		options.secondaryRepoSync === undefined ? undefined : createSecondaryRepoSyncGate(options.secondaryRepoSync),
 	);
 	const responseForwardingDone = forwardCodegraphToClient(
 		childOutput,
@@ -145,6 +159,7 @@ async function forwardClientToCodegraph(
 	pendingResponses: Map<string, PendingClientResponse>,
 	setDefaultResponseMode: (mode: StdioJsonRpcResponseMode) => void,
 	tolerateWatchdogClose: () => boolean,
+	syncSecondaryRepo: ((payload: unknown) => Promise<void>) | undefined,
 ): Promise<void> {
 	try {
 		for await (const message of readStdioJsonRpcMessages(input)) {
@@ -161,6 +176,7 @@ async function forwardClientToCodegraph(
 					toolName: jsonRpcToolName(message.payload),
 				});
 			}
+			if (syncSecondaryRepo !== undefined) await syncSecondaryRepo(message.payload);
 			await writeLine(childInput, JSON.stringify(message.payload));
 		}
 		childInput.end();
@@ -218,6 +234,55 @@ function jsonRpcToolName(payload: unknown): string | null {
 	if (!isPlainRecord(params)) return null;
 	const name = params["name"];
 	return typeof name === "string" ? name : null;
+}
+
+// Serializes and debounces per-canonical-project secondary syncs. Concurrent
+// calls for the same project await the in-flight sync; failures are swallowed
+// so a broken secondary repository never blocks or fails the forwarded call.
+function createSecondaryRepoSyncGate(hooks: SecondaryRepoSyncHooks): (payload: unknown) => Promise<void> {
+	const entries = new Map<string, SecondarySyncStateEntry>();
+	let canonicalDefault: string | null = null;
+	return async (payload) => {
+		const rawProjectPath = extractToolCallProjectPath(payload);
+		if (rawProjectPath === null) return;
+		if (canonicalDefault === null) canonicalDefault = canonicalizeExistingPath(hooks.defaultProjectRoot);
+		const target = canonicalizeExistingPath(rawProjectPath);
+		if (target === canonicalDefault) return;
+		const nowMsValue = Date.now();
+		const existing = entries.get(target);
+		if (existing?.inflight !== undefined) {
+			await existing.inflight;
+			return;
+		}
+		if (existing !== undefined && nowMsValue - existing.lastAttemptAt < hooks.debounceMs) return;
+		const inflight = hooks.syncProject(target).catch(() => undefined);
+		entries.set(target, { lastAttemptAt: nowMsValue, inflight });
+		try {
+			await inflight;
+		} finally {
+			const current = entries.get(target);
+			if (current?.inflight === inflight) entries.set(target, { lastAttemptAt: current.lastAttemptAt });
+		}
+	};
+}
+
+function extractToolCallProjectPath(payload: unknown): string | null {
+	if (jsonRpcMethod(payload) !== "tools/call" || !isPlainRecord(payload)) return null;
+	const params = payload["params"];
+	if (!isPlainRecord(params)) return null;
+	const args = params["arguments"];
+	if (!isPlainRecord(args)) return null;
+	const projectPath = args["projectPath"];
+	if (typeof projectPath !== "string" || projectPath.trim().length === 0) return null;
+	return projectPath;
+}
+
+function canonicalizeExistingPath(path: string): string {
+	try {
+		return realpathSync(path);
+	} catch {
+		return resolve(path);
+	}
 }
 
 function clarifyCodegraphResponse(payload: unknown, pendingResponse: PendingClientResponse | undefined): unknown {
