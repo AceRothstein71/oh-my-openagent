@@ -73,4 +73,66 @@ describe("git-worktree", () => {
 
     expect(summary).not.toContain("[NOTEPAD UPDATED]")
   })
+
+  test("#given more than 20 files in one group #when formatting #then caps the group with a deterministic and-N-more note", () => {
+    const stats = Array.from({ length: 25 }, (_, i) => ({
+      path: `src/modified_${i}.ts`,
+      added: 1,
+      removed: 0,
+      status: "modified" as const,
+    }))
+
+    const summary = formatFileChanges(stats)
+
+    expect(summary).toContain("[FILE CHANGES SUMMARY]")
+    expect(summary).toContain("src/modified_19.ts")
+    expect(summary).not.toContain("src/modified_20.ts")
+    expect(summary).toContain("...and 5 more modified files")
+  })
+
+  test("#given thousands of changed files #when formatting #then summary stays bounded with explicit truncation marker", () => {
+    const modified = Array.from({ length: 3000 }, (_, i) => ({
+      path: `pkg/module_${i}/very/long/path/component_file_name.ts`,
+      added: 10,
+      removed: 5,
+      status: "modified" as const,
+    }))
+    const added = Array.from({ length: 2000 }, (_, i) => ({
+      path: `new/folder_${i}/created_file.ts`,
+      added: 100,
+      removed: 0,
+      status: "added" as const,
+    }))
+    const deleted = Array.from({ length: 1500 }, (_, i) => ({
+      path: `old/deleted_${i}/removed_file.ts`,
+      added: 0,
+      removed: 50,
+      status: "deleted" as const,
+    }))
+
+    const summary = formatFileChanges([...modified, ...added, ...deleted])
+
+    expect(Buffer.byteLength(summary)).toBeLessThanOrEqual(32 * 1024)
+    expect(summary).toContain("Output truncated: true")
+    expect(summary).toContain("6500")
+  })
+
+  test("#given extremely long paths exceeding the byte cap #when formatting #then byte cap holds and notepad section survives", () => {
+    const longSegment = "d".repeat(2000)
+    const stats = [
+      { path: ".omo/notepads/work/notes.md", added: 1, removed: 0, status: "modified" as const },
+      ...Array.from({ length: 30 }, (_, i) => ({
+        path: `${longSegment}/file_${i}.ts`,
+        added: 1,
+        removed: 0,
+        status: "modified" as const,
+      })),
+    ]
+
+    const summary = formatFileChanges(stats, ".omo/notepads/work/notes.md")
+
+    expect(Buffer.byteLength(summary)).toBeLessThanOrEqual(32 * 1024)
+    expect(summary).toContain("[NOTEPAD UPDATED]")
+    expect(summary).toContain(".omo/notepads/work/notes.md")
+  })
 })
