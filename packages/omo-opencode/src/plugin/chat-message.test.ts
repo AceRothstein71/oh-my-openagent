@@ -8,7 +8,7 @@ import type { OhMyOpenCodeConfig } from "../config"
 import { readBoulderState } from "../features/boulder-state"
 import { _resetForTesting, getSessionAgent, registerAgentName, setMainSession, subagentSessions, updateSessionAgent } from "../features/claude-code-session-state"
 import { createAutoSlashCommandHook } from "../hooks/auto-slash-command"
-import { validateObjective } from "../hooks/goal/validation"
+import { MAX_OBJECTIVE_LENGTH, validateObjective } from "../hooks/goal/validation"
 import { createStartWorkHook } from "../hooks/start-work"
 import { getAgentListDisplayName } from "../shared/agent-display-names"
 import { getOmoOpenCodeCacheDir, getOpenCodeCacheDir } from "../shared/data-path"
@@ -792,6 +792,61 @@ describe("createChatMessageHandler - /goal raw slash fallback", () => {
     expect(goalMock.setGoalCalls).toEqual([
       { sessionID: "test-session", objective: "Ship the dashboard" },
     ])
+  })
+
+  test("truncates an over-limit message instead of crashing the prompt", async () => {
+    // given
+    const setGoal = mock((_: string, objective: string) => {
+      validateObjective(objective)
+      return { objective, status: "active" }
+    })
+    const goalMock = createGoalHookMock()
+    const args = createMockHandlerArgs()
+    args.hooks.goal = { ...goalMock.hook, setGoal }
+    const handler = createChatMessageHandler(args)
+    const longText = "Fix the login bug. ".repeat(200)
+    const output: ChatMessageHandlerOutput = {
+      message: {},
+      parts: [{ type: "text", text: longText }],
+    }
+
+    // when
+    await handler(createMockInput("sisyphus"), output)
+
+    // then
+    expect(setGoal).toHaveBeenCalledTimes(1)
+    const captured = setGoal.mock.calls[0]?.[1] as string
+    expect(captured.length).toBe(MAX_OBJECTIVE_LENGTH)
+    expect(captured.startsWith("Fix the login bug.")).toBe(true)
+  })
+
+  test("truncates an over-limit first message when default_mode.goal is enabled instead of crashing the prompt", async () => {
+    // given
+    const setGoal = mock((_: string, objective: string) => {
+      validateObjective(objective)
+      return { objective, status: "active" }
+    })
+    const goalMock = createGoalHookMock()
+    const args = createMockHandlerArgs({
+      shouldOverride: true,
+      pluginConfig: { default_mode: { goal: true } },
+    })
+    args.hooks.goal = { ...goalMock.hook, setGoal }
+    const handler = createChatMessageHandler(args)
+    const longText = "Migrate the billing service. ".repeat(200)
+    const output: ChatMessageHandlerOutput = {
+      message: {},
+      parts: [{ type: "text", text: longText }],
+    }
+
+    // when
+    await handler(createMockInput("sisyphus"), output)
+
+    // then
+    expect(setGoal).toHaveBeenCalledTimes(1)
+    const captured = setGoal.mock.calls[0]?.[1] as string
+    expect(captured.length).toBe(MAX_OBJECTIVE_LENGTH)
+    expect(captured.startsWith("Migrate the billing service.")).toBe(true)
   })
 
 })
