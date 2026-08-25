@@ -72,7 +72,10 @@ export function createStandaloneMcpRequestContext(
 	input: StandaloneMcpRequestContextInput = {},
 ): LspRequestContext {
 	const env = input.env ?? process.env;
-	const cwd = canonicalCwd(input.cwd ?? process.cwd());
+	// The spawning harness knows the session directory but the server process
+	// cwd is wherever the host was launched (#6207), so the explicit input wins,
+	// then the LSP_TOOLS_MCP_CWD session-directory override, then process.cwd().
+	const cwd = canonicalCwd(input.cwd ?? env["LSP_TOOLS_MCP_CWD"] ?? process.cwd());
 	const home = input.homeDir ?? homedir();
 	const projectConfigPaths = translateProjectConfigEnv(env["LSP_TOOLS_MCP_PROJECT_CONFIG"], cwd);
 	const userConfigPath = translateHomeConfigEnv(env["LSP_TOOLS_MCP_USER_CONFIG"], home, ".codex/lsp-client.json");

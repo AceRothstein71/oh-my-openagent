@@ -168,4 +168,30 @@ describe("LspRequestContext", () => {
 			capabilities: { installDecisionTool: true },
 		});
 	});
+
+	it("#given LSP_TOOLS_MCP_CWD env #when no explicit cwd #then the session directory overrides process.cwd()", () => {
+		// given
+		const sessionDirectory = tempSystemRoot("lsp-context-env-cwd-");
+
+		// when
+		const context = createStandaloneMcpRequestContext({ env: { LSP_TOOLS_MCP_CWD: sessionDirectory } });
+
+		// then
+		expect(context.cwd).toBe(realpathSync(sessionDirectory));
+	});
+
+	it("#given explicit cwd and LSP_TOOLS_MCP_CWD env #when both set #then the explicit cwd wins", () => {
+		// given
+		const sessionDirectory = tempSystemRoot("lsp-context-explicit-cwd-");
+		const envDirectory = tempSystemRoot("lsp-context-env-loses-");
+
+		// when
+		const context = createStandaloneMcpRequestContext({
+			cwd: sessionDirectory,
+			env: { LSP_TOOLS_MCP_CWD: envDirectory },
+		});
+
+		// then
+		expect(context.cwd).toBe(realpathSync(sessionDirectory));
+	});
 });
