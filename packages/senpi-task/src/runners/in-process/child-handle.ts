@@ -99,6 +99,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
+function eventFlagTrue(event: unknown, key: string): boolean {
+  return isRecord(event) && event[key] === true
+}
+
 // Derive the settled turn's outcome from what it emitted. The session-level getLastAssistantText()
 // is only trusted when it CHANGED during this turn (baseline diff): on a revive, the previous run's
 // text must never masquerade as a fresh completion.
@@ -179,7 +183,20 @@ function createTrackedChildHandle(taskId: string, session: ChildSession): Tracke
   // Seeded for the restored case; createChildHandle's beginTurn replaces it immediately.
   let running: Promise<RunnerOutcome> = Promise.resolve(settledSessionOutcome(session))
   const observation: TurnObservation = { text: undefined, stopReason: undefined, errorMessage: undefined, baseline: undefined }
-  const unsubscribeObserver = session.subscribe((event) => observeTurnEvent(observation, event))
+  // Settlement cell for the ACTIVE turn. runTurn's resolution races the session's terminating
+  // agent_end event; first writer wins, later writers are no-ops. Without the event path a child
+  // whose loop exits while its prompt() promise never settles (#5167) strands waitForIdle forever,
+  // leaving the parent's task() blocked with no timeout and no error.
+  let settleActiveTurn: ((outcome: RunnerOutcome) => void) | undefined
+
+  const unsubscribeObserver = session.subscribe((event) => {
+    observeTurnEvent(observation, event)
+    if (event.type !== "agent_end") return
+    if (eventFlagTrue(event, "willRetry")) return
+    const settle = settleActiveTurn
+    if (settle === undefined) return
+    settle(aborted ? { status: "cancelled" } : turnOutcome(session, observation))
+  })
 
   // Start a fresh tracked turn and mark it active until it settles. waitForIdle() always returns the
   // CURRENT turn, so a revive follow-up re-arms it to the new turn instead of a stale resolved one.
@@ -190,15 +207,15 @@ function createTrackedChildHandle(taskId: string, session: ChildSession): Tracke
     observation.stopReason = undefined
     observation.errorMessage = undefined
     observation.baseline = session.getLastAssistantText()
-    running = runTurn(session, text, () => aborted, observation)
-    void running.then(
-      () => {
-        turnActive = false
-      },
-      () => {
-        turnActive = false
-      },
-    )
+    const cell = Promise.withResolvers<RunnerOutcome>()
+    running = cell.promise
+    const settle = (outcome: RunnerOutcome): void => {
+      settleActiveTurn = undefined
+      turnActive = false
+      cell.resolve(outcome)
+    }
+    settleActiveTurn = settle
+    void runTurn(session, text, () => aborted, observation).then(settle)
   }
 
   const handle: ChildHandle = {
