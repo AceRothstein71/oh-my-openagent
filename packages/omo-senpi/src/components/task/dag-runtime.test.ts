@@ -1051,6 +1051,31 @@ describe("assembled DAG runtime control verbs", () => {
     runtime.dispose()
   }, { timeout: 20_000 })
 
+  test("#given a run paused for shutdown with a queued dependent wave #when the finished node settles while the run identifier is latched #then the next-wave admission settles as a typed denial instead of pinning the pipeline forever", async () => {
+    // given
+    const { runner, runtime, sessionId, runId } = await controlFixture("admission-latch-denial", [
+      { id: "solo" },
+      { id: "next", dependsOn: ["solo"] },
+    ])
+    await within(runner.whenStarted(1))
+    // Pausing latches admission for this run identifier while the scheduler keeps running its loop.
+    runtime.pauseForShutdown()
+
+    // when the first-wave child completes and the scheduler admits the dependent next wave
+    runner.handles[0]?.settle("solo output")
+
+    // then the latched admission settles as a typed residency denial: the run reaches a terminal
+    // state instead of hanging on a never-resolving admission promise, and no child spawns past the latch
+    const result = await within(runtime.wait(runId, sessionId), 5_000)
+    expect(result.status).toBe("failed")
+    expect(result.nodes.solo).toEqual(expect.objectContaining({ state: "completed", output: "solo output" }))
+    const next = result.nodes.next
+    expect(next?.state).toBe("failed")
+    if (next?.state === "failed") expect(next.error.code).toBe("residency_denied")
+    expect(runner.handles).toHaveLength(1)
+    runtime.dispose()
+  }, { timeout: 20_000 })
+
   test("#given a run resumed by retry #when attach re-runs the schedulable gate #then the re-registered scheduler is reused instead of a second one starting the node twice", async () => {
     // given
     const { runner, runtime, sessionId, runId, whenAttached } = await controlFixture("retry-registration", [{ id: "solo" }])
