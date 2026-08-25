@@ -57,6 +57,32 @@ describe("classifyRetryableModelMiss", () => {
     })
   })
 
+  test("#given a kimi billing-cycle quota 403 child failure #when classified #then it is retryable so the chain can advance to another provider", () => {
+    // given: the exact two-line stderr from issue #6808 - the shipped quick route
+    // is kimi-only, so this provider-plan limit must not terminate the reflection
+    const child = result([
+      "403 permission_error",
+      "You've reached your usage limit for this billing cycle",
+    ].join("\n"))
+
+    // when
+    const miss = classifyRetryableModelMiss(child)
+
+    // then
+    expect(miss).toEqual({
+      kind: "provider_unavailable",
+      detail: "403 permission_error | You've reached your usage limit for this billing cycle",
+    })
+  })
+
+  test("#given a bare 403 permission error without a billing-cycle usage limit #when classified #then it is not retryable", () => {
+    // given
+    const child = result("403 permission_error")
+
+    // when / then
+    expect(classifyRetryableModelMiss(child)).toBeUndefined()
+  })
+
   test("#given a billing exhaustion child failure #when classified #then it is not retryable because another model cannot fix it", () => {
     // given
     const child = result("Error: quota exceeded for this organization")

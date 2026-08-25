@@ -15,6 +15,8 @@ export type RetryableModelMiss =
 const MODEL_NOT_FOUND_PATTERN = /^Error: Model "([^"]+)" not found\. Use --list-models to see available models\.$/m
 const API_KEY_NOT_FOUND_PATTERN = /^(?:Error:\s*)?No API key found for\s+([^\s.]+)/m
 const HTTP_STATUS_PATTERN = /(?:^|\s)(\d{3})\s*:/
+const KIMI_PERMISSION_ERROR_CONTEXT_PATTERN = /(?:\b403\b[\s\S]*\bpermission_error\b|\bpermission_error\b[\s\S]*\b403\b)/i
+const KIMI_BILLING_CYCLE_LIMIT_PATTERN = /\byou(?:'|’)ve reached your usage limit for this billing cycle\b/i
 const PROVIDER_DETAIL_MAX_CHARS = 200
 
 export function classifyRetryableModelMiss(result: ModelMissResult): RetryableModelMiss | undefined {
@@ -24,6 +26,13 @@ export function classifyRetryableModelMiss(result: ModelMissResult): RetryableMo
   if (model !== undefined) return { kind: "model_not_visible", id: model }
   const provider = API_KEY_NOT_FOUND_PATTERN.exec(output)?.[1]
   if (provider !== undefined) return { kind: "auth_missing", provider }
+  // A Kimi billing-cycle quota 403 (issue #6808) is provider-plan exhaustion, not a
+  // wrong-model or account-wide defect: another candidate can still serve the
+  // reflection, so the chain must advance instead of recording a dead run. Generic
+  // org-quota/billing STOP cases stay terminal through the shared classifier below.
+  if (isKimiBillingCycleLimit(output)) {
+    return { kind: "provider_unavailable", detail: boundedOutputDetail(result) }
+  }
   // A provider-side outage (cooldown, 429/503, overload) says nothing about THIS model being wrong,
   // so the reflection chain must move to the next candidate instead of recording a dead run. The
   // shared classifier owns the pattern table, including the billing/quota STOP cases that another
@@ -37,6 +46,19 @@ export function classifyRetryableModelMiss(result: ModelMissResult): RetryableMo
   })
     ? { kind: "provider_unavailable", detail }
     : undefined
+}
+
+function isKimiBillingCycleLimit(output: string): boolean {
+  return KIMI_PERMISSION_ERROR_CONTEXT_PATTERN.test(output)
+    && KIMI_BILLING_CYCLE_LIMIT_PATTERN.test(output)
+}
+
+function boundedOutputDetail(result: ModelMissResult): string {
+  const lines = [result.stderr, result.stdout]
+    .flatMap((stream) => stream.split("\n"))
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+  return lines.join(" | ").slice(0, PROVIDER_DETAIL_MAX_CHARS)
 }
 
 /** First meaningful child error line: senpi prints the fatal provider error and exits. */
