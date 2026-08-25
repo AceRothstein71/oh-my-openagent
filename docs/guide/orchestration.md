@@ -49,7 +49,7 @@ flowchart TB
         Oracle[" Oracle<br/>(Architecture)<br/>gpt-5.6-sol / gemini-3.1-pro / claude-opus-5 / glm-5.2"]
         Explore[" Explore<br/>(Codebase Grep)<br/>gpt-5.6-luna-fast / deepseek-v4-flash (max) / qwen3.7-plus / minimax-m2.7-highspeed / minimax-m3 / MiniMax-M3 / minimax-m2.7 / claude-haiku-4-5 / gpt-5.4-nano"]
         Librarian[" Librarian<br/>(Docs/OSS)<br/>gpt-5.6-luna-fast / deepseek-v4-flash (max) / qwen3.7-plus / minimax-m2.7-highspeed / minimax-m3 / MiniMax-M3 / minimax-m2.7 / claude-haiku-4-5 / gpt-5.4-nano"]
-        Frontend[" visual-engineering<br/>(category + frontend)<br/>claude-opus-5 / kimi-k3 / glm-5.2 / gpt-5.6-sol"]
+        Frontend[" visual-engineering<br/>(category + frontend)<br/>claude-opus-5 / kimi-k3 / glm-4.6v / qwen3.7-plus / gpt-5.6-sol"]
     end
 
     User -->|"Describe work"| Prometheus

@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test"
 import { CATEGORY_MODEL_REQUIREMENTS } from "./model-requirements"
 
 describe("category routing policy", () => {
-  test("visual-engineering prioritizes Opus max, Kimi K3 max, GLM 5.2 max, then Sol medium", () => {
+  test("visual-engineering prioritizes Opus max, Kimi K3 max, GLM 4.6v, Qwen 3.7 Plus, then Sol medium", () => {
     // given
     const visual = CATEGORY_MODEL_REQUIREMENTS["visual-engineering"]
 
@@ -23,9 +23,12 @@ describe("category routing policy", () => {
         variant: "max",
       },
       {
-        providers: ["zai-coding-plan", "opencode-go", "vercel"],
-        model: "glm-5.2",
-        variant: "max",
+        providers: ["zai-coding-plan", "vercel"],
+        model: "glm-4.6v",
+      },
+      {
+        providers: ["opencode-go", "vercel"],
+        model: "qwen3.7-plus",
       },
       {
         providers: ["openai", "quotio-openai", "github-copilot", "opencode", "vercel"],

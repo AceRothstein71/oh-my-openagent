@@ -271,8 +271,9 @@ The built-in `visual-engineering` category starts with Claude Opus 5 and does no
 |---|---|---|---|
 | 1 | `claude-opus-5` (`max`) | `anthropic`, `anthropic-api`, `github-copilot`, `opencode`, `vercel` | Primary UI/UX, CSS, design-token, and layout model. |
 | 2 | `kimi-k3` (`max`) | `opencode-go`, `kimi-for-coding`, `moonshotai`, `opencode`, `vercel` | Current visual fallback when Opus 5 is unavailable. |
-| 3 | `glm-5.2` (`max`) | `zai-coding-plan`, `opencode-go`, `vercel` | GLM visual fallback. |
-| 4 | `gpt-5.6-sol` (`medium`) | `openai`, `quotio-openai`, `github-copilot`, `opencode`, `vercel` | Final built-in visual fallback. |
+| 3 | `glm-4.6v` | `zai-coding-plan`, `vercel` | GLM visual fallback (vision-capable). |
+| 4 | `qwen3.7-plus` | `opencode-go`, `vercel` | Vision-capable fallback so opencode-go users never land on a text-only model. |
+| 5 | `gpt-5.6-sol` (`medium`) | `openai`, `quotio-openai`, `github-copilot`, `opencode`, `vercel` | Final built-in visual fallback. |
 
 Gemini 3.1 Pro remains a visual-capable explicit override where a provider exposes it. Gemini 3.6 Flash remains useful for fast writing and documentation work, but neither model is the current `visual-engineering` default chain.
 
@@ -284,7 +285,7 @@ Gemini 3.1 Pro remains a visual-capable explicit override where a provider expos
 |---|---|---|
 | Claude Opus/Sonnet for Sisyphus | Kimi K3 → GPT-5.6 Sol (medium) → GLM 5.2 → Big Pickle | Kimi K2.7 is not an automatic rung |
 | GPT-5.6 Sol | Hephaestus: no automatic fallback. Oracle: Gemini 3.1 Pro → Claude Opus 5 → GLM 5.2 | DeepSeek v3.2 is not in these built-in chains |
-| `visual-engineering` primary | Claude Opus 5 → Kimi K3 → GLM 5.2 → GPT-5.6 Sol (medium) | Qwen is not in the built-in chain |
+| `visual-engineering` primary | Claude Opus 5 → Kimi K3 → GLM 4.6v → Qwen 3.7 Plus → GPT-5.6 Sol (medium) | Every rung is vision-capable; text-only GLM 5.2 was removed (#6268) |
 | GPT 5.6 Luna Fast (Explore/Librarian) | DeepSeek v4 Flash (max) → Qwen 3.7 Plus → MiniMax M2.7 Highspeed (Vercel only) → MiniMax M3 → MiniMax M3 plan aliases → MiniMax M2.7 → Claude Haiku 4.5 → GPT-5.4 Nano | Opus (massive cost waste) |
 
 GLM 5.2 is now an explicit model literal in the automatic Sisyphus fallback chain. Older `glm-5` / `glm-5.1` catalog entries remain compatibility paths, but the current GLM fallback is `glm-5.2`.
@@ -359,7 +360,7 @@ A premium subscription tier ($10/month) that provides reliable access to Chinese
 | Model                    | Use Case                                                              |
 | ------------------------ | --------------------------------------------------------------------- |
 | **opencode-go/kimi-k3** | Strongest Kimi orchestration model; vision-capable, Claude-like reasoning. Primary recommended Kimi for Sisyphus when thinking cost is acceptable. Used by Sisyphus, Atlas, Sisyphus-Junior, Multimodal Looker. |
-| **opencode-go/glm-5.2**     | Text-only orchestration model. Used by Sisyphus, Oracle, Momus, and `visual-engineering`.  |
+| **opencode-go/glm-5.2**     | Text-only orchestration model. Used by Sisyphus, Oracle, and Momus fallbacks. Never routes `visual-engineering` (vision category) as of #6268.  |
 | **opencode-go/minimax-m3** | Latest MiniMax flagship on OpenCode Go. Primary MiniMax fallback for Atlas, Sisyphus-Junior, Explore and Librarian, ahead of M2.7. |
 | **opencode-go/minimax-m2.7** | Ultra-cheap, fast responses. Used by Atlas, Sisyphus-Junior, Explore and Librarian fallbacks for utility work. |
 | **opencode-go/qwen3.7-plus** | Qwen coding model used as the first OpenCode Go utility fallback for Explore and Librarian when GPT 5.6 Luna Fast is unavailable. |
@@ -386,7 +387,7 @@ When agents delegate work, they don't pick a model name — they pick a **catego
 
 | Category | Used For | Default Model | Full fallback chain |
 | --- | --- | --- | --- |
-| `visual-engineering` | Frontend, UI, CSS, design | `anthropic/claude-opus-5 (max)` | `anthropic\|anthropic-api\|github-copilot\|opencode\|vercel/claude-opus-5 (max)` → `kimi-for-coding\|moonshotai\|opencode-go\|opencode\|vercel/kimi-k3 (max)` → `zai-coding-plan\|opencode-go\|vercel/glm-5.2 (max)` → `openai\|quotio-openai\|github-copilot\|opencode\|vercel/gpt-5.6-sol (medium)` |
+| `visual-engineering` | Frontend, UI, CSS, design | `anthropic/claude-opus-5 (max)` | `anthropic\|anthropic-api\|github-copilot\|opencode\|vercel/claude-opus-5 (max)` → `kimi-for-coding\|moonshotai\|opencode-go\|opencode\|vercel/kimi-k3 (max)` → `zai-coding-plan\|vercel/glm-4.6v` → `opencode-go\|vercel/qwen3.7-plus` → `openai\|quotio-openai\|github-copilot\|opencode\|vercel/gpt-5.6-sol (medium)` |
 | `ultrabrain` | Maximum reasoning needed | `openai/gpt-5.6-sol (max)` | `openai\|quotio-openai\|vercel/gpt-5.6-sol (max)` → `github-copilot/gpt-5.6-sol (max)` → `openai\|opencode\|vercel/gpt-5.6-sol (max)` |
 | `deep` | Deep coding, complex logic | `openai/gpt-5.6-sol (medium)` | `openai\|quotio-openai\|github-copilot\|opencode\|vercel/gpt-5.6-sol (medium)` |
 | `artistry` | Creative, novel approaches | `anthropic/claude-fable-5 (xhigh)` | `anthropic\|anthropic-api\|github-copilot\|opencode\|vercel/claude-fable-5 (xhigh)` → `kimi-for-coding\|moonshotai\|opencode-go\|opencode\|vercel/kimi-k3 (max)` → `anthropic\|anthropic-api\|github-copilot\|opencode\|vercel/claude-opus-5 (xhigh)` |
@@ -548,7 +549,7 @@ If you have OpenRouter and want DeepSeek in the chain when GPT is unavailable:
 - **Oracle → MiniMax**: Same reason. Oracle needs sustained reasoning; MiniMax drifts.
 - **Explore → Opus**: Massive cost waste. Explore needs speed, not intelligence.
 - **Librarian → Opus**: Same. Doc search doesn't need Opus-level reasoning.
-- **`visual-engineering` → utility/search models**: Keep this category on its approved Claude Opus 5 → Kimi K3 → GLM 5.2 → GPT-5.6 Sol (medium) chain; MiniMax, Haiku, and search-oriented Qwen tiers are poor substitutes for visual implementation work.
+- **`visual-engineering` → utility/search models**: Keep this category on its approved Claude Opus 5 → Kimi K3 → GLM 4.6v → Qwen 3.7 Plus → GPT-5.6 Sol (medium) chain; MiniMax, Haiku, and search-oriented Qwen tiers are poor substitutes for visual implementation work.
 
 ---
 

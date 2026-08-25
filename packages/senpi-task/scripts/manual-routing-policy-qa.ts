@@ -32,7 +32,8 @@ function resolved(
 const scenarios = {
   visualPrimary: resolved("visual-engineering", [model("anthropic", "claude-opus-5")]),
   visualKimiFallback: resolved("visual-engineering", [model("kimi-coding", "k3")]),
-  visualGlmFallback: resolved("visual-engineering", [model("zai-coding-plan", "glm-5.2")]),
+  visualZaiVisionFallback: resolved("visual-engineering", [model("zai-coding-plan", "glm-4.6v")]),
+  visualGoVisionFallback: resolved("visual-engineering", [model("opencode-go", "qwen3.7-plus")]),
   quickPrimary: resolved("quick", [model("kimi-coding", "kimi-for-coding-highspeed")]),
   quickMiniFallback: resolved("quick", [model("quotio-openai", "gpt-5.6-luna-fast")]),
   quickGrokFallback: resolved("quick", [model("xai", "grok-4.20-0309-non-reasoning")]),

@@ -557,7 +557,7 @@ When Z.ai is the primary provider, the most important fallbacks are:
 | Agent                  | Model                      |
 | ---------------------- | -------------------------- |
 | **Sisyphus**           | `zai-coding-plan/glm-5.2`  |
-| **visual-engineering** | `zai-coding-plan/glm-5.2`  |
+| **visual-engineering** | `zai-coding-plan/glm-4.6v` |
 | **unspecified-high**   | `zai-coding-plan/glm-5.2`  |
 | **Multimodal-Looker**  | `zai-coding-plan/glm-4.6v` |
 

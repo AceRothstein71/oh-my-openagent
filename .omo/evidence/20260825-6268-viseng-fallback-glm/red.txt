@@ -1,0 +1,50 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/model-core/src/vision-category-fallback-invariant.test.ts:
+[test-setup] vendored lsp-daemon dist missing; building once via `npm ci && npm run build`...
+20 | 
+21 |     // when
+22 |     const textOnlyRungs = chain.filter((entry) => !acceptsImageInput(bundledSnapshot.models, entry.model))
+23 | 
+24 |     // then
+25 |     expect(textOnlyRungs).toEqual([])
+                               ^
+error: expect(received).toEqual(expected)
+
+- []
++ [
++   {
++     "model": "glm-5.2",
++     "providers": [
++       "zai-coding-plan",
++       "opencode-go",
++       "vercel",
++     ],
++     "variant": "max",
++   },
++ ]
+
+- Expected  - 1
++ Received  + 11
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6268/packages/model-core/src/vision-category-fallback-invariant.test.ts:25:27)
+(fail) vision category fallback invariant > #given the visual-engineering chain #when every rung model is checked against the bundled capabilities snapshot #then no rung pairs a text-only model (issue #6268) [1.65ms]
+34 |     const openCodeGoRungs = chain.filter((entry) => entry.providers.includes("opencode-go"))
+35 | 
+36 |     // then
+37 |     expect(openCodeGoRungs.length).toBeGreaterThanOrEqual(1)
+38 |     for (const rung of openCodeGoRungs) {
+39 |       expect(acceptsImageInput(bundledSnapshot.models, rung.model)).toBe(true)
+                                                                         ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6268/packages/model-core/src/vision-category-fallback-invariant.test.ts:39:69)
+(fail) vision category fallback invariant > #given an opencode-go user walking the visual-engineering chain #when the opencode-go rungs are collected #then at least one exists and every one is vision-capable [0.57ms]
+
+ 0 pass
+ 2 fail
+ 4 expect() calls
+Ran 2 tests across 1 file. [10.44s]

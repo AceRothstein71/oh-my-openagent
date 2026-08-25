@@ -147,7 +147,7 @@ Here's a practical starting `~/.omo/omo.jsonc`. OpenCode plugin settings live in
       // writing - docs/prose
       "writing": { "model": "kimi-for-coding/kimi-k3", "reasoning": "low" },
 
-      // visual-engineering - Opus 5, then Kimi K3 and GLM 5.2
+      // visual-engineering - Opus 5, then Kimi K3, GLM 4.6v, and Qwen 3.7 Plus (all vision-capable)
       "visual-engineering": {
         "model": "anthropic/claude-opus-5",
         "reasoning": "max",

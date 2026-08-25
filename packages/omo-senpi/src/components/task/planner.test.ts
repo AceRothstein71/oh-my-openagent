@@ -68,7 +68,7 @@ describe("createTaskChildPlanner", () => {
     const planner = createTaskChildPlanner(
       {},
       {},
-      () => registry([model("zai-coding-plan", "glm-5.2")]),
+      () => registry([model("kimi-for-coding", "kimi-k3")]),
     )
 
     // when
@@ -83,9 +83,9 @@ describe("createTaskChildPlanner", () => {
     const resolved = expectResolved(result)
     expect(resolved.plan.resolved_model).toMatchObject({
       source: "category",
-      provider: "zai-coding-plan",
-      model_id: "glm-5.2",
-      display: "zai-coding-plan/glm-5.2",
+      provider: "kimi-for-coding",
+      model_id: "kimi-k3",
+      display: "kimi-for-coding/kimi-k3",
       variant: "max",
     })
   })
@@ -225,7 +225,7 @@ describe("createTaskChildPlanner", () => {
     const planner = createTaskChildPlanner(
       {},
       BUILTIN_AGENTS,
-      () => registry([model("zai-coding-plan", "glm-5.2")]),
+      () => registry([model("opencode-go", "qwen3.7-plus")]),
     )
 
     // when
@@ -238,7 +238,7 @@ describe("createTaskChildPlanner", () => {
 
     // then
     const resolved = expectResolved(result)
-    expect(resolved.plan.resolved_model).toMatchObject({ source: "category", provider: "zai-coding-plan" })
+    expect(resolved.plan.resolved_model).toMatchObject({ source: "category", provider: "opencode-go" })
     expect(resolved.plan.category).toBe("visual-engineering")
   })
 
@@ -426,7 +426,7 @@ describe("createTaskChildPlanner plan variant", () => {
     const planner = createTaskChildPlanner(
       {},
       {},
-      () => registry([model("zai-coding-plan", "glm-5.2")]),
+      () => registry([model("kimi-for-coding", "kimi-k3")]),
     )
 
     // when
