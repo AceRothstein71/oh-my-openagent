@@ -31,6 +31,7 @@ export const HookNameSchema = z.enum([
 
   "compaction-context-injector",
   "compaction-todo-preserver",
+  "context-injector",
   "claude-code-hooks",
   "auto-slash-command",
   "edit-error-recovery",
