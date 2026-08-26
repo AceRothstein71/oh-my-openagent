@@ -1,7 +1,7 @@
 # Evidence: issue 6450 - [Senpi][WSL] Config watcher hangs on drvfs projects after updates
 
 Branch: fix/wsl-drvfs-config-watch-6450 (base origin/dev @ 8c57e463e)
-Worktree: /home/viprix/projects/oom-wt-6450
+Worktree: this repository's worktree root
 Date: 2026-08-26
 
 ## WHAT WAS TESTED
