@@ -71,6 +71,7 @@ import {
   isTerminalSessionError,
 } from "./error-classifier"
 import { isEmptyNoProgressAssistantTurnInfo } from "./empty-assistant-turn"
+import { createFallbackDeferralTracker, type FallbackDeferralTracker } from "./fallback-deferral"
 import { tryFallbackRetry } from "./fallback-retry-handler"
 import { messageUpdatedInfoHasParentWakeOutput } from "./message-updated-parent-wake-output"
 import {
@@ -240,6 +241,7 @@ export interface BackgroundManagerConfig {
   enableParentSessionNotifications?: boolean
   modelFallbackControllerAccessor?: ModelFallbackControllerAccessor
   log?: typeof log
+  fallbackDeferral?: FallbackDeferralTracker
 }
 
 export class BackgroundManager {
@@ -271,6 +273,7 @@ export class BackgroundManager {
   private notificationQueueByParent: Map<string, Promise<void>> = new Map()
   private readonly parentWakeNotifier: ParentWakeNotifier
   private parentWakeTextDeltaBuffers: Map<string, string> = new Map()
+  private fallbackDeferral: FallbackDeferralTracker
   private observedOutputSessions: Set<string> = new Set()
   private observedIncompleteTodosBySession: Map<string, boolean> = new Map()
   private rootDescendantCounts: Map<string, number>
@@ -304,6 +307,7 @@ export class BackgroundManager {
     this.enableParentSessionNotifications = options?.enableParentSessionNotifications ?? true
     this.modelFallbackControllerAccessor = options?.modelFallbackControllerAccessor
     this.logger = options?.log ?? log
+    this.fallbackDeferral = options?.fallbackDeferral ?? createFallbackDeferralTracker()
     this.parentWakeNotifier = new ParentWakeNotifier(
       {
         client: this.client,
@@ -1654,6 +1658,9 @@ The fallback retry session is now created and can be inspected directly.
         message: extractErrorMessage(assistantError),
         statusCode: extractErrorStatusCode(assistantError),
       }
+      if (this.maybeDeferFallbackTakeover(task, errorInfo, "message.updated")) {
+        return
+      }
       void this.tryFallbackRetry(task, errorInfo, "message.updated").catch((error) => {
         log("[background-agent] Error handling message.updated fallback retry:", {
           error,
@@ -1932,6 +1939,9 @@ The fallback retry session is now created and can be inspected directly.
 
       const errorMessage = typeof status.message === "string" ? status.message : undefined
       const errorInfo = { name: "SessionRetry", message: errorMessage }
+      if (this.maybeDeferFallbackTakeover(task, errorInfo, "session.status")) {
+        return
+      }
       void this.tryFallbackRetry(task, errorInfo, "session.status").catch((error) => {
         log("[background-agent] Error handling session.status fallback retry:", {
           error,
@@ -2001,6 +2011,7 @@ The fallback retry session is now created and can be inspected directly.
       clearTimeout(idleTimer)
       this.idleDeferralTimers.delete(task.id)
     }
+    this.fallbackDeferral.cancel(task.id)
 
     this.cleanupPendingByParent(task)
     this.clearNotificationsForTask(task.id)
@@ -2045,6 +2056,10 @@ The fallback retry session is now created and can be inspected directly.
         `Agent "${task.agent}" not found. Make sure the agent is registered in your opencode.json or provided by a plugin.`,
         "agent-not-found session.error",
       )
+      return
+    }
+
+    if (this.maybeDeferFallbackTakeover(task, errorInfo, "session.error")) {
       return
     }
 
@@ -2114,6 +2129,7 @@ The fallback retry session is now created and can be inspected directly.
       clearTimeout(idleTimer)
       this.idleDeferralTimers.delete(task.id)
     }
+    this.fallbackDeferral.cancel(task.id)
 
     this.cleanupPendingByParent(task)
     this.clearNotificationsForTask(task.id)
@@ -2136,6 +2152,124 @@ The fallback retry session is now created and can be inspected directly.
     this.enqueueNotificationForParent(task.parentSessionId, () => this.notifyParentSession(task)).catch(err => {
       log("[background-agent] Error in notifyParentSession for errored task:", { taskId: task.id, error: err })
     })
+  }
+
+  private maybeDeferFallbackTakeover(
+    task: BackgroundTask,
+    errorInfo: { name?: string; message?: string; statusCode?: number },
+    source: string,
+  ): boolean {
+    const deferMs = this.config?.fallbackDeferMs ?? 0
+    if (deferMs <= 0) return false
+    if (!shouldRetryError(errorInfo)) return false
+    if (isTerminalSessionError(errorInfo)) return false
+
+    const scheduled = this.fallbackDeferral.schedule(task.id, deferMs, () => {
+      void this.runDeferredFallbackTakeover(task, errorInfo, source).catch((error) => {
+        log("[background-agent] Error in deferred fallback takeover:", {
+          error,
+          taskId: task.id,
+          source,
+        })
+      })
+    })
+    if (scheduled) {
+      this.logger("[background-agent] Deferring fallback takeover behind retry grace window:", {
+        taskId: task.id,
+        source,
+        deferMs,
+        errorName: errorInfo.name,
+      })
+    }
+    return true
+  }
+
+  private async runDeferredFallbackTakeover(
+    task: BackgroundTask,
+    errorInfo: { name?: string; message?: string; statusCode?: number },
+    source: string,
+  ): Promise<void> {
+    if (this.tasks.get(task.id) !== task || task.status !== "running") return
+
+    const sessionID = task.sessionId
+    const deferredSource = `${source}:deferred`
+    if (!sessionID) {
+      await this.tryFallbackRetry(task, errorInfo, deferredSource)
+      return
+    }
+
+    const statuses = await this.readSessionStatusMap(task.id)
+    if (!statuses) {
+      await this.tryFallbackRetry(task, errorInfo, deferredSource)
+      return
+    }
+
+    const status = statuses[sessionID]
+    if (!status) {
+      const sessionExists = await this.verifySessionExists(sessionID)
+      if (sessionExists) {
+        this.logger("[background-agent] Skipping deferred fallback: session alive but absent from status map:", {
+          taskId: task.id,
+          sessionID,
+          source,
+        })
+        return
+      }
+      await this.tryFallbackRetry(task, errorInfo, deferredSource)
+      return
+    }
+
+    if (status.type === "idle") {
+      const hasOutput = await this.validateSessionHasOutput(sessionID)
+      if (hasOutput) {
+        this.logger("[background-agent] Skipping deferred fallback: session recovered with output:", {
+          taskId: task.id,
+          sessionID,
+          source,
+        })
+        return
+      }
+      await this.tryFallbackRetry(task, errorInfo, deferredSource)
+      return
+    }
+
+    if (isActiveSessionStatus(status.type)) {
+      if (status.type !== "retry") {
+        this.logger("[background-agent] Skipping deferred fallback: session recovered and active:", {
+          taskId: task.id,
+          sessionID,
+          source,
+          sessionStatus: status.type,
+        })
+        return
+      }
+      await this.tryFallbackRetry(task, errorInfo, deferredSource)
+      return
+    }
+
+    this.logger("[background-agent] Skipping deferred fallback: terminal or unknown session status:", {
+      taskId: task.id,
+      sessionID,
+      source,
+      sessionStatus: status.type,
+    })
+  }
+
+  private async readSessionStatusMap(taskId?: string): Promise<Record<string, { type: string; message?: string }> | undefined> {
+    const sessionStatusMethod = this.client?.session?.status
+    if (typeof sessionStatusMethod !== "function") {
+      return undefined
+    }
+    try {
+      const statusResult = await this.client.session.status()
+      return normalizeSDKResponse(statusResult, {})
+    } catch (error) {
+      log("[background-agent] Deferred fallback status probe failed:", {
+        error,
+        taskId,
+      })
+      return undefined
+    }
   }
 
   private async tryFallbackRetry(
@@ -2173,6 +2307,9 @@ The task was re-queued on a fallback model after a retryable failure.
       },
     })
     const retried = await result
+    if (retried) {
+      this.fallbackDeferral.cancel(task.id)
+    }
     if (retried && retryingNotification) {
       const parentPromptContext = await this.resolveParentWakePromptContext(task)
       this.queuePendingParentWake(
@@ -2429,6 +2566,7 @@ The task was re-queued on a fallback model after a retryable failure.
       clearTimeout(idleTimer)
       this.idleDeferralTimers.delete(task.id)
     }
+    this.fallbackDeferral.cancel(task.id)
 
     removeTaskToastTracking(task.id)
 
@@ -2560,6 +2698,7 @@ The task was re-queued on a fallback model after a retryable failure.
         clearTimeout(idleTimer)
         this.idleDeferralTimers.delete(task.id)
       }
+      this.fallbackDeferral.cancel(task.id)
 
       if (task.sessionId) {
         subagentSessions.delete(task.sessionId)
@@ -2890,6 +3029,7 @@ The task was re-queued on a fallback model after a retryable failure.
           clearTimeout(idleTimer)
           this.idleDeferralTimers.delete(taskId)
         }
+        this.fallbackDeferral.cancel(taskId)
         if (wasPending) {
           const key = this.concurrencyManager.getConcurrencyKey(this.getRawConcurrencyKeyFromTask(task))
           const queue = this.queuesByKey.get(key)
@@ -2961,6 +3101,7 @@ The task was re-queued on a fallback model after a retryable failure.
       clearTimeout(idleTimer)
       this.idleDeferralTimers.delete(task.id)
     }
+    this.fallbackDeferral.cancel(task.id)
 
     this.cleanupPendingByParent(task)
     this.clearNotificationsForTask(task.id)
@@ -3025,6 +3166,9 @@ The task was re-queued on a fallback model after a retryable failure.
               ? (sessionStatus as { message?: string }).message
               : undefined
             const errorInfo = { name: "SessionRetry", message: retryMessage }
+            if (this.maybeDeferFallbackTakeover(task, errorInfo, "polling:session.status")) {
+              continue
+            }
             if (await this.tryFallbackRetry(task, errorInfo, "polling:session.status")) {
               continue
             }
@@ -3176,6 +3320,7 @@ The task was re-queued on a fallback model after a retryable failure.
       clearTimeout(timer)
     }
     this.idleDeferralTimers.clear()
+    this.fallbackDeferral.cancelAll()
 
     this.parentWakeNotifier.shutdown()
 

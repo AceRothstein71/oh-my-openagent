@@ -25,6 +25,8 @@ export const BackgroundTaskConfigSchema = z.object({
   /** Maximum tool calls per subagent task before circuit breaker triggers (default: 200, minimum: 10). Prevents runaway loops from burning unlimited tokens. */
   maxToolCalls: z.number().int().min(10).optional(),
   circuitBreaker: CircuitBreakerConfigSchema.optional(),
+  /** Grace period in milliseconds before a retryable-error fallback takeover (default: 0 = immediate, current behavior). While >0, transient errors wait this long so an in-flight session retry can recover; terminal/non-retryable errors still fall back immediately. */
+  fallbackDeferMs: z.number().int().min(0).optional(),
 })
 
 export type BackgroundTaskConfig = z.infer<typeof BackgroundTaskConfigSchema>

@@ -490,6 +490,7 @@ Control parallel agent execution and concurrency limits. `background_task` (came
 | `syncPollTimeoutMs`         | -         | Synchronous polling timeout in milliseconds (min: 60000)             |
 | `maxToolCalls`              | `4000`    | Maximum tool calls per subagent task (min: 10)                        |
 | `circuitBreaker`            | -         | Circuit-breaker object: `enabled` (default `true`), `maxToolCalls`, `consecutiveThreshold` |
+| `fallbackDeferMs`           | `0`       | Grace period before a retryable-error model fallback takeover (min: 0). While waiting, an in-flight session retry can recover on the original model; terminal and non-retryable errors still fall back immediately. |
 
 Priority: `modelConcurrency` > `providerConcurrency` > `defaultConcurrency`
 
