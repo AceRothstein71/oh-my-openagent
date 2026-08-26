@@ -1,0 +1,104 @@
+
+=== isolation proof BEFORE (real dirs, metadata only: file count + mtime digest) ===
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.omo
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.senpi
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.codex
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.cache/opencode
+
+=== 1: installed-layout CLI answers ulw-loop status --json with NO env help (issue acceptance command) ===
+create exit:0
+status exit:0
+{
+  "ok": true,
+  "plan": {
+    "version": 1,
+    "evidenceLayoutVersion": 2,
+    "createdAt": "2026-08-26T08:50:21.774Z",
+    "updatedAt": "2026-08-26T08:50:21.774Z",
+    "briefPath": ".omo/ulw-loop/qa6456/brief.md",
+    "goalsPath": ".omo/ulw-loop/qa6456/goals.json",
+    "ledgerPath": ".omo/ulw-loop/qa6456/ledger.jsonl",
+    "codexGoalMode": "aggregate",
+    "goals": [
+      {
+        "id": "G001-issue-6456-acceptance-probe",
+        "title": "issue 6456 acceptance probe",
+        "objective": "issue 6456 acceptance probe",
+        "status": "pending",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "happy path for: issue 6456 acceptance probe",
+            "userModel": "happy",
+            "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 1.",
+            "essential": true,
+            "capturedEvidence": null,
+            "status": "pending"
+          },
+          {
+            "id": "C002",
+            "scenario": "edge case (boundary/empty/malformed)",
+            "userModel": "edge",
+            "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: issue 6456 acceptance probe.",
+            "essential": true,
+            "capturedEvidence": null,
+            "status": "pending"
+          },
+          {
+            "id": "C003",
+            "scenario": "regression: adjacent surface still works",
+            "userModel": "regression",
+            "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: issue 6456 acceptance probe.",
+            "essential": false,
+            "capturedEvidence": null,
+            "status": "pending"
+          }
+        ],
+        "attempt": 0,
+        "createdAt": "2026-08-26T08:50:21.774Z",
+        "updatedAt": "2026-08-26T08:50:21.774Z"
+      }
+    ],
+    "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/qa6456/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/qa6456/ledger.jsonl as the audit trail."
+  },
+  "summary": {
+    "total": 1,
+    "pending": 1,
+    "in_progress": 0,
+    "complete": 0,
+    "failed": 0,
+    "blocked": 0,
+    "review_blocked": 0,
+    "needs_user_decision": 0,
+    "superseded": 0,
+    "criteria": {
+      "total": 3,
+      "pass": 0,
+      "pending": 3,
+      "fail": 0,
+      "blocked": 0
+    }
+  }
+}
+ACCEPTANCE_JSON_OK goals=1
+
+=== 2: unscoped status in a plan-less cwd exits non-zero with the documented missing-plan error ===
+empty-cwd status exit:1 stderr:
+
+=== 3: adapter spawn path end-to-end via probe-cross-session.mjs (real component + staged CLI; bun script) ===
+probe exit:0
+{"verdict":"PASS","sessionA":{"sessionId":"session-A","messageCount":1,"customTypes":["omo-senpi:ulw-continuation"]},"sessionB":{"sessionId":"session-B","messageCount":0,"customTypes":[]},"paths":{"ownerPlan":true,"unrelatedPlan":false,"sharedRootPlan":false},"noSessionHost":{"sessionId":null,"messageCount":0,"unscopedPlan":true},"cleanup":{"removedSharedCwd":true}}
+
+=== isolation proof AFTER ===
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.omo
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.senpi
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.codex
+ABSENT /tmp/opencode/issue-6456/sandbox/home/.cache/opencode
+REAL_DIRS_UNTOUCHED
+
+=== sandbox residue summary ===
+/tmp/opencode/issue-6456/sandbox/status-probe-GwONqq/status.json
+/tmp/opencode/issue-6456/sandbox/status-probe-GwONqq/.omo
+/tmp/opencode/issue-6456/sandbox/status-probe-GwONqq/create.json
+
+QA_VERDICT:PASS

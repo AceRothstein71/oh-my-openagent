@@ -1,0 +1,8 @@
+
+ RUN  v4.1.11 /home/viprix/projects/oom-wt-6456/packages/omo-codex/plugin/components/ulw-loop
+
+
+ Test Files  7 passed (7)
+      Tests  40 passed (40)
+   Start at  10:49:29
+   Duration  4.81s (transform 4.43s, setup 0ms, import 6.80s, tests 4.54s, environment 7ms)

@@ -1,0 +1,52 @@
+
+ RUN  v4.1.11 /home/viprix/projects/oom-wt-6456/packages/omo-codex/plugin/components/ulw-loop
+
+ ❯ test/cli-checkpoint-continuation.test.ts (2 tests | 2 failed) 217ms
+     × #given another pending goal #when checkpoint completes #then JSON includes the next goal 141ms
+     × #given no-advance #when checkpoint completes #then JSON omits next 74ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/cli-checkpoint-continuation.test.ts > ulwLoopCommand checkpoint continuation > #given another pending goal #when checkpoint completes #then JSON includes the next goal
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ test/cli-checkpoint-continuation.test.ts:82:5
+     80|     "--json",
+     81|    ]),
+     82|   ).toBe(0);
+       |     ^
+     83|   expect(stdoutJson()).toMatchObject({
+     84|    next: { resumed: false, goal: { id: "G002-goal-b", status: "in_prog…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/cli-checkpoint-continuation.test.ts > ulwLoopCommand checkpoint continuation > #given no-advance #when checkpoint completes #then JSON omits next
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ test/cli-checkpoint-continuation.test.ts:108:5
+    106|     "--json",
+    107|    ]),
+    108|   ).toBe(0);
+       |     ^
+    109|   expect(stdoutJson()).not.toHaveProperty("next");
+    110|  });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 6 passed (7)
+      Tests  2 failed | 38 passed (40)
+   Start at  10:21:43
+   Duration  4.02s (transform 2.89s, setup 0ms, import 5.13s, tests 4.48s, environment 1ms)

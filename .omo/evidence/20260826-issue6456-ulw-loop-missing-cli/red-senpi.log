@@ -1,0 +1,74 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-senpi/src/package-shape.test.ts:
+147 |     try {
+148 |       // when
+149 |       const bin = resolveOmoBin({}, importerUrl)
+150 |
+151 |       // then: the pinned CLI ships inside the package and resolves with no env help at all
+152 |       expect(bin).toBe(resolve("packages/omo-senpi/plugin/runtime/agent-toolkit/cli.js"))
+                        ^
+error: expect(received).toBe(expected)
+
+Expected: "/home/viprix/projects/oom-wt-6456/packages/omo-senpi/plugin/runtime/agent-toolkit/cli.js"
+Received: null
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6456/packages/omo-senpi/src/package-shape.test.ts:152:19)
+(fail) omo-senpi package shape > #given the built senpi plugin package #when resolving its staged ulw-loop CLI and probing status #then the CLI runs without a Codex installation or session env [3.68ms]
+
+packages/omo-senpi/src/components/ulw-loop/omo-command.test.ts:
+105 |
+106 |       // when
+107 |       const resolved = resolveOmoBin({}, importerUrl)
+108 |
+109 |       // then
+110 |       expect(resolved).toBe(stagedCli)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "/tmp/omo-senpi-bundled-toolkit-mtdzsl/runtime/agent-toolkit/cli.js"
+Received: null
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6456/packages/omo-senpi/src/components/ulw-loop/omo-command.test.ts:110:24)
+(fail) omo-senpi ulw-loop omo-command bundled toolkit resolution > #given a staged runtime beside a bundle-layout importer #when resolving with a clean env #then the bundled CLI wins over every env override [30.26ms]
+122 |
+123 |       // when
+124 |       const resolved = resolveOmoBin({ OMO_BIN: "/opt/omo/bin/omo-agent-toolkit" }, importerUrl)
+125 |
+126 |       // then
+127 |       expect(resolved).toBe("/opt/omo/bin/omo-agent-toolkit")
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: "/opt/omo/bin/omo-agent-toolkit"
+Received: null
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6456/packages/omo-senpi/src/components/ulw-loop/omo-command.test.ts:127:24)
+(fail) omo-senpi ulw-loop omo-command bundled toolkit resolution > #given no staged runtime at the importer-relative location #when resolving with an env override #then resolution falls through to the override [6.94ms]
+167 |       // when
+168 |       const result = await runOmoCommand(process.execPath, ["-e", probe], { cwd: tmpdir() })
+169 |
+170 |       // then
+171 |       expect(result.code).toBe(0)
+172 |       expect(JSON.parse(result.stdout)).toEqual([])
+                                              ^
+error: expect(received).toEqual(expected)
+
+- []
++ [
++   "OMO_ULW_LOOP_SESSION_ID",
++   "CODEX_SESSION_ID",
++   "CODEX_THREAD_ID",
++   "PI_SESSION_ID",
++ ]
+
+- Expected  - 1
++ Received  + 6
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6456/packages/omo-senpi/src/components/ulw-loop/omo-command.test.ts:172:41)
+(fail) omo-senpi ulw-loop omo-command child env hygiene > #given inherited session-scoping env #when running the command #then the child sees none of the session keys [209.14ms]
+
+ 13 pass
+ 4 fail
+ 45 expect() calls
+Ran 17 tests across 2 files. [2.62s]
