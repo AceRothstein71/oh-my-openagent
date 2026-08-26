@@ -293,6 +293,7 @@ export function createDagRuntime(deps: DagRuntimeDeps): DagRuntime {
   const statusUi = createDagStatusUi({
     manager: queryManager,
     runtime: deps.engine.runtime,
+    logger: deps.logger,
     ...(deps.statusUiTimers === undefined ? {} : { timers: deps.statusUiTimers }),
   })
 
@@ -438,26 +439,21 @@ export function createDagRuntime(deps: DagRuntimeDeps): DagRuntime {
       activeSessionId = deps.engine.runtime.sessionId()
       durableEventListener = onEvent
       wake?.onSessionStart(activeSessionId)
+      const sessionId = activeSessionId
+      if (sessionId !== undefined) {
+        try {
+          await recovery.resumePausedRuns(sessionId)
+        } finally {
+          clearSubscriptions(recoveryTaskSubscriptions)
+        }
+        for (const run of manager.list(sessionId)) ensureScheduled(run.runId, sessionId)
+      }
+      // #7316 defect 1: the bridge attaches AFTER recovery so its first emitted snapshot reflects
+      // the recovered runs. Attaching first pushed a pre-recovery paused projection, and wholesale
+      // consumers (omo-desktop) read a run missing-or-paused as "the dag finished". While recovery
+      // runs the bridge is silent, which consumers treat as "no change" - dark beats lying.
       bridge.attach()
       syncActivitySubscriptions()
-      // The ledger and heartbeat wire up immediately so recovery-era events (including the
-      // scheduler overflow marker) still reach viewers, but the wholesale snapshot stays suspended
-      // until recovery settles: hosts read omo.dag.updated as "a live run missing from it has
-      // completed", so the first payload must describe the recovered state, never pre-recovery disk.
-      bridge.setSnapshotsSuspended(true)
-      try {
-        const sessionId = activeSessionId
-        if (sessionId !== undefined) {
-          try {
-            await recovery.resumePausedRuns(sessionId)
-          } finally {
-            clearSubscriptions(recoveryTaskSubscriptions)
-          }
-          for (const run of manager.list(sessionId)) ensureScheduled(run.runId, sessionId)
-        }
-      } finally {
-        bridge.setSnapshotsSuspended(false)
-      }
       statusUi.syncNow()
     },
     sync() {
