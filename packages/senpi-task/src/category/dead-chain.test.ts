@@ -24,6 +24,10 @@ function registry(models: readonly FakeModel[]) {
 // visual-engineering/unspecified-high alive so the gated list is not simply empty.
 const OPUS_ONLY = registry([model("omo-mock", "mock-parent"), model("anthropic", "claude-opus-5")])
 
+// No Claude model at all: the whole architect chain (fable-5 + opus-5) is dead while gpt-5.6-sol
+// keeps deep/ultrabrain alive.
+const NO_CLAUDE = registry([model("omo-mock", "mock-parent"), model("openai", "gpt-5.6-sol")])
+
 describe("dead-chain category disabling", () => {
   describe("#given a builtin category whose chain has no resolvable rung", () => {
     test("#when spawned #then it fails model_unavailable with attempted_chain and missing_providers", () => {
@@ -69,14 +73,26 @@ describe("dead-chain category disabling", () => {
 
     test("#when a gated builtin's chain is also dead #then the gate failure carries the chain details", () => {
       // given / when
-      const result = resolveCategory("architect", {}, OPUS_ONLY)
+      const result = resolveCategory("architect", {}, NO_CLAUDE)
 
       // then
       expect(result.kind).toBe("model_unavailable")
       if (result.kind !== "model_unavailable") throw new Error("Expected model_unavailable")
       expect(result.attempted_chain).toEqual(CATEGORY_FALLBACK_CHAINS.architect)
+      expect(result.missing_providers).toContain("anthropic")
       expect(result.missing_providers).toContain("anthropic-api")
-      expect(result.missing_providers).not.toContain("anthropic")
+    })
+
+    test("#when a gated builtin's chain is viable but its gate model is absent #then the failure is gate-only without chain-dead details", () => {
+      // given / when
+      const result = resolveCategory("architect", {}, OPUS_ONLY)
+
+      // then
+      expect(result.kind).toBe("model_unavailable")
+      if (result.kind !== "model_unavailable") throw new Error("Expected model_unavailable")
+      expect(result.attemptedModel).toBe("anthropic/claude-fable-5")
+      expect(result.attempted_chain).toBeUndefined()
+      expect(result.missing_providers).toBeUndefined()
     })
   })
 
