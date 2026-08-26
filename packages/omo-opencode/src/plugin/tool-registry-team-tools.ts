@@ -1,12 +1,11 @@
 import type { ToolDefinition } from "@opencode-ai/plugin"
 import type { OhMyOpenCodeConfig } from "../config"
 import type { Managers } from "../create-managers"
+import { getSisyphusJuniorModelOverride } from "../tools/delegate-task/fresh-config-snapshot"
 import type { PluginContext } from "./types"
 import type { ToolRegistryFactories } from "./tool-registry-factories"
 
-export function getSisyphusJuniorModelOverride(agentOverride?: { model?: string }): string | undefined {
-  return agentOverride?.model
-}
+export { getSisyphusJuniorModelOverride }
 
 export function createTeamModeToolsRecord(args: {
   readonly pluginConfig: OhMyOpenCodeConfig

@@ -1,5 +1,6 @@
 import type { BackgroundManager } from "../../features/background-agent"
 import type { CategoriesConfig, GitMasterConfig, BrowserAutomationProvider, AgentOverrides, SisyphusAgentConfig } from "../../config/schema"
+import type { OmoConfigEnv } from "@oh-my-opencode/omo-config-core"
 import type { ModelFallbackControllerAccessor } from "../../hooks/model-fallback"
 import type { LoadedSkill } from "../../features/opencode-skill-loader/types"
 import type { SessionPromptAsyncData, SessionPromptData, SessionStatusData } from "@opencode-ai/sdk"
@@ -100,6 +101,10 @@ export interface DelegateTaskToolOptions {
    * Test hook: bypass fetchAvailableModels() by providing an explicit available model set.
    */
   availableModelsOverride?: Set<string>
+  /**
+   * Test hook: environment for the per-spawn fresh config read (defaults to process.env).
+   */
+  configEnvironment?: OmoConfigEnv
   userCategories?: CategoriesConfig
   gitMasterConfig?: GitMasterConfig
   sisyphusJuniorModel?: string

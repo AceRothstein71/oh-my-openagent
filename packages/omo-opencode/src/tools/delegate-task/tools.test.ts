@@ -4409,6 +4409,100 @@ describe("sisyphus-task", () => {
       expect(promptBody.variant).toBe("max")
     }, { timeout: 20000 })
 
+    test("re-reads omo.json per spawn so an edited agent model applies without restart (#7325)", async () => {
+      // given - a project dir whose .omo/omo.json configures oracle with model-a
+      const { join } = require("node:path")
+      const { tmpdir } = require("node:os")
+      const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = require("node:fs")
+      const projectDir = mkdtempSync(join(tmpdir(), "omo-7325-"))
+      const isolatedHome = mkdtempSync(join(tmpdir(), "omo-7325-home-"))
+      try {
+        const omoDir = join(projectDir, ".omo")
+        mkdirSync(omoDir, { recursive: true })
+        const configPath = join(omoDir, "omo.json")
+        writeFileSync(configPath, JSON.stringify({
+          agents: { oracle: { model: "test-provider-7325/model-a" } },
+        }))
+
+        const { createDelegateTask } = require("./tools")
+        let promptBody: CapturedPromptBody = {}
+        const mockManager = { launch: async () => ({}) }
+        const promptMock = async (input: CapturedPromptInput) => {
+          promptBody = input.body
+          return { data: {} }
+        }
+        let sessionCounter = 0
+        const sessionIDFor = () => `ses_fresh_config_${sessionCounter}`
+        const mockClient = {
+          app: {
+            agents: async () => ({
+              data: [
+                { name: "oracle", mode: "subagent", model: { providerID: "openai", modelID: "gpt-5.5" } },
+              ],
+            }),
+          },
+          config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+          session: {
+            get: async () => ({ data: { directory: "/project" } }),
+            create: async () => {
+              sessionCounter += 1
+              return { data: { id: sessionIDFor() } }
+            },
+            prompt: promptMock,
+            promptAsync: promptMock,
+            messages: async () => ({
+              data: [{ info: { role: "assistant" }, parts: [{ type: "text", text: "Done" }] }],
+            }),
+            status: async () => ({ data: { [sessionIDFor()]: { type: "idle" } } }),
+          },
+        }
+
+        const toolContext = {
+          sessionID: "parent-session",
+          messageID: "parent-message",
+          agent: "sisyphus",
+          abort: new AbortController().signal,
+        }
+        const delegateArgs = {
+          description: "Consult oracle after config edit",
+          prompt: "Review architecture",
+          subagent_type: "oracle",
+          run_in_background: false,
+          load_skills: [],
+        }
+
+        const toolBeforeEdit = createDelegateTask({
+          manager: mockManager,
+          client: mockClient,
+          directory: projectDir,
+          agentOverrides: {},
+          configEnvironment: { HOME: isolatedHome },
+        })
+        await toolBeforeEdit.execute(delegateArgs, toolContext)
+        expect(promptBody.model).toEqual({
+          providerID: "test-provider-7325",
+          modelID: "model-a",
+        })
+
+        // when - the user edits omo.json mid-session and spawns again
+        writeFileSync(configPath, JSON.stringify({
+          agents: { oracle: { model: "test-provider-7325/model-b" } },
+        }))
+        releaseAllPromptAsyncReservationsForTesting()
+        promptBody = {}
+        await toolBeforeEdit.execute(delegateArgs, toolContext)
+
+        // then - the fresh value from disk must be used, not the boot snapshot
+        expect(promptBody.model).toEqual({
+          providerID: "test-provider-7325",
+          modelID: "model-b",
+        })
+      } finally {
+        rmSync(projectDir, { recursive: true, force: true })
+        rmSync(isolatedHome, { recursive: true, force: true })
+      }
+    }, { timeout: 20000 })
+
     test("fallback chain resolves model when no override and no matchedAgent.model (#1357)", async () => {
       // given - agent registered without model, no override, but AGENT_MODEL_REQUIREMENTS has fallback
       const { createDelegateTask } = require("./tools")
