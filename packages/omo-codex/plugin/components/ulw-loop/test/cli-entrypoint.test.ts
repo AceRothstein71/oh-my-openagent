@@ -5,6 +5,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { ULW_LOOP_SESSION_ENV_KEYS } from "../src/paths.js";
+
 const componentRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const builtCli = join(componentRoot, "dist", "cli.js");
 
@@ -16,9 +18,7 @@ type CliResult = {
 
 function sanitizedEnv(): NodeJS.ProcessEnv {
 	const env = { ...process.env };
-	delete env["CODEX_SESSION_ID"];
-	delete env["CODEX_THREAD_ID"];
-	delete env["OMO_ULW_LOOP_SESSION_ID"];
+	for (const key of ULW_LOOP_SESSION_ENV_KEYS) delete env[key];
 	return env;
 }
 

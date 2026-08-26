@@ -5,16 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ulwLoopCommand } from "../src/cli-commands.js";
 import { ULW_LOOP_AGGREGATE_CODEX_OBJECTIVE } from "../src/goal-status.js";
+import { captureAndClearUlwLoopSessionEnv, restoreUlwLoopSessionEnv } from "./session-env-isolation.js";
 
 let testDir: string;
 let out: string[];
-let originalOmoSessionId: string | undefined;
+let sessionEnvSnapshot: ReturnType<typeof captureAndClearUlwLoopSessionEnv>;
 
 beforeEach(async () => {
 	testDir = await mkdtemp(join(tmpdir(), "ug-cli-checkpoint-next-"));
 	out = [];
-	originalOmoSessionId = process.env["OMO_ULW_LOOP_SESSION_ID"];
-	delete process.env["OMO_ULW_LOOP_SESSION_ID"];
+	sessionEnvSnapshot = captureAndClearUlwLoopSessionEnv();
 	vi.spyOn(process, "cwd").mockReturnValue(testDir);
 	vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array): boolean => {
 		out.push(chunk.toString());
@@ -25,8 +25,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	vi.restoreAllMocks();
-	if (originalOmoSessionId === undefined) delete process.env["OMO_ULW_LOOP_SESSION_ID"];
-	else process.env["OMO_ULW_LOOP_SESSION_ID"] = originalOmoSessionId;
+	restoreUlwLoopSessionEnv(sessionEnvSnapshot);
 	await rm(testDir, { recursive: true, force: true });
 });
 
