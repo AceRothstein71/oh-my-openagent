@@ -101,13 +101,12 @@ export function composeOmoSenpiExtension(
       { scheduleFlush: (flush) => void setTimeout(flush, 200) },
     )
 
-    // Warm the pi-tui lazy boundary once for the whole extension, before any component registers.
-    // Renderers across several components (fallback-architect notices, memory worker entries, task
-    // renderers) read the pi-tui namespace synchronously from render callbacks, and any of those
-    // components can be live while another is disabled by flag or fails to register. Warming here —
-    // not inside one component's register — is what keeps `--omo-senpi-task-disabled` from turning
-    // every other component's notice into a throw. The load is memoized, so this costs one small
-    // module load per process.
+    // Warm the pi-tui lazy boundary once for THIS bundle before any component registers. The
+    // memoized boundary state is per-bundle: this warm-up covers the components that live in
+    // omo.js (fallback-architect notices, memory worker entries) even when other components are
+    // disabled by flag or fail to register. It CANNOT warm the separately-bundled omo-task.js,
+    // whose own copy is warmed by createTaskComponent().register() - see issue #7339. The load is
+    // memoized, so this costs one small module load per process.
     await loadPiTui()
 
     const ctx: ComponentContext = {

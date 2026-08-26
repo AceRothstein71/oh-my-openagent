@@ -4,6 +4,7 @@ import * as fs from "node:fs"
 import { join } from "node:path"
 
 import { defaultSignaller } from "../lifecycle/context"
+import { isSenpiBarrelLoaded, loadSenpiBarrel } from "../lazy/senpi-barrel"
 import { dagDefinitionAmendedEvent, dagRunCreatedEvent, type DagRunEventType } from "./events"
 import { dagDefinitionFingerprint, diffNodeFingerprints, type DagNodeFingerprintInputV1 } from "./fingerprint"
 import { compileDag, type DagCompileError, type DagDefinition, type DagNodeInput } from "./graph"
@@ -219,19 +220,32 @@ export function createDagManager(options: DagManagerOptions): DagManager {
   return {
     // start is async so every rejection path (invalid_definition, definition_conflict) reaches the
     // caller as a promise rejection rather than a synchronous throw.
-    start: async (params) => startRun(params, {
-      store,
-      now,
-      newRunId,
-      settings,
-      ...(options.materializeSkills === undefined ? {} : { materializeSkills: options.materializeSkills }),
-    }),
-    amend: async (params) => amendRun(params, {
-      store,
-      now,
-      settings,
-      ...(options.materializeSkills === undefined ? {} : { materializeSkills: options.materializeSkills }),
-    }),
+    start: async (params) => {
+      // Skill materialization runs synchronously inside startRun and reads the senpi barrel
+      // through the default filesystem skill loader's discovery, so this async entry point must
+      // await the barrel load first (issue #7339: a cold barrel crashed dag start before any node
+      // was dispatched). The loaded-check keeps the warm-barrel path synchronous: node-retry's
+      // prompt override fires amend as `void manager.amend(...)` and reads the mutated checkpoint
+      // WITHOUT awaiting, which only works while the wrapper body runs without yielding.
+      if (options.materializeSkills !== undefined && !isSenpiBarrelLoaded()) await loadSenpiBarrel()
+      return startRun(params, {
+        store,
+        now,
+        newRunId,
+        settings,
+        ...(options.materializeSkills === undefined ? {} : { materializeSkills: options.materializeSkills }),
+      })
+    },
+    amend: async (params) => {
+      // Same seam as start, with the same synchronous-when-warm requirement (see above).
+      if (options.materializeSkills !== undefined && !isSenpiBarrelLoaded()) await loadSenpiBarrel()
+      return amendRun(params, {
+        store,
+        now,
+        settings,
+        ...(options.materializeSkills === undefined ? {} : { materializeSkills: options.materializeSkills }),
+      })
+    },
     attach(runId, parentSessionId) {
       ownedRecord(runId, parentSessionId)
       return {

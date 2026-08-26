@@ -28,6 +28,15 @@ export function loadSenpiBarrel(): Promise<SenpiBarrelModule> {
 }
 
 /**
+ * True once the barrel namespace is available synchronously. Entry points that must keep running
+ * their body SYNCHRONOUSLY when possible (a caller may read their side effects without awaiting)
+ * gate the await on this check: warm barrel means zero yield, cold barrel means one awaited load.
+ */
+export function isSenpiBarrelLoaded(): boolean {
+  return barrelModule !== undefined
+}
+
+/**
  * Synchronous access to the loaded senpi barrel namespace. Only valid after an async entry point
  * on the same code path awaited loadSenpiBarrel(); the throw below marks a missed warm-up, which
  * is a programming error rather than a runtime condition to handle.

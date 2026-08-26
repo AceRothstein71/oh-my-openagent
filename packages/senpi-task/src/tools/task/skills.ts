@@ -121,8 +121,10 @@ export function createFsSkillLoader(options: FsSkillLoaderOptions = {}): SkillLo
   const home = options.homeDir ?? homedir()
   const agentDir = options.agentDir ?? join(home, ".senpi", "agent")
   const extraDirs = options.extraDirs ?? []
-  // The default discovery reads the senpi barrel lazily through the boundary; the loader runs on
-  // the task spawn path, which awaits loadSenpiBarrel() before resolving skills.
+  // The default discovery reads the senpi barrel lazily through the boundary. Sync callers are
+  // reached from async entry points that await loadSenpiBarrel() first: the task spawn path
+  // (tools/task/execute.ts + execute-single.ts) and dag run creation/amendment
+  // (dag/manager.ts start/amend when a materializer is configured).
   const discover = options.loadSkillsFromDir ?? ((dir: Parameters<typeof discoverSkillsFromDir>[0]) => senpiBarrel().loadSkillsFromDir(dir))
   return (names, cwd): SkillResolution => {
     const dirs = searchDirs(cwd, home, agentDir, extraDirs)
