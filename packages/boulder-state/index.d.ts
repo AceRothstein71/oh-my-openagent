@@ -116,6 +116,8 @@ export interface TaskTimerInput extends TaskSessionInput {
 export declare function readCurrentTopLevelTask(planPath: string): TopLevelTaskRef | null
 export declare function getPlanChecklist(planPath: string): PlanChecklist
 export declare function parsePlanChecklist(markdown: string): PlanChecklist
+export declare const TASK_ID_PATTERN: string
+export declare const FINAL_WAVE_TASK_ID_PATTERN: string
 export declare function addBoulderWork(directory: string, input: BoulderWorkInput): BoulderState | null
 export declare function appendSessionId(
   directory: string,

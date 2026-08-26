@@ -220,6 +220,149 @@ describe("parsePlanChecklist", () => {
     // then
     expect(checklist).toEqual({ completed: 0, remaining: 0, total: 0, nextTaskLabel: null })
   })
+
+  test("#given common task-ID schemes in counted sections #when parsed #then every scheme is counted", () => {
+    // given
+    const markdown = [
+      "## Todos",
+      "- [x] T1.1 - tolerances schema",
+      "- [ ] T5.9 - verification engine",
+      "## Final verification wave",
+      "- [x] T6.3a follow-up patch",
+      "- [ ] F5 - delta verification",
+      "- [ ] H1 - push and PR",
+    ].join("\n")
+
+    // when
+    const checklist = parsePlanChecklist(markdown)
+
+    // then
+    expect(checklist).toEqual({
+      completed: 2,
+      remaining: 3,
+      total: 5,
+      nextTaskLabel: "T5.9 - verification engine",
+    })
+  })
+
+  test("#given a heading-free plan whose every row is user-blocked #when parsed #then blocked rows are counted as discharged", () => {
+    // given
+    const markdown = ["# Plan", "- [~] Await customer credentials", "* [~] Await legal sign-off"].join("\n")
+
+    // when
+    const checklist = parsePlanChecklist(markdown)
+
+    // then
+    expect(checklist).toEqual({ completed: 2, remaining: 0, total: 2, nextTaskLabel: null })
+  })
+
+  test("#given user-blocked rows in both counted sections #when parsed #then they are counted as discharged", () => {
+    // given
+    const markdown = [
+      "## Todos",
+      "- [~] 1. Blocked on a decision only the user can make",
+      "- [x] 2. Preserve completed implementation rows",
+      "## Final verification wave",
+      "- [~] F1. Blocked on unavailable credentials",
+    ].join("\n")
+
+    // when
+    const checklist = parsePlanChecklist(markdown)
+
+    // then
+    expect(checklist).toEqual({ completed: 3, remaining: 0, total: 3, nextTaskLabel: null })
+  })
+
+  test("#given a user-blocked row before an actionable row #when parsed #then the actionable row is next", () => {
+    // given
+    const markdown = [
+      "## Todos",
+      "- [~] 1. Blocked on a decision only the user can make",
+      "- [ ] 2. Still actionable",
+    ].join("\n")
+
+    // when
+    const checklist = parsePlanChecklist(markdown)
+
+    // then
+    expect(checklist).toEqual({
+      completed: 1,
+      remaining: 1,
+      total: 2,
+      nextTaskLabel: "2. Still actionable",
+    })
+  })
+
+  test("#given boilerplate structured headings with checkboxes only under another section #when parsed #then simple mode counts them", () => {
+    // given
+    const markdown = [
+      "# Plan",
+      "## Todos",
+      "Wave descriptions live here.",
+      "## Final verification wave",
+      "Template explanation lives here.",
+      "## Progress Tracker",
+      "### Implementation Waves",
+      "- [x] T1.1 - tolerances schema",
+      "- [~] T5.1 - verification engine - DEFERRED",
+      "### Final Verification Wave (all must APPROVE)",
+      "- [ ] F1 - plan-compliance audit",
+    ].join("\n")
+
+    // when
+    const checklist = parsePlanChecklist(markdown)
+
+    // then
+    expect(checklist).toEqual({
+      completed: 2,
+      remaining: 1,
+      total: 3,
+      nextTaskLabel: "F1 - plan-compliance audit",
+    })
+  })
+
+  test("#given structured sections that already count canonical rows #when parsed #then no simple fallback runs", () => {
+    // given
+    const markdown = [
+      "## Todos",
+      "- [ ] 1. Canonical implementation",
+      "## Acceptance Criteria",
+      "- [ ] Outside checkbox stays ignored",
+    ].join("\n")
+
+    // when
+    const checklist = parsePlanChecklist(markdown)
+
+    // then
+    expect(checklist).toEqual({
+      completed: 0,
+      remaining: 1,
+      total: 1,
+      nextTaskLabel: "1. Canonical implementation",
+    })
+  })
+
+  test("#given only noncanonical labeled rows under counted sections #when parsed #then simple fallback counts them as plain tasks", () => {
+    // given
+    const markdown = [
+      "## Todos",
+      "- [ ] 0. Zero is invalid",
+      "- [ ] Phase 1: prose prefix is invalid",
+      "## Final verification wave",
+      "- [ ] F0. Zero final verifier is invalid",
+    ].join("\n")
+
+    // when
+    const checklist = parsePlanChecklist(markdown)
+
+    // then
+    expect(checklist).toEqual({
+      completed: 0,
+      remaining: 3,
+      total: 3,
+      nextTaskLabel: "0. Zero is invalid",
+    })
+  })
 })
 
 describe("getPlanChecklist", () => {

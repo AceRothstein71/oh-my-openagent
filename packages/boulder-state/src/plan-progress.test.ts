@@ -63,4 +63,62 @@ describe("getPlanProgress", () => {
     // then
     expect(progress).toEqual({ total: 2, completed: 1, isComplete: false })
   })
+
+  test("#given production-shaped plan with progress tracked outside boilerplate sections #when progress is read #then real totals are reported", () => {
+    // given
+    const planPath = writePlan([
+      "# Plan",
+      "## Todos",
+      "Wave descriptions live here.",
+      "## Final verification wave",
+      "Template explanation lives here.",
+      "## Progress Tracker",
+      "- [x] T1.1 - tolerances schema",
+      "- [~] T5.1 - verification engine - DEFERRED",
+      "- [ ] F1 - plan-compliance audit",
+    ].join("\n"))
+
+    // when
+    const progress = getPlanProgress(planPath)
+
+    // then
+    expect(progress).toEqual({ total: 3, completed: 2, isComplete: false })
+  })
+
+  test("#given every tracked row resolved or user-blocked #when progress is read #then the plan is complete", () => {
+    // given
+    const planPath = writePlan([
+      "# Plan",
+      "## Todos",
+      "Wave descriptions live here.",
+      "## Final verification wave",
+      "Template explanation lives here.",
+      "## Progress Tracker",
+      "- [x] T1.1 - tolerances schema",
+      "- [~] T5.1 - verification engine - BLOCKED on user decision",
+    ].join("\n"))
+
+    // when
+    const progress = getPlanProgress(planPath)
+
+    // then
+    expect(progress).toEqual({ total: 2, completed: 2, isComplete: true })
+  })
+
+  test("#given a genuinely empty structured plan #when progress is read #then it stays incomplete", () => {
+    // given
+    const planPath = writePlan([
+      "# Plan",
+      "## Todos",
+      "Describe implementation work here.",
+      "## Final verification wave",
+      "Describe final checks here.",
+    ].join("\n"))
+
+    // when
+    const progress = getPlanProgress(planPath)
+
+    // then
+    expect(progress).toEqual({ total: 0, completed: 0, isComplete: false })
+  })
 })

@@ -1,5 +1,10 @@
 export { BOULDER_DIR, BOULDER_FILE, BOULDER_STATE_PATH, NOTEPAD_BASE_PATH, NOTEPAD_DIR, PROMETHEUS_PLANS_DIR } from "./constants"
-export { getPlanChecklist, parsePlanChecklist } from "./plan-checklist"
+export {
+  FINAL_WAVE_TASK_ID_PATTERN,
+  getPlanChecklist,
+  parsePlanChecklist,
+  TASK_ID_PATTERN,
+} from "./plan-checklist"
 export { readCurrentTopLevelTask } from "./top-level-task"
 export {
   addBoulderWork,

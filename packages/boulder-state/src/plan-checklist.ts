@@ -2,14 +2,29 @@ import { existsSync, readFileSync } from "node:fs"
 
 import type { PlanChecklist, TopLevelTaskRef } from "./types"
 
-const SIMPLE_CHECKBOX_PATTERN = /^[-*][ \t]*\[[ \t]*([xX]?)[ \t]*\][ \t]+(.+)$/
+const SIMPLE_CHECKBOX_PATTERN = /^[-*][ \t]*\[[ \t]*([xX~]?)[ \t]*\][ \t]+(.+)$/
 const TODO_HEADING_PATTERN = /^##[ \t]+TODOs(?:[ \t]+#+)?[ \t]*$/i
 const FINAL_VERIFICATION_HEADING_PATTERN =
   /^##[ \t]+Final Verification Wave(?:[ \t]+#+)?[ \t]*$/i
 const SECTION_BOUNDARY_HEADING_PATTERN = /^#{1,2}(?:[ \t]+|$)/
 const FENCE_PATTERN = /^[ \t]{0,3}(`{3,}|~{3,})(.*)$/
-const TODO_CHECKBOX_PATTERN = /^- \[([ xX])\] ([1-9]\d*\. .+)$/
-const FINAL_WAVE_CHECKBOX_PATTERN = /^- \[([ xX])\] (F[1-9]\d*\. .+)$/i
+// Task-ID grammar: `[prefix]?number[.sub][suffix][.]` + whitespace + title,
+// e.g. `1.`, `T1.1`, `T6.3a`, `H1`, and dotless `F5`. Final-wave IDs require the
+// prefix letter so bare numbered rows stay excluded there.
+const TASK_NUMBER_PATTERN = "[1-9]\\d*(?:\\.[1-9]\\d*)?[a-z]?\\.?"
+export const TASK_ID_PATTERN = `[A-Z]?${TASK_NUMBER_PATTERN}`
+export const FINAL_WAVE_TASK_ID_PATTERN = `[A-Z]${TASK_NUMBER_PATTERN}`
+const TODO_CHECKBOX_PATTERN = new RegExp(`^- \\[([ xX~])\\] (${TASK_ID_PATTERN}[ \\t]+.+)$`)
+const FINAL_WAVE_CHECKBOX_PATTERN = new RegExp(
+  `^- \\[([ xX~])\\] (${FINAL_WAVE_TASK_ID_PATTERN}[ \\t]+.+)$`,
+  "i",
+)
+const TASK_REF_CORE_PATTERN = "[A-Z]?[1-9]\\d*(?:\\.[1-9]\\d*)?[a-z]?"
+const TASK_REF_PATTERN_TODO = new RegExp(`^(${TASK_REF_CORE_PATTERN})\\.?[ \\t]+(.+)$`)
+const TASK_REF_PATTERN_FINAL_WAVE = new RegExp(
+  `^([A-Z][1-9]\\d*(?:\\.[1-9]\\d*)?[a-z]?)\\.?[ \\t]+(.+)$`,
+  "i",
+)
 
 type ChecklistSection = "todo" | "final-wave" | "other"
 
@@ -53,7 +68,12 @@ export function parsePlanChecklist(markdown: string): PlanChecklist {
     return parseSimpleChecklist(lines)
   }
 
-  return parseStructuredPlan(lines).checklist
+  const structured = parseStructuredPlan(lines).checklist
+  if (structured.total === 0) {
+    return parseSimpleChecklist(lines)
+  }
+
+  return structured
 }
 
 export function parseCurrentTopLevelTask(markdown: string): TopLevelTaskRef | null {
@@ -169,7 +189,12 @@ function parseSimpleTopLevelCheckbox(line: string): ParsedCheckbox | null {
   if (marker === undefined || label === undefined) {
     return null
   }
-  return { checked: marker.toLowerCase() === "x", label }
+  return { checked: isDischargedMarker(marker), label }
+}
+
+function isDischargedMarker(marker: string): boolean {
+  const normalized = marker.toLowerCase()
+  return normalized === "x" || normalized === "~"
 }
 
 function hasStructuredSection(lines: readonly string[]): boolean {
@@ -219,11 +244,11 @@ function parseStructuredTopLevelCheckbox(
   if (task === null) {
     return null
   }
-  return { checked: marker.toLowerCase() === "x", label, task }
+  return { checked: isDischargedMarker(marker), label, task }
 }
 
 function buildTaskRef(section: "todo" | "final-wave", label: string): TopLevelTaskRef | null {
-  const pattern = section === "todo" ? /^([1-9]\d*)\. (.+)$/ : /^(F[1-9]\d*)\. (.+)$/i
+  const pattern = section === "todo" ? TASK_REF_PATTERN_TODO : TASK_REF_PATTERN_FINAL_WAVE
   const match = label.match(pattern)
   const rawLabel = match?.[1]
   const title = match?.[2]
