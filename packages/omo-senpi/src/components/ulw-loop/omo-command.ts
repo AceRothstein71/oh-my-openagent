@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process"
-import { accessSync, constants, existsSync } from "node:fs"
+import { accessSync, constants, existsSync, statSync } from "node:fs"
 import { delimiter, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const OMO_COMMAND_TIMEOUT_MS = 30_000
+const SESSION_SCOPING_ENV_KEYS = ["OMO_ULW_LOOP_SESSION_ID", "CODEX_SESSION_ID", "CODEX_THREAD_ID", "PI_SESSION_ID"] as const
 
 export interface SpawnTarget {
   readonly command: string
@@ -27,17 +29,41 @@ export function toSpawnTarget(
   return { command: "cmd.exe", args: ["/d", "/s", "/c", bin, ...args] }
 }
 
-export function resolveOmoBin(): string | null {
-  const toolkitEnvBin = process.env.OMO_AGENT_TOOLKIT_BIN?.trim()
+export function resolveOmoBin(
+  env: Record<string, string | undefined> = process.env,
+  importerUrl: string = import.meta.url,
+): string | null {
+  const toolkitEnvBin = env["OMO_AGENT_TOOLKIT_BIN"]?.trim()
   if (toolkitEnvBin) return toolkitEnvBin
-  const toolkitOnPath = findExecutableOnPath("omo-agent-toolkit")
+  // The staged runtime beats PATH/OMO_BIN discovery: it is built and pinned to this exact
+  // adapter build (stage-agent-toolkit.mjs), so it is always the compatible CLI when present.
+  // The explicit OMO_AGENT_TOOLKIT_BIN override above still wins, e.g. the omo-native launcher
+  // pins its own staged copy through it.
+  const bundledCli = resolveBundledToolkitCli(importerUrl)
+  if (bundledCli !== null) return bundledCli
+  const toolkitOnPath = findExecutableOnPath("omo-agent-toolkit", env["PATH"])
   if (toolkitOnPath) return toolkitOnPath
-  const envBin = process.env.OMO_BIN?.trim()
+  const envBin = env["OMO_BIN"]?.trim()
   if (envBin) return envBin
   // Deliberately NO PATH lookup of the bare name "omo": after the hard cutover
   // an `omo` on PATH is either a stale install of ours or the unrelated
   // third-party package, and resolving it would silently execute the wrong binary.
   return null
+}
+
+// The build stages the pinned ulw-loop CLI beside the extension bundle with the fixed layout
+// plugin/extensions/omo.js -> ../runtime/agent-toolkit/cli.js. Resolving relative to this module's
+// URL keeps holding after bundling because import.meta.url then points at extensions/omo.js; in
+// unbundled source contexts the relative location simply does not exist and resolution falls through.
+export function resolveBundledToolkitCli(importerUrl: string = import.meta.url): string | null {
+  let candidate: string
+  try {
+    candidate = fileURLToPath(new URL("../runtime/agent-toolkit/cli.js", importerUrl))
+  } catch {
+    return null
+  }
+  const stat = statSync(candidate, { throwIfNoEntry: false })
+  return stat?.isFile() === true ? candidate : null
 }
 
 export async function runOmoCommand(
@@ -52,6 +78,7 @@ export async function runOmoCommand(
   const target = toSpawnTarget(bin, args)
   const child = spawn(target.command, [...target.args], {
     cwd: options.cwd,
+    env: sessionScopeFreeEnv(),
     stdio: ["ignore", "pipe", "ignore"],
     windowsHide: true,
   })
@@ -82,8 +109,7 @@ export async function runOmoCommand(
   return promise
 }
 
-function findExecutableOnPath(command: string): string | null {
-  const pathValue = process.env.PATH
+function findExecutableOnPath(command: string, pathValue: string | undefined): string | null {
   if (!pathValue) return null
   for (const directory of pathValue.split(delimiter)) {
     if (!directory) continue
@@ -100,6 +126,15 @@ function executableCandidates(directory: string, command: string): string[] {
     .split(";")
     .filter((extension) => extension.length > 0)
   return [join(directory, command), ...extensions.map((extension) => join(directory, `${command}${extension.toLowerCase()}`))]
+}
+
+// Probes are always scoped with an explicit --session-id; inherited host session variables
+// (e.g. CODEX_THREAD_ID when the Senpi host runs embedded in Codex Desktop) must never reach
+// the toolkit as a fallback scope for state or evidence directories.
+function sessionScopeFreeEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env }
+  for (const key of SESSION_SCOPING_ENV_KEYS) delete env[key]
+  return env
 }
 
 function isExecutableFile(file: string): boolean {

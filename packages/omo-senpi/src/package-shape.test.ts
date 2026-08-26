@@ -1,5 +1,12 @@
+import { spawnSync } from "node:child_process"
+import { mkdtempSync, rmSync } from "node:fs"
 import { readFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join, resolve } from "node:path"
+import { pathToFileURL } from "node:url"
 import { describe, expect, test } from "bun:test"
+
+import { resolveOmoBin } from "./components/ulw-loop/omo-command"
 
 type JsonObject = Record<string, unknown>
 
@@ -130,4 +137,53 @@ describe("omo-senpi package shape", () => {
     expect(devDependencies["@oh-my-opencode/omo-senpi"]).toBe("workspace:*")
     expect(typecheckPackages).toContain("tsgo --noEmit -p packages/omo-senpi/tsconfig.json")
   })
+
+  test("#given the built senpi plugin package #when resolving its staged ulw-loop CLI and probing status #then the CLI runs without a Codex installation or session env", async () => {
+    // given: the plugin-layout importer URL anchors the bundle-relative resolution rule
+    // (extensions/omo.js -> ../runtime/agent-toolkit/cli.js); the staged runtime exists after
+    // `bun run build:senpi-plugin`, which every senpi gate runs before this suite.
+    const importerUrl = pathToFileURL(resolve("packages/omo-senpi/plugin/extensions/omo.js")).href
+    const workspace = mkdtempSync(join(tmpdir(), "omo-senpi-package-shape-toolkit-"))
+    try {
+      // when
+      const bin = resolveOmoBin({}, importerUrl)
+      if (bin === null) throw new Error("the staged agent-toolkit CLI did not resolve from the plugin layout")
+
+      // then: the pinned CLI ships inside the package and resolves with no env help at all
+      expect(bin).toBe(resolve("packages/omo-senpi/plugin/runtime/agent-toolkit/cli.js"))
+
+      const env = sanitizedToolkitEnv()
+      const created = spawnSync(process.execPath, [bin, "ulw-loop", "create-goals", "--brief", "- package-shape probe goal", "--json", "--session-id", "pkgshape"], {
+        cwd: workspace,
+        env,
+        encoding: "utf8",
+        timeout: 60_000,
+      })
+      expect(created.status).toBe(0)
+
+      const status = spawnSync(process.execPath, [bin, "ulw-loop", "status", "--json", "--session-id", "pkgshape"], {
+        cwd: workspace,
+        env,
+        encoding: "utf8",
+        timeout: 60_000,
+      })
+      expect(status.status).toBe(0)
+      const parsed: unknown = JSON.parse(status.stdout)
+      if (!isJsonObject(parsed)) throw new Error("status output must be a JSON object")
+      expect(parsed["ok"]).toBe(true)
+      const plan = parsed["plan"]
+      if (!isJsonObject(plan)) throw new Error("status plan must be a JSON object")
+      expect(Array.isArray(plan["goals"])).toBe(true)
+    } finally {
+      rmSync(workspace, { recursive: true, force: true })
+    }
+  })
 })
+
+const SESSION_SCOPING_ENV_KEYS = ["OMO_ULW_LOOP_SESSION_ID", "CODEX_SESSION_ID", "CODEX_THREAD_ID", "PI_SESSION_ID"] as const
+
+function sanitizedToolkitEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env }
+  for (const key of SESSION_SCOPING_ENV_KEYS) delete env[key]
+  return env
+}
