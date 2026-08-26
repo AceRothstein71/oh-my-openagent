@@ -953,7 +953,7 @@ describe("boulder-state", () => {
       expect(progress.isComplete).toBe(false)
     })
 
-    test("should reject noncanonical asterisk bullets in structured task sections", () => {
+    test("rescues structured sections whose only rows use noncanonical asterisk bullets", () => {
       // given - structured rows that do not use the canonical dash marker
       const planPath = join(TEST_DIR, "asterisk-bullet-plan.md")
       writeFileSync(planPath, `# Plan
@@ -966,9 +966,9 @@ describe("boulder-state", () => {
       // when
       const progress = getPlanProgress(planPath)
 
-      // then
-      expect(progress.total).toBe(0)
-      expect(progress.completed).toBe(0)
+      // then - structured parse yields zero rows, so simple-mode fallback counts them
+      expect(progress.total).toBe(2)
+      expect(progress.completed).toBe(1)
       expect(progress.isComplete).toBe(false)
     })
 
