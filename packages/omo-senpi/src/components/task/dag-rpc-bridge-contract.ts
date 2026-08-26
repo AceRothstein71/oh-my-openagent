@@ -66,5 +66,8 @@ export interface DagRpcBridge {
   publishActivity(event: DagBridgeActivityEvent): void
   // Every dag store mutation calls this; the snapshot flush is debounced and fingerprint-deduped.
   notifyStoreMutation(): void
+  // Hold omo.dag.updated while the attach window belongs to crash recovery: the ledger and
+  // heartbeat stay live, and releasing schedules one honest snapshot of the recovered state.
+  setSnapshotsSuspended(suspended: boolean): void
   dispose(): void
 }

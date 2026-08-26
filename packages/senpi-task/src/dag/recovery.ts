@@ -117,7 +117,7 @@ async function resumePausedRuns(
 ): Promise<readonly DagRecoveryOutcome[]> {
   const outcomes: DagRecoveryOutcome[] = []
   for (const observed of listRunRecords(context.store)) {
-    if (observed.parentSessionId !== parentSessionId) continue
+    if (observed.status !== "paused" && !LIVE_RUN_STATUSES.has(observed.status)) continue
     const claim = claimPausedRun(context, observed.runId, parentSessionId)
     if (claim.kind === "skipped") {
       if (claim.reason === "live_lease") outcomes.push({ runId: observed.runId, kind: "skipped", reason: claim.reason })
@@ -132,8 +132,19 @@ function claimPausedRun(context: RecoveryContext, runId: DagRunId, parentSession
   return context.store.withRunLock(runId, () => {
     const fresh = context.store.readCheckpoint<RecoverableRecord>(runId)
     if (fresh === null || fresh.status !== "paused") return { kind: "skipped", reason: "not_paused" }
-    if (fresh.parentSessionId !== parentSessionId) return { kind: "skipped", reason: "foreign_session" }
     const priorHolder = fresh.leaseHolderPid ?? fresh.previousLeaseHolderPid
+    if (fresh.parentSessionId !== parentSessionId) {
+      // Explicit adoption for a stranded predecessor session id (fork / compaction / restart under
+      // a new id). Adoption requires durable proof the owning host is gone - a live prior holder
+      // means some live session still owns this run, and stealing it would leak another session's
+      // work into this one. rootSessionId is preserved as lineage provenance.
+      if (priorHolder === undefined || context.isProcessAlive(priorHolder)) {
+        return { kind: "skipped", reason: "foreign_session" }
+      }
+      const adopted: RecoverableRecord = { ...fresh, parentSessionId, leaseHolderPid: context.hostPid }
+      context.store.writeCheckpoint(runId, adopted)
+      return { kind: "claimed", record: adopted }
+    }
     if (priorHolder !== undefined && context.isProcessAlive(priorHolder)) {
       return { kind: "skipped", reason: "live_lease" }
     }

@@ -330,10 +330,11 @@ describe("DAG crash recovery", () => {
     expect(manager.startOwnedCalls).toEqual([])
   })
 
-  test("#given a paused run owned by another parent session #when recovery scans #then it is not claimed", async () => {
+  test("#given a paused run owned by another session whose lease holder is still live #when recovery scans #then it is refused as foreign and left untouched", async () => {
     // given
     const projectDir = tempProject()
     const store = createDagFileStore({ project_dir: projectDir })
+    const manager = new RecoveryTaskManager()
     store.writeCheckpoint(runId, recoverableRecord(definition([node("foreign")]), {}, {
       parentSessionId: "foreign-session",
       previousLeaseHolderPid: 9001,
@@ -342,14 +343,47 @@ describe("DAG crash recovery", () => {
     // when
     const outcomes = await createDagRecovery({
       store,
-      taskManager: new RecoveryTaskManager(),
+      taskManager: manager,
+      hostPid: 101,
+      isProcessAlive: (pid) => pid === 9001,
+    }).resumePausedRuns(parentSessionId)
+
+    // then
+    expect(outcomes).toEqual([])
+    const record = store.readCheckpoint<DagRunRecordV1>(runId)
+    expect(record?.status).toBe("paused")
+    expect(record?.parentSessionId).toBe("foreign-session")
+    expect(manager.startOwnedCalls).toEqual([])
+  })
+
+  test("#given a paused run owned by a predecessor session whose host provably died #when the successor session resumes #then the run is adopted into the successor and dispatched", async () => {
+    // given - fork / compaction / restart under a new session id strands the old id permanently
+    const projectDir = tempProject()
+    const store = createDagFileStore({ project_dir: projectDir })
+    const manager = new RecoveryTaskManager()
+    store.writeCheckpoint(runId, recoverableRecord(definition([node("orphan")]), {
+      orphan: { state: "scheduled" },
+    }, {
+      parentSessionId: "predecessor-session",
+      previousLeaseHolderPid: 9001,
+    }))
+
+    // when
+    const [outcome] = await createDagRecovery({
+      store,
+      taskManager: manager,
       hostPid: 101,
       isProcessAlive: () => false,
     }).resumePausedRuns(parentSessionId)
 
     // then
-    expect(outcomes).toEqual([])
-    expect(store.readCheckpoint<DagRunRecordV1>(runId)?.status).toBe("paused")
+    expect(outcome?.kind).toBe("resumed")
+    expect(outcome?.record?.parentSessionId).toBe(parentSessionId)
+    expect(outcome?.record?.rootSessionId).toBe(rootSessionId)
+    expect(manager.startOwnedCalls).toEqual(["orphan"])
+    const durable = store.readCheckpoint<DagRunRecordV1>(runId)
+    expect(durable?.parentSessionId).toBe(parentSessionId)
+    expect(durable?.rootSessionId).toBe(rootSessionId)
   })
 
   test("#given two managers race a paused run #when the first claim holder is live #then exactly one resumes and the other observes the live lease", async () => {

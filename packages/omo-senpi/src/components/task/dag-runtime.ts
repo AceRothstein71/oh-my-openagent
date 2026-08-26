@@ -440,14 +440,23 @@ export function createDagRuntime(deps: DagRuntimeDeps): DagRuntime {
       wake?.onSessionStart(activeSessionId)
       bridge.attach()
       syncActivitySubscriptions()
-      const sessionId = activeSessionId
-      if (sessionId !== undefined) {
-        try {
-          await recovery.resumePausedRuns(sessionId)
-        } finally {
-          clearSubscriptions(recoveryTaskSubscriptions)
+      // The ledger and heartbeat wire up immediately so recovery-era events (including the
+      // scheduler overflow marker) still reach viewers, but the wholesale snapshot stays suspended
+      // until recovery settles: hosts read omo.dag.updated as "a live run missing from it has
+      // completed", so the first payload must describe the recovered state, never pre-recovery disk.
+      bridge.setSnapshotsSuspended(true)
+      try {
+        const sessionId = activeSessionId
+        if (sessionId !== undefined) {
+          try {
+            await recovery.resumePausedRuns(sessionId)
+          } finally {
+            clearSubscriptions(recoveryTaskSubscriptions)
+          }
+          for (const run of manager.list(sessionId)) ensureScheduled(run.runId, sessionId)
         }
-        for (const run of manager.list(sessionId)) ensureScheduled(run.runId, sessionId)
+      } finally {
+        bridge.setSnapshotsSuspended(false)
       }
       statusUi.syncNow()
     },
