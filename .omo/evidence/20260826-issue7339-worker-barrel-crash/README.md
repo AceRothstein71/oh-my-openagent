@@ -1,6 +1,6 @@
 # Evidence - issue #7339: bug(omo-task): worker creation can crash host before barrels load
 
-Worktree: /home/viprix/projects/oom-wt-7339 (branch fix/7339-worker-barrel-load-crash, base 8c57e463e on origin/dev). Deliberately LEFT DIRTY: no commit, no push, no PR.
+Worktree: this repository's worktree root (branch fix/7339-worker-barrel-load-crash, base 8c57e463e on origin/dev). Deliberately LEFT DIRTY: no commit, no push, no PR.
 
 ## WHAT WAS TESTED
 
