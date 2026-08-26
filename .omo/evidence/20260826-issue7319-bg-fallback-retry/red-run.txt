@@ -1,0 +1,134 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:
+152 |       await drainEventHandlers()
+153 |       manual.fireAll()
+154 |       await drainEventHandlers()
+155 | 
+156 |       //#then
+157 |       expect(task.attemptCount).toBe(0)
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:157:33)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when a session.status retry event arrives and the session recovers before grace expires #then the task is not downgraded [8.39ms]
+173 |       //#when
+174 |       emitStatusRetry(manager, "ses_still_retry")
+175 |       await drainEventHandlers()
+176 | 
+177 |       //#then
+178 |       expect(task.attemptCount).toBe(0)
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:178:33)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when grace expires while the session is still retrying #then the fallback takeover proceeds [7.33ms]
+205 |       await drainEventHandlers()
+206 |       manual.fireAll()
+207 |       await drainEventHandlers()
+208 | 
+209 |       //#then
+210 |       expect(manual.scheduledCount()).toBe(1)
+                                            ^
+error: expect(received).toBe(expected)
+
+Expected: 1
+Received: 0
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:210:39)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when repeated retry signals arrive during the grace window #then exactly one takeover fires [11.55ms]
+227 |       await drainEventHandlers()
+228 |       manual.fireAll()
+229 |       await drainEventHandlers()
+230 | 
+231 |       //#then
+232 |       expect(task.attemptCount).toBe(0)
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:232:33)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when a transient session.error arrives and the session recovers #then the task is not downgraded [5.72ms]
+347 | 
+348 |       manual.fireAll()
+349 |       await drainEventHandlers()
+350 | 
+351 |       //#then
+352 |       expect(task.attemptCount).toBe(1)
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: 1
+Received: 0
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:352:33)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when the poller sees retry status and grace expires without recovery #then the fallback takeover proceeds [6.15ms]
+375 |       await drainEventHandlers()
+376 |       manual.fireAll()
+377 |       await drainEventHandlers()
+378 | 
+379 |       //#then
+380 |       expect(task.attemptCount).toBe(0)
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:380:33)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when the session went idle with real output by fire time #then the takeover is skipped [28.30ms]
+429 |       await drainEventHandlers()
+430 |       manual.fireAll()
+431 |       await drainEventHandlers()
+432 | 
+433 |       //#then
+434 |       expect(task.attemptCount).toBe(0)
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:434:33)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when an assistant message.error arrives and the session recovers #then the task is not downgraded [16.66ms]
+455 |       manual.fireAll()
+456 |       await drainEventHandlers()
+457 | 
+458 |       //#then
+459 |       expect(task.status).toBe("cancelled")
+460 |       expect(task.attemptCount).toBe(0)
+                                      ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:460:33)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when the task is cancelled during the grace window #then a late fire is a no-op [9.20ms]
+469 |       stubProcessKey(manager)
+470 |       injectRunningRetryTask(manager, "ses_shutdown_defer")
+471 | 
+472 |       emitStatusRetry(manager, "ses_shutdown_defer")
+473 |       await drainEventHandlers()
+474 |       expect(manual.scheduledCount()).toBe(1)
+                                            ^
+error: expect(received).toBe(expected)
+
+Expected: 1
+Received: 0
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7319/packages/omo-opencode/src/features/background-agent/manager.fallback-defer.test.ts:474:39)
+(fail) BackgroundManager fallback deferral (issue #7319) > #given fallbackDeferMs grace is configured > #when the manager shuts down during the grace window #then pending deferrals are cancelled [2.26ms]
+
+ 6 pass
+ 9 fail
+ 25 expect() calls
+Ran 15 tests across 1 file. [1.81s]
