@@ -11,8 +11,8 @@ import {
   normalizeRendererText,
   optionalRendererText,
   rendererVisibleWidth,
+  truncateRendererText,
 } from "@oh-my-opencode/senpi-task/renderer-text"
-import { truncateToWidth } from "@earendil-works/pi-tui"
 
 /** The subset of Theme an entry renderer needs; keeps fakes cheap in tests. */
 export type EntryRenderTheme = Pick<Theme, "fg" | "bg">
@@ -144,7 +144,7 @@ export function fit(text: string, width: number): string {
   if (width <= 0) return ""
   const normalized = normalizeRendererText(text)
   if (rendererVisibleWidth(normalized) <= width) return normalized
-  return normalizeRendererText(truncateToWidth(normalized, width, ELLIPSIS))
+  return normalizeRendererText(truncateRendererText(normalized, width, ELLIPSIS))
 }
 
 /** Join non-empty fields with the notice separator. */

@@ -62,8 +62,31 @@ describe("built bundles keep their lazy barrels loadable", () => {
         ).toBeUndefined()
       }
     })
+
+    it(`#given any built bundle #when the artifact is inspected #then it never statically binds the ${barrel.label} barrel`, () => {
+      for (const { file, source } of readAllBundles()) {
+        const staticEdge = findStaticBarrelImport(source, barrel.specifier)
+        expect(
+          staticEdge,
+          `${file} statically binds the ${barrel.label} barrel (${staticEdge}); that re-couples this blob to the barrel at module-load time and defeats the lazy boundary - route barrel access through the lazy module instead`,
+        ).toBeUndefined()
+      }
+    })
   }
 })
+
+function readAllBundles(): readonly { file: string; source: string }[] {
+  return BUNDLE_FILES.map((file) => {
+    const path = join(extensionsDir, file)
+    expect(existsSync(path), `missing built bundle at ${path}; run build:senpi-plugin first`).toBe(true)
+    return { file, source: readFileSync(path, "utf8") }
+  })
+}
+
+function findStaticBarrelImport(source: string, specifier: string): string | undefined {
+  const pattern = new RegExp(`from\\s*["']${escapeForRegExp(specifier)}["']`, "u")
+  return pattern.exec(source)?.[0]
+}
 
 function readBundlesReaching(guardMessage: string): readonly { file: string; source: string }[] {
   const reaching: { file: string; source: string }[] = []
