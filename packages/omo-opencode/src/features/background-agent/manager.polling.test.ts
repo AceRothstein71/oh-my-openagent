@@ -276,7 +276,7 @@ describe("BackgroundManager pollRunningTasks", () => {
       expect(task.status).toBe("completed")
     })
 
-    test("#when output was already observed from events #then it completes without fetching messages", async () => {
+    test("#when pollRunningTasks runs #then it validates assistant text from messages before completing (#7325)", async () => {
       //#given
       let messagesCallCount = 0
       const manager = createManagerWithClient({
@@ -304,9 +304,9 @@ describe("BackgroundManager pollRunningTasks", () => {
       await poll.call(manager)
       manager.shutdown()
 
-      //#then
+      //#then - completion requires the fresh messages check, not event hearsay
       expect(task.status).toBe("completed")
-      expect(messagesCallCount).toBe(0)
+      expect(messagesCallCount).toBe(1)
     })
 
     test("#when todo state was already observed from events #then it completes without fetching todos", async () => {

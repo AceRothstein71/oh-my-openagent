@@ -271,7 +271,6 @@ export class BackgroundManager {
   private notificationQueueByParent: Map<string, Promise<void>> = new Map()
   private readonly parentWakeNotifier: ParentWakeNotifier
   private parentWakeTextDeltaBuffers: Map<string, string> = new Map()
-  private observedOutputSessions: Set<string> = new Set()
   private observedIncompleteTodosBySession: Map<string, boolean> = new Map()
   private rootDescendantCounts: Map<string, number>
   private preStartDescendantReservations: Set<string>
@@ -1514,10 +1513,6 @@ The fallback retry session is now created and can be inspected directly.
     }
   }
 
-  private markSessionOutputObserved(sessionID: string): void {
-    this.observedOutputSessions.add(sessionID)
-  }
-
   private clearDispatchedParentWake(sessionID: string): void {
     this.clearParentWakeTextDeltaBuffers(sessionID)
     this.parentWakeNotifier.clearDispatchedParentWake(sessionID)
@@ -1525,10 +1520,6 @@ The fallback retry session is now created and can be inspected directly.
 
   private async requeueDispatchedParentWake(sessionID: string, reason: string): Promise<boolean> {
     return this.parentWakeNotifier.requeueDispatchedParentWake(sessionID, reason)
-  }
-
-  private clearSessionOutputObserved(sessionID: string): void {
-    this.observedOutputSessions.delete(sessionID)
   }
 
   private clearSessionTodoObservation(sessionID: string): void {
@@ -1634,10 +1625,6 @@ The fallback retry session is now created and can be inspected directly.
         this.clearDispatchedParentWake(sessionID)
       }
 
-      if (role === "tool") {
-        this.markSessionOutputObserved(sessionID)
-      }
-
       if (role !== "assistant") return
 
       const resolved = this.resolveTaskAttemptBySession(sessionID)
@@ -1691,10 +1678,6 @@ The fallback retry session is now created and can be inspected directly.
       if (!resolved?.isCurrent) return
 
       const { task } = resolved
-
-      if (hasParentWakeOutput) {
-        this.markSessionOutputObserved(sessionID)
-      }
 
       // Clear any pending idle deferral timer since the task is still active
       const existingTimer = this.idleDeferralTimers.get(task.id)
@@ -1809,6 +1792,14 @@ The fallback retry session is now created and can be inspected directly.
         checkSessionTodos: (id) => this.checkSessionTodos(id),
         tryCompleteTask: (task, source) => this.tryCompleteTask(task, source),
         emitIdleEvent: (sessionID) => this.handleEvent({ type: "session.idle", properties: { sessionID } }),
+        hasRemainingFallbacks: (task) => {
+          if (!task.fallbackChain || task.fallbackChain.length === 0) return false
+          return hasMoreFallbacks(task.fallbackChain, task.attemptCount ?? 0)
+        },
+        failTaskWithoutOutput: (task) => this.failCrashedTask(
+          task,
+          "Subagent session ended without producing any assistant output and no fallback models remain.",
+        ),
       })
     }
 
@@ -1853,7 +1844,6 @@ The fallback retry session is now created and can be inspected directly.
     if (event.type === "session.deleted") {
       const sessionID = resolveSessionEventID(props)
       if (!sessionID) return
-      this.clearSessionOutputObserved(sessionID)
       this.clearSessionTodoObservation(sessionID)
 
       const tasksToCancel = new Map<string, BackgroundTask>()
@@ -2184,7 +2174,6 @@ The task was re-queued on a fallback model after a retryable failure.
       )
     }
     if (retried && previousSessionID) {
-      this.clearSessionOutputObserved(previousSessionID)
       this.clearSessionTodoObservation(previousSessionID)
       clearDelegatedChildSessionBootstrap(previousSessionID)
       subagentSessions.delete(previousSessionID)
@@ -2225,14 +2214,12 @@ The task was re-queued on a fallback model after a retryable failure.
   }
 
   /**
-   * Validates that a session has actual assistant/tool output before marking complete.
-   * Prevents premature completion when session.idle fires before agent responds.
+   * Validates that a session produced a readable assistant response before
+   * marking complete. Reasoning/tool-only or error-only sessions must NOT
+   * complete as success (#7325): callers either keep waiting for a retry or
+   * surface a hard failure.
    */
   private async validateSessionHasOutput(sessionID: string): Promise<boolean> {
-    if (this.observedOutputSessions.has(sessionID)) {
-      return true
-    }
-
     try {
       const response = await messagesInDirectory(this.client, {
         path: { id: sessionID },
@@ -2240,51 +2227,27 @@ The task was re-queued on a fallback model after a retryable failure.
 
       const messages = normalizeSDKResponse(response, [] as Array<{ info?: { role?: string } }>, { preferResponseOnMissingData: true })
 
-      // Check for at least one assistant or tool message
-      const hasAssistantOrToolMessage = messages.some(
-        (m: { info?: { role?: string } }) =>
-          m.info?.role === "assistant" || m.info?.role === "tool"
-      )
-
-      if (!hasAssistantOrToolMessage) {
-        log("[background-agent] No assistant/tool messages found in session:", sessionID)
-        return false
-      }
-
-      // OpenCode API uses different part types than Anthropic's API:
-      // - "reasoning" with .text property (thinking/reasoning content)
-      // - "tool" with .state.output property (tool call results)
-      // - "text" with .text property (final text output)
-      // - "step-start"/"step-finish" (metadata, no content)
       type SessionPart = { type?: string; text?: string; content?: string | unknown[] }
       type SessionMessage = { info?: { role?: string }; parts?: SessionPart[] }
-      const hasContent = messages.some((m: SessionMessage) => {
-        if (m.info?.role !== "assistant" && m.info?.role !== "tool") return false
+      const hasAssistantText = messages.some((m: SessionMessage) => {
+        if (m.info?.role !== "assistant") return false
         const parts = m.parts ?? []
-      return parts.some((p: SessionPart) =>
-        // Text content (final output)
-        (p.type === "text" && p.text && p.text.trim().length > 0) ||
-        // Reasoning content (thinking blocks)
-        (p.type === "reasoning" && p.text && p.text.trim().length > 0) ||
-        // Tool calls (indicates work was done)
-        p.type === "tool" ||
-        // Tool results (output from executed tools) - important for tool-only tasks
-        (p.type === "tool_result" && p.content &&
-          (typeof p.content === "string" ? p.content.trim().length > 0 : p.content.length > 0))
-      )
+        return parts.some((p: SessionPart) =>
+          p.type === "text" && p.text && p.text.trim().length > 0
+        )
       })
 
-      if (!hasContent) {
-        log("[background-agent] Messages exist but no content found in session:", sessionID)
+      if (!hasAssistantText) {
+        log("[background-agent] No assistant text output found in session:", sessionID)
         return false
       }
 
-      this.markSessionOutputObserved(sessionID)
       return true
     } catch (error) {
       log("[background-agent] Error validating session output:", error)
-      // On error, allow completion to proceed (don't block indefinitely)
-      return true
+      // Unknown state must never count as valid output (#7325); callers wait
+      // for the next poll/event instead of completing blind.
+      return false
     }
   }
 
@@ -3043,6 +3006,16 @@ The task was re-queued on a fallback model after a retryable failure.
           }
 
           if (sessionStatus && isTerminalSessionStatus(sessionStatus.type)) {
+            const hasTerminalOutput = await this.validateSessionHasOutput(sessionID)
+            if (!hasTerminalOutput) {
+              log("[background-agent] Terminal session status without assistant output, failing task:", {
+                taskId: task.id,
+                sessionID,
+                sessionStatus: sessionStatus.type,
+              })
+              await this.failCrashedTask(task, `Subagent session reached terminal status "${sessionStatus.type}" without producing any assistant output.`)
+              continue
+            }
             await this.tryCompleteTask(task, `polling (terminal session status: ${sessionStatus.type})`)
             continue
           }

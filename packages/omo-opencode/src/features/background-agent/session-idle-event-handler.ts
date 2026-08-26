@@ -11,6 +11,8 @@ export function handleSessionIdleBackgroundEvent(args: {
   checkSessionTodos: (sessionID: string) => Promise<boolean>
   tryCompleteTask: (task: BackgroundTask, source: string) => Promise<boolean>
   emitIdleEvent: (sessionID: string) => void
+  hasRemainingFallbacks?: (task: BackgroundTask) => boolean
+  failTaskWithoutOutput?: (task: BackgroundTask) => Promise<void>
 }): void {
   const {
     properties,
@@ -20,6 +22,8 @@ export function handleSessionIdleBackgroundEvent(args: {
     checkSessionTodos,
     tryCompleteTask,
     emitIdleEvent,
+    hasRemainingFallbacks,
+    failTaskWithoutOutput,
   } = args
 
   const sessionID = resolveSessionEventID(properties)
@@ -62,6 +66,12 @@ export function handleSessionIdleBackgroundEvent(args: {
       }
 
       if (!hasValidOutput) {
+        const fallbacksRemain = hasRemainingFallbacks?.(task) ?? true
+        if (!fallbacksRemain && failTaskWithoutOutput && task.status === "running") {
+          log("[background-agent] Session.idle with no assistant output and no fallbacks left, failing task:", task.id)
+          await failTaskWithoutOutput(task)
+          return
+        }
         log("[background-agent] Session.idle but no valid output yet, waiting:", task.id)
         return
       }

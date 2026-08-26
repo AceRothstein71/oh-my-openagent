@@ -6817,6 +6817,103 @@ describe("BackgroundManager.handleEvent - session.error", () => {
     manager.shutdown()
   })
 
+  test("fails task instead of completing when idle arrives with no assistant text and fallbacks are exhausted (#7325)", async () => {
+    //#given - every fallback rung failed; session holds only errored assistant + tool output
+    const sessionID = "ses-7325-empty-output"
+    const client = {
+      session: {
+        prompt: async () => ({}),
+        promptAsync: async () => ({}),
+        abort: async () => ({}),
+        messages: async () => ({
+          data: [
+            {
+              info: { role: "assistant", error: { name: "ProviderModelNotFoundError", message: "Model not found: opencode/gpt-5.4-nano" } },
+              parts: [{ type: "error", errorText: "Model not found: opencode/gpt-5.4-nano" }],
+            },
+            {
+              info: { role: "tool" },
+              parts: [{ type: "tool", state: { output: "stale grep results from first attempt" } }],
+            },
+          ],
+        }),
+        todo: async () => ({ data: [] }),
+      },
+    }
+
+    const manager = new BackgroundManager({ pluginContext: createPluginInput(client) })
+    stubNotifyParentSession(manager)
+
+    const task = createMockTask({
+      id: "task-7325-empty-output",
+      sessionId: sessionID,
+      parentSessionId: "parent-session",
+      parentMessageId: "msg-7325",
+      description: "fallback-exhausted task with zero assistant output",
+      agent: "explore",
+      status: "running",
+      startedAt: new Date(Date.now() - (MIN_IDLE_TIME_MS + 10)),
+      fallbackChain: [{ model: "gpt-5.4-nano", providers: ["opencode"], variant: undefined }],
+      attemptCount: 1,
+    })
+    getTaskMap(manager).set(task.id, task)
+
+    //#when
+    manager.handleEvent({ type: "session.idle", properties: { sessionID } })
+    await waitUntil(() => task.status !== "running", 600)
+
+    //#then
+    expect(task.status).toBe("error")
+    expect(task.error).toContain("assistant output")
+
+    manager.shutdown()
+  })
+
+  test("does not complete task when output validation fails to fetch messages (#7325)", async () => {
+    //#given
+    const sessionID = "ses-7325-fetch-error"
+    const client = {
+      session: {
+        prompt: async () => ({}),
+        promptAsync: async () => ({}),
+        abort: async () => ({}),
+        messages: async () => {
+          throw new Error("messages endpoint unavailable")
+        },
+        todo: async () => ({ data: [] }),
+      },
+    }
+
+    const manager = new BackgroundManager({ pluginContext: createPluginInput(client) })
+    stubNotifyParentSession(manager)
+
+    const task = createMockTask({
+      id: "task-7325-fetch-error",
+      sessionId: sessionID,
+      parentSessionId: "parent-session",
+      parentMessageId: "msg-7325b",
+      description: "task whose messages cannot be fetched",
+      agent: "explore",
+      status: "running",
+      startedAt: new Date(Date.now() - (MIN_IDLE_TIME_MS + 10)),
+      fallbackChain: [
+        { model: "m1", providers: ["p1"], variant: undefined },
+        { model: "m2", providers: ["p2"], variant: undefined },
+      ],
+      attemptCount: 0,
+    })
+    getTaskMap(manager).set(task.id, task)
+
+    //#when
+    manager.handleEvent({ type: "session.idle", properties: { sessionID } })
+    await new Promise((resolve) => setTimeout(resolve, 120))
+
+    //#then - must wait (retry may land), never mark COMPLETED on unknown state
+    expect(task.status).toBe("running")
+
+    manager.shutdown()
+  })
+
   test("completes task when session.idle carries session id in info", async () => {
     //#given
     const sessionID = "ses-info-idle-completes-task"
@@ -7794,8 +7891,8 @@ describe("BackgroundManager.handleEvent - non-tool event lastUpdate", () => {
     expect(task.status).toBe("running")
   })
 
-  test("should complete idle task without fetching messages after output event was observed", async () => {
-    //#given - a running task with observed output from message part events
+  test("should complete idle task after re-validating assistant text from messages (#7325)", async () => {
+    //#given - a running task whose session messages contain assistant text
     let messagesCallCount = 0
     let todoCallCount = 0
     const sessionID = "session-output-cached-idle"
@@ -7842,13 +7939,13 @@ describe("BackgroundManager.handleEvent - non-tool event lastUpdate", () => {
       properties: { sessionID: sessionID, type: "text" },
     })
 
-    //#when - session.idle fires after output event was already observed
+    //#when - session.idle fires; completion must verify real output, not event hearsay
     manager.handleEvent({ type: "session.idle", properties: { sessionID } })
 
-    //#then - task completes without refetching session.messages
+    //#then - task completes only after the messages fetch confirms assistant text
     await waitUntil(() => task.status === "completed", 600)
     expect(task.status).toBe("completed")
-    expect(messagesCallCount).toBe(0)
+    expect(messagesCallCount).toBe(1)
     expect(todoCallCount).toBe(1)
 
     manager.shutdown()

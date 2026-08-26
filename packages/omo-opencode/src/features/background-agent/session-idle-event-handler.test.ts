@@ -289,6 +289,65 @@ describe("handleSessionIdleBackgroundEvent", () => {
       expect(tryCompleteTask).not.toHaveBeenCalled()
     })
 
+    it("#when no valid output and no fallbacks remain #then should fail the task instead of waiting (#7325)", async () => {
+      //#given
+      const task = createRunningTask({
+        fallbackChain: [{ model: "m1", providers: ["p1"], variant: undefined }],
+        attemptCount: 1,
+      })
+      const tryCompleteTask = mock(() => Promise.resolve(true))
+      const failTaskWithoutOutput = mock(() => Promise.resolve())
+
+      //#when
+      handleSessionIdleBackgroundEvent({
+        properties: { sessionID: task.sessionId! },
+        findBySession: () => task,
+        idleDeferralTimers: new Map(),
+        validateSessionHasOutput: () => Promise.resolve(false),
+        checkSessionTodos: () => Promise.resolve(false),
+        hasRemainingFallbacks: () => false,
+        failTaskWithoutOutput,
+        tryCompleteTask,
+        emitIdleEvent: () => {},
+      })
+
+      //#then
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      expect(failTaskWithoutOutput).toHaveBeenCalledWith(task)
+      expect(tryCompleteTask).not.toHaveBeenCalled()
+    })
+
+    it("#when no valid output but fallbacks remain #then should keep waiting for the retry (#7325)", async () => {
+      //#given
+      const task = createRunningTask({
+        fallbackChain: [
+          { model: "m1", providers: ["p1"], variant: undefined },
+          { model: "m2", providers: ["p2"], variant: undefined },
+        ],
+        attemptCount: 1,
+      })
+      const tryCompleteTask = mock(() => Promise.resolve(true))
+      const failTaskWithoutOutput = mock(() => Promise.resolve())
+
+      //#when
+      handleSessionIdleBackgroundEvent({
+        properties: { sessionID: task.sessionId! },
+        findBySession: () => task,
+        idleDeferralTimers: new Map(),
+        validateSessionHasOutput: () => Promise.resolve(false),
+        checkSessionTodos: () => Promise.resolve(false),
+        hasRemainingFallbacks: () => true,
+        failTaskWithoutOutput,
+        tryCompleteTask,
+        emitIdleEvent: () => {},
+      })
+
+      //#then
+      await new Promise((resolve) => setTimeout(resolve, 10))
+      expect(failTaskWithoutOutput).not.toHaveBeenCalled()
+      expect(tryCompleteTask).not.toHaveBeenCalled()
+    })
+
     it("#when task has incomplete todos #then should not complete task", async () => {
       //#given
       const task = createRunningTask()

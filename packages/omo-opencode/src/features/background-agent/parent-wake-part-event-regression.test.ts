@@ -40,10 +40,6 @@ function getPendingParentWakes(manager: BackgroundManager): Map<string, PendingP
   }>(manager).parentWakeNotifier.getPendingParentWakes()
 }
 
-function getObservedOutputSessions(manager: BackgroundManager): Set<string> {
-  return unsafeTestValue<{ readonly observedOutputSessions: Set<string> }>(manager).observedOutputSessions
-}
-
 async function dispatchParentWake(manager: BackgroundManager, sessionID: string): Promise<void> {
   const internals = unsafeTestValue<{
     readonly queuePendingParentWake: (
@@ -97,7 +93,6 @@ describe("BackgroundManager parent-wake part event regression", () => {
 
       // then
       expect(getDispatchedParentWakes(manager).has("parent-session-user-part-update")).toBe(true)
-      expect(getObservedOutputSessions(manager).has("parent-session-user-part-update")).toBe(false)
     } finally {
       manager.shutdown()
     }
@@ -132,7 +127,6 @@ describe("BackgroundManager parent-wake part event regression", () => {
 
       // then
       expect(getDispatchedParentWakes(manager).has("parent-session-user-part-delta")).toBe(true)
-      expect(getObservedOutputSessions(manager).has("parent-session-user-part-delta")).toBe(false)
     } finally {
       manager.shutdown()
     }
@@ -177,7 +171,6 @@ describe("BackgroundManager parent-wake part event regression", () => {
       // then
       expect(requeued).toBe(true)
       expect(getDispatchedParentWakes(manager).has("parent-session-user-part-delta-split")).toBe(false)
-      expect(getObservedOutputSessions(manager).has("parent-session-user-part-delta-split")).toBe(false)
       expect(getPendingParentWakes(manager).get("parent-session-user-part-delta-split")?.notifications).toEqual([
         "<system-reminder>done</system-reminder>",
       ])
