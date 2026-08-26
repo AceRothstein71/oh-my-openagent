@@ -1,0 +1,345 @@
+bun test v1.3.14 (0d9b296a)
+Bundled 796 modules in 86ms
+
+  omo.js  1.29 MB  (entry point)
+
+Bundled 671 modules in 76ms
+
+  omo-task.js  0.92 MB  (entry point)
+
+Bundled 284 modules in 32ms
+
+  omo-member.js  175.55 KB  (entry point)
+
+Bundled 94 modules in 19ms
+
+  omo-memory-mcp.js  97.19 KB  (entry point)
+
+Bundled 125 modules in 15ms
+
+  memory-run-supervisor.mjs  29.25 KB  (entry point)
+
+Bundled 115 modules in 21ms
+
+  omo-init-deep-advisor.js  68.88 KB  (entry point)
+
+Bundled 796 modules in 83ms
+
+  omo.js  1.29 MB  (entry point)
+
+Bundled 671 modules in 67ms
+
+  omo-task.js  0.92 MB  (entry point)
+
+Bundled 284 modules in 42ms
+
+  omo-member.js  175.55 KB  (entry point)
+
+Bundled 94 modules in 13ms
+
+  omo-memory-mcp.js  97.19 KB  (entry point)
+
+Bundled 125 modules in 15ms
+
+  memory-run-supervisor.mjs  29.25 KB  (entry point)
+
+Bundled 115 modules in 15ms
+
+  omo-init-deep-advisor.js  68.88 KB  (entry point)
+
+Bundled 796 modules in 73ms
+
+  omo.js  1.29 MB  (entry point)
+
+Bundled 671 modules in 63ms
+
+  omo-task.js  0.92 MB  (entry point)
+
+Bundled 284 modules in 32ms
+
+  omo-member.js  175.55 KB  (entry point)
+
+Bundled 94 modules in 16ms
+
+  omo-memory-mcp.js  97.19 KB  (entry point)
+
+Bundled 125 modules in 15ms
+
+  memory-run-supervisor.mjs  29.25 KB  (entry point)
+
+Bundled 115 modules in 25ms
+
+  omo-init-deep-advisor.js  68.88 KB  (entry point)
+
+Bundled 796 modules in 92ms
+
+  omo.js  1.29 MB  (entry point)
+
+Bundled 671 modules in 55ms
+
+  omo-task.js  0.92 MB  (entry point)
+
+Bundled 284 modules in 25ms
+
+  omo-member.js  175.55 KB  (entry point)
+
+Bundled 94 modules in 14ms
+
+  omo-memory-mcp.js  97.19 KB  (entry point)
+
+Bundled 125 modules in 16ms
+
+  memory-run-supervisor.mjs  29.25 KB  (entry point)
+
+Bundled 115 modules in 21ms
+
+  omo-init-deep-advisor.js  68.88 KB  (entry point)
+
+Bundled 796 modules in 67ms
+
+  omo.js  1.29 MB  (entry point)
+
+Bundled 671 modules in 65ms
+
+  omo-task.js  0.92 MB  (entry point)
+
+Bundled 284 modules in 31ms
+
+  omo-member.js  175.55 KB  (entry point)
+
+Bundled 94 modules in 13ms
+
+  omo-memory-mcp.js  97.19 KB  (entry point)
+
+Bundled 125 modules in 14ms
+
+  memory-run-supervisor.mjs  29.25 KB  (entry point)
+
+Bundled 115 modules in 25ms
+
+  omo-init-deep-advisor.js  68.88 KB  (entry point)
+
+Bundled 796 modules in 82ms
+
+  omo.js  1.29 MB  (entry point)
+
+Bundled 671 modules in 66ms
+
+  omo-task.js  0.92 MB  (entry point)
+
+Bundled 284 modules in 35ms
+
+  omo-member.js  175.55 KB  (entry point)
+
+Bundled 94 modules in 34ms
+
+  omo-memory-mcp.js  97.19 KB  (entry point)
+
+Bundled 125 modules in 14ms
+
+  memory-run-supervisor.mjs  29.25 KB  (entry point)
+
+Bundled 115 modules in 20ms
+
+  omo-init-deep-advisor.js  68.88 KB  (entry point)
+
+ulw-loop help
+ulw-loop help
+ulw-loop help
+ulw-loop help
+ulw-loop help
+ulw-loop help
+ulw-loop help
+changed
+ulw-loop help
+
+packages/omo-senpi/src/extension/compose.test.ts:
+omo-senpi component disabled by flag {
+  component: "beta",
+}
+
+packages/omo-senpi/src/extension/index.test.ts:
+omo-senpi ulw-loop inactive; omo binary not found undefined
+omo-senpi memory component skipped: missing ExtensionAPI capabilities {
+  missing: [ "appendEntry", "registerEntryRenderer" ],
+}
+config-watch skipped: events capability missing undefined
+omo-senpi ulw-loop inactive; omo binary not found undefined
+omo-senpi memory component skipped: missing ExtensionAPI capabilities {
+  missing: [ "appendEntry", "registerEntryRenderer" ],
+}
+config-watch skipped: events capability missing undefined
+
+packages/omo-senpi/src/components/ultrawork/ultrawork-arming.test.ts:
+omo-senpi memory component skipped: missing ExtensionAPI capabilities {
+  missing: [ "appendEntry", "registerEntryRenderer" ],
+}
+config-watch skipped: events capability missing undefined
+omo-senpi memory component skipped: missing ExtensionAPI capabilities {
+  missing: [ "appendEntry", "registerEntryRenderer" ],
+}
+config-watch skipped: events capability missing undefined
+
+packages/omo-senpi/src/components/task/dag-runtime.test.ts:
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishDurableEvents (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:542:58)
+      at writeCheckpoint (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:108:9)
+      at <anonymous> (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:110:21)
+      at withLock (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/store.ts:570:12)
+      at appendPayload (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:90:32)
+      at <anonymous> (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/manager.ts:392:13)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+      at <anonymous> (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:209:12)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+      at <anonymous> (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:209:12)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+
+DAG runtime subscriber failed 652 |     cleanupRoots.push(cwd)
+653 |     const runner = new ScriptedRunner()
+654 |     const pi = Object.assign(new FakeExtensionAPI(), {
+655 |       rpc: {
+656 |         emit: (name: string) => {
+657 |           if (name === "omo.dag.event") throw new Error("subscriber exploded")
+                                                        ^
+error: subscriber exploded
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.test.ts:657:51)
+      at emit (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:68:13)
+      at forward (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-rpc-bridge.ts:77:5)
+      at deliverDurableEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:551:5)
+      at publishSchedulerEvent (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/task/dag-runtime.ts:149:65)
+      at deliver (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:238:11)
+      at drain (/home/viprix/projects/oom-wt-6450/packages/senpi-task/src/dag/journal.ts:226:13)
+
+Preparing worktree (new branch 'linked-branch')
+fatal: not a git repository (or any of the parent directories): .git
+fatal: git cat-file: could not get object info
+fatal: git cat-file: could not get object info
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+fatal: not a git repository (or any of the parent directories): .git
+
+ 2274 pass
+ 7 skip
+ 0 fail
+ 7029 expect() calls
+Ran 2281 tests across 310 files. [195.75s]

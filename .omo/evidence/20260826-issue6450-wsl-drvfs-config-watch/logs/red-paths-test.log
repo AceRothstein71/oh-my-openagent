@@ -1,0 +1,36 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-senpi/src/components/config-watch/paths.test.ts:
+290 |       env: fixtureEnv(fixture),
+291 |       platform: "linux",
+292 |       resolveFileSystemType: createDriveFileSystemTypeResolver([resolvedDriveRoot]),
+293 |     })
+294 |
+295 |     expect(targetFor(resolution.targets, join(projectDir, ".omo"), "/omo.jsonc")).toBe(false)
+                                                                                        ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/config-watch/paths.test.ts:295:83)
+(fail) resolveOmoConfigWatchTargets > #given a drvfs project on a simulated Windows drive #when resolving targets #then no project .omo or ancestor creation targets are emitted and the native user config target survives [1.19ms]
+327 |       platform: "linux",
+328 |       resolveFileSystemType: createDriveFileSystemTypeResolver([resolvedDriveRoot]),
+329 |     })
+330 |
+331 |     for (const target of resolution.targets) {
+332 |       expect(target.path.startsWith(resolvedDriveRoot)).toBe(false)
+                                                              ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6450/packages/omo-senpi/src/components/config-watch/paths.test.ts:332:57)
+(fail) resolveOmoConfigWatchTargets > #given a drvfs HOME holding the user config directory #when resolving targets #then user config watch targets are dropped and discovery reports reload_required [1.08ms]
+
+ 15 pass
+ 2 fail
+ 62 expect() calls
+Ran 17 tests across 1 file. [1.59s]

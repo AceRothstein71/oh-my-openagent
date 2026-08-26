@@ -1,0 +1,25 @@
+Bundled 796 modules in 100ms
+
+  omo.js  1.29 MB  (entry point)
+
+Bundled 671 modules in 73ms
+
+  omo-task.js  0.92 MB  (entry point)
+
+Bundled 284 modules in 30ms
+
+  omo-member.js  175.55 KB  (entry point)
+
+Bundled 94 modules in 12ms
+
+  omo-memory-mcp.js  97.19 KB  (entry point)
+
+Bundled 125 modules in 19ms
+
+  memory-run-supervisor.mjs  29.25 KB  (entry point)
+
+Bundled 115 modules in 22ms
+
+  omo-init-deep-advisor.js  68.88 KB  (entry point)
+
+Built omo-senpi extensions: /home/viprix/projects/oom-wt-6450/packages/omo-senpi/plugin/extensions/omo.js, /home/viprix/projects/oom-wt-6450/packages/omo-senpi/plugin/extensions/omo-task.js, /home/viprix/projects/oom-wt-6450/packages/omo-senpi/plugin/extensions/omo-member.js, /home/viprix/projects/oom-wt-6450/packages/omo-senpi/plugin/extensions/omo-memory-mcp.js, /home/viprix/projects/oom-wt-6450/packages/omo-senpi/plugin/extensions/memory-run-supervisor.mjs, /home/viprix/projects/oom-wt-6450/packages/omo-senpi/plugin/extensions/omo-init-deep-advisor.js

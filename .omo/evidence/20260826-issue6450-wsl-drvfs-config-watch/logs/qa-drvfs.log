@@ -1,0 +1,23 @@
+{
+  "mode": "drvfs",
+  "sandbox": "/tmp/opencode/issue-6450/sandbox/home",
+  "pass": true,
+  "verdicts": [
+    {
+      "check": "drvfs-registration-emitted",
+      "ok": true
+    },
+    {
+      "check": "drvfs-no-target-under-drive",
+      "ok": true
+    },
+    {
+      "check": "drvfs-no-recursive-project-or-ancestor-targets",
+      "ok": true
+    },
+    {
+      "check": "plan9-magic-exact",
+      "ok": true
+    }
+  ]
+}

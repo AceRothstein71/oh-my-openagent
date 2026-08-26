@@ -1,0 +1,15 @@
+{
+  "mode": "tmpfs",
+  "sandbox": "/tmp/opencode/issue-6450/sandbox/home",
+  "pass": true,
+  "verdicts": [
+    {
+      "check": "tmpfs-real-mount-probed",
+      "ok": true
+    },
+    {
+      "check": "tmpfs-not-treated-as-plan9",
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "mode": "native",
+  "sandbox": "/tmp/opencode/issue-6450/sandbox/home",
+  "pass": true,
+  "verdicts": [
+    {
+      "check": "native-default-statfs-probe-ran",
+      "ok": true
+    },
+    {
+      "check": "native-user-config-watched",
+      "ok": true
+    },
+    {
+      "check": "native-project-omo-watched",
+      "ok": true
+    },
+    {
+      "check": "native-creation-targets-present",
+      "ok": true
+    },
+    {
+      "check": "native-registration-id",
+      "ok": true
+    },
+    {
+      "check": "native-registration-has-targets",
+      "ok": true
+    },
+    {
+      "check": "drvfs-injected-drops-everything",
+      "ok": true
+    },
+    {
+      "check": "drvfs-injected-reload-required",
+      "ok": true
+    }
+  ]
+}
