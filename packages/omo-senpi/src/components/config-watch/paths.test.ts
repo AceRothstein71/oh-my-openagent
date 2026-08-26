@@ -2,7 +2,7 @@
 
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 import { describe, expect, it } from "bun:test"
 
 import {
@@ -14,6 +14,21 @@ import {
 import { resolveOmoConfigWatchTargetResolution, resolveOmoConfigWatchTargets } from "./paths"
 
 const cleanupRoots: string[] = []
+
+// Real Linux statfs magics: ext4 for native filesystems, v9fs (0x01021997,
+// decimal 16914839) for WSL drvfs Windows-drive mounts. Pinned as literals so
+// the tests stay honest about the exact value senpi hosts report.
+const EXT4_FILE_SYSTEM_TYPE = 0xef53
+const V9FS_FILE_SYSTEM_TYPE = 16914839
+
+type FileSystemTypeResolver = (path: string) => number | null
+
+function createDriveFileSystemTypeResolver(driveRoots: readonly string[]): FileSystemTypeResolver {
+  return (path: string): number | null => {
+    const underDrive = driveRoots.some((driveRoot) => path === driveRoot || path.startsWith(`${driveRoot}/`))
+    return underDrive ? V9FS_FILE_SYSTEM_TYPE : EXT4_FILE_SYSTEM_TYPE
+  }
+}
 
 type Fixture = {
   readonly agentDir: string
@@ -257,6 +272,131 @@ describe("resolveOmoConfigWatchTargets", () => {
     })
     const configTarget = targets.find((target) => target.path === omoDirectory)
     expect(configTarget?.filterGlobs).toEqual(["/omo.jsonc", "/omo.json"])
+  })
+
+  it("#given a drvfs project on a simulated Windows drive #when resolving targets #then no project .omo or ancestor creation targets are emitted and the native user config target survives", () => {
+    const fixture = createFixture()
+    const driveRoot = join(fixture.homeDir, "..", "mnt-e")
+    const resolvedDriveRoot = resolve(driveRoot)
+    const projectDir = join(resolvedDriveRoot, "project")
+    const cwd = join(projectDir, "child")
+    mkdirSync(cwd, { recursive: true })
+    writeProjectConfig(projectDir)
+    const userConfigDirectory = join(fixture.homeDir, ".omo")
+    mkdirSync(userConfigDirectory, { recursive: true })
+
+    const resolution = resolveOmoConfigWatchTargetResolution({
+      cwd,
+      env: fixtureEnv(fixture),
+      platform: "linux",
+      resolveFileSystemType: createDriveFileSystemTypeResolver([resolvedDriveRoot]),
+    })
+
+    expect(targetFor(resolution.targets, join(projectDir, ".omo"), "/omo.jsonc")).toBe(false)
+    expect(resolution.targets.filter((target) => target.filterGlobs.includes("/.omo"))).toEqual([])
+    for (const target of resolution.targets) {
+      expect(target.path.startsWith(resolvedDriveRoot)).toBe(false)
+    }
+    expect(resolution.targets.map((target) => target.path)).toEqual([userConfigDirectory])
+    expect(targetFor(resolution.targets, userConfigDirectory, "/omo.jsonc")).toBe(true)
+    expect(targetFor(resolution.targets, userConfigDirectory, "/omo.json")).toBe(true)
+    expect(resolution.userConfigCreationWatched).toBe(true)
+    expect(resolution.userConfigCreationDiscovery).toBe("watched")
+  })
+
+  it("#given a drvfs HOME holding the user config directory #when resolving targets #then user config watch targets are dropped and discovery reports reload_required", () => {
+    const fixture = createFixture()
+    const driveRoot = join(fixture.homeDir, "..", "mnt-e-home")
+    const resolvedDriveRoot = resolve(driveRoot)
+    const drvfsHomeDir = join(resolvedDriveRoot, "home")
+    const userConfigDirectory = join(drvfsHomeDir, ".omo")
+    mkdirSync(userConfigDirectory, { recursive: true })
+    const nativeRoot = mkdtempSync(join(tmpdir(), "omo-config-watch-native-"))
+    cleanupRoots.push(nativeRoot)
+    const nativeCwd = join(nativeRoot, "native-project")
+    mkdirSync(nativeCwd, { recursive: true })
+    const env = {
+      HOME: drvfsHomeDir,
+      XDG_CONFIG_HOME: join(drvfsHomeDir, "xdg"),
+      SENPI_CODING_AGENT_DIR: fixture.agentDir,
+    }
+
+    const resolution = resolveOmoConfigWatchTargetResolution({
+      cwd: nativeCwd,
+      env,
+      platform: "linux",
+      resolveFileSystemType: createDriveFileSystemTypeResolver([resolvedDriveRoot]),
+    })
+
+    for (const target of resolution.targets) {
+      expect(target.path.startsWith(resolvedDriveRoot)).toBe(false)
+    }
+    expect(targetFor(resolution.targets, userConfigDirectory, "/omo.jsonc")).toBe(false)
+    expect(resolution.userConfigCreationWatched).toBe(false)
+    expect(resolution.userConfigCreationDiscovery).toBe("reload_required")
+  })
+
+  it("#given a native ext4 project via the injected resolver #when resolving targets #then the full legacy target set is unchanged", () => {
+    const fixture = createFixture()
+    const userConfigDirectory = join(fixture.homeDir, ".omo")
+    mkdirSync(userConfigDirectory, { recursive: true })
+    writeProjectConfig(fixture.projectDir)
+
+    const targets = resolveOmoConfigWatchTargets({
+      cwd: fixture.cwd,
+      env: fixtureEnv(fixture),
+      platform: "linux",
+      resolveFileSystemType: createDriveFileSystemTypeResolver([]),
+    })
+
+    expect(targetFor(targets, userConfigDirectory, "/omo.jsonc")).toBe(true)
+    expect(targetFor(targets, join(fixture.projectDir, ".omo"), "/omo.jsonc")).toBe(true)
+    expect(targets.filter((target) => target.filterGlobs.includes("/.omo")).map((target) => target.path)).toEqual([
+      fixture.cwd,
+      fixture.projectDir,
+      fixture.workDir,
+      fixture.homeDir,
+    ])
+  })
+
+  it("#given an unknown filesystem type from the resolver #when resolving targets #then detection fails open to the legacy full target set", () => {
+    const fixture = createFixture()
+    const userConfigDirectory = join(fixture.homeDir, ".omo")
+    mkdirSync(userConfigDirectory, { recursive: true })
+    writeProjectConfig(fixture.projectDir)
+
+    const targets = resolveOmoConfigWatchTargets({
+      cwd: fixture.cwd,
+      env: fixtureEnv(fixture),
+      platform: "linux",
+      resolveFileSystemType: () => null,
+    })
+
+    expect(targetFor(targets, userConfigDirectory, "/omo.jsonc")).toBe(true)
+    expect(targetFor(targets, join(fixture.projectDir, ".omo"), "/omo.jsonc")).toBe(true)
+    expect(targets.some((target) => target.path === fixture.cwd && target.filterGlobs.includes("/.omo"))).toBe(true)
+  })
+
+  it("#given a non-linux platform without an injected resolver #when resolving targets #then default detection stays inert and the full target set is unchanged", () => {
+    const fixture = createFixture()
+    const userConfigDirectory = join(fixture.homeDir, ".omo")
+    mkdirSync(userConfigDirectory, { recursive: true })
+    writeProjectConfig(fixture.projectDir)
+
+    const targets = resolveOmoConfigWatchTargets({
+      cwd: fixture.cwd,
+      env: fixtureEnv(fixture),
+      platform: "darwin",
+    })
+
+    expect(targetFor(targets, userConfigDirectory, "/omo.jsonc")).toBe(true)
+    expect(targetFor(targets, join(fixture.projectDir, ".omo"), "/omo.jsonc")).toBe(true)
+    expect(targets.some((target) => target.path === fixture.cwd && target.filterGlobs.includes("/.omo"))).toBe(true)
+  })
+
+  it("#given the Plan 9 statfs magic #when comparing against the value WSL hosts report #then it equals decimal 16914839 and not the visually similar tmpfs magic", () => {
+    expect(V9FS_FILE_SYSTEM_TYPE).toBe(0x01021997)
+    expect(V9FS_FILE_SYSTEM_TYPE).not.toBe(0x01021994)
   })
 })
 
