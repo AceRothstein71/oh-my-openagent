@@ -1,7 +1,7 @@
 # Live QA transcript - issue #7338 (2026-08-26)
 
 ## Environment
-- opencode 1.18.23 (/home/viprix/.opencode/bin/opencode), headless `serve` topology
+- opencode 1.18.23 (~/.opencode/bin/opencode), headless `serve` topology
 - OMO plugin loaded from THIS worktree via plugin: ["file://<worktree>/packages/omo-opencode/src/index.ts"]
 - Fake OpenAI Responses-API LLM (scripted branches) + ambient provider fallback for some turns
 - Isolated XDG sandbox per run (mktemp oqa-xdg.*), OPENCODE_SERVER_PASSWORD auth
