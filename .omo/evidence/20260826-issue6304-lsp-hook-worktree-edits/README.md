@@ -1,6 +1,6 @@
 # QA evidence - issue 6304 (PostToolUse LSP hook blocks edits in sibling Git worktrees)
 
-Date: 2026-08-26. Worktree: /home/viprix/projects/oom-wt-6304 (branch fix/lsp-hook-worktree-edits-6304, base origin/dev 8c57e463e).
+Date: 2026-08-26. Worktree: <repo-root> (branch fix/lsp-hook-worktree-edits-6304, base origin/dev 8c57e463e).
 
 ## WHAT WAS TESTED
 
