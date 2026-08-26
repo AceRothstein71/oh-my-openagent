@@ -3,7 +3,11 @@ import { resolve } from "node:path"
 
 import type { PluginInput } from "@opencode-ai/plugin"
 
-import { getPlanProgress } from "../../features/boulder-state/storage"
+import {
+  FINAL_WAVE_TASK_ID_PATTERN,
+  getPlanProgress,
+  TASK_ID_PATTERN,
+} from "../../features/boulder-state/storage"
 import { log } from "../../shared/logger"
 
 const WRITE_TOOLS = new Set(["Write", "Edit", "write", "edit"])
@@ -11,9 +15,12 @@ const WRITE_TOOLS = new Set(["Write", "Edit", "write", "edit"])
 const SECTION_BOUNDARY_HEADING = /^#{1,2}(?:[ \t]+|$)/
 const HEADING_TODOS = /^##[ \t]+TODOs(?:[ \t]+#+)?[ \t]*$/i
 const HEADING_FINAL_WAVE = /^##[ \t]+Final Verification Wave(?:[ \t]+#+)?[ \t]*$/i
-const TOPLEVEL_CHECKBOX = /^[-*]\s*\[[ xX]?\]/
-const TODO_TASK = /^- \[[ xX]\] [1-9]\d*\. .+$/
-const FINAL_WAVE_TASK = /^- \[[ xX]\] F[1-9]\d*\. .+$/i
+// `~` is the blocked marker the boulder continuation directive requires an agent to
+// write, and the task-ID grammars mirror parsePlanChecklist via the shared pattern
+// fragments so rows the progress counter accepts are never flagged as malformed.
+const TOPLEVEL_CHECKBOX = /^[-*]\s*\[[ xX~]?\]/
+const TODO_TASK = new RegExp(`^- \\[[ xX~]\\] ${TASK_ID_PATTERN}[ \\t]+.+$`)
+const FINAL_WAVE_TASK = new RegExp(`^- \\[[ xX~]\\] ${FINAL_WAVE_TASK_ID_PATTERN}[ \\t]+.+$`, "i")
 const FENCE_PATTERN = /^[ \t]{0,3}(`{3,}|~{3,})(.*)$/
 
 type SectionName = "todo" | "final-wave"
@@ -32,6 +39,7 @@ type PlanFormatStats = {
   readonly rawCount: number
   readonly hasEmptySection: boolean
   readonly hasMalformedRows: boolean
+  readonly hasStructuredRow: boolean
   readonly recognized: boolean
 }
 
@@ -79,6 +87,7 @@ function analyzeStructuredSections(content: string): PlanFormatStats {
     rawCount: sections.reduce((total, item) => total + item.rawCount, 0),
     hasEmptySection: sections.some((item) => item.validCount === 0),
     hasMalformedRows: sections.some((item) => item.rawCount !== item.validCount),
+    hasStructuredRow: sections.some((item) => item.validCount > 0),
     recognized: sections.length > 0,
   }
 }
@@ -119,10 +128,10 @@ function buildWarning(rawCount: number, parsedCount: number, hasEmptySection: bo
       summary,
       "Those sections will contribute no tasks to `/ulw-execute` progress.",
       "",
-      "**Fix**: Every task checkbox under `## TODOs` MUST start with a bare number",
-      "followed by dot + space: `1.`, `2.`, `3.` — NOT `T1.`, `Phase 1:`, `Task-1.` etc.",
-      "Every Final Verification Wave checkbox MUST start with `F` + number:",
-      "`F1.`, `F2.` — NOT `T-F1.`, `F-1.`, `Final-1.` etc.",
+      "**Fix**: Every task checkbox under `## TODOs` MUST start with a task ID:",
+      "`1.`, `2.`, `T1.1`, `H3` followed by whitespace - NOT `Phase 1:`, `Task-1.`,",
+      "`0.`, `01.` etc. Every Final Verification Wave checkbox MUST start with an ID",
+      "too: `F1.`, `F5`, `T6.3a` - NOT `Final-1.`, `F-1.`, `F0.` etc.",
       "</plan-format-warning>",
     ].join("\n")
   }
@@ -134,9 +143,9 @@ function buildWarning(rawCount: number, parsedCount: number, hasEmptySection: bo
     `**${skipped} task(s)** have malformed labels and will be SKIPPED by the progress counter.`,
     `\`/ulw-execute\` will show \"Progress: ${parsedCount} tasks\" — missing ${skipped} task(s).`,
     "",
-    "**Fix**: Ensure every skipped task checkbox uses bare-number format:",
-    "  `## TODOs` → `1.`, `2.`, `3.` (NOT `T1.`, `Phase 1:`, `Task-1.`)",
-    "  `## Final Verification Wave` → `F1.`, `F2.`, `F3.` (NOT `T-F1.`, `F-1.`, `Final-1.`)",
+    "**Fix**: Ensure every skipped task checkbox starts with a task ID followed by whitespace:",
+    "  `## TODOs` → `1.`, `2.`, `T1.1`, `H3` (NOT `Phase 1:`, `Task-1.`, `0.`, `01.`)",
+    "  `## Final Verification Wave` → `F1.`, `F5`, `T6.3a` (NOT `Final-1.`, `F-1.`, `F0.`)",
     "</plan-format-warning>",
   ].join("\n")
 }
@@ -188,6 +197,11 @@ export function createPlanFormatValidatorHook(_ctx: PluginInput) {
       const parsedCount = progress.total
 
       if (!formatStats.hasEmptySection && !formatStats.hasMalformedRows) return
+      // When no structured row is valid but the progress counter still counted every
+      // raw checkbox, parsePlanChecklist fell back to simple mode and nothing is skipped.
+      const rescuedBySimpleFallback =
+        !formatStats.hasStructuredRow && parsedCount > 0 && parsedCount >= formatStats.rawCount
+      if (rescuedBySimpleFallback) return
 
       log(`[plan-format-validator] Plan ${filePath}: ${parsedCount}/${formatStats.rawCount} tasks parsed`, {
         sessionID: input.sessionID,

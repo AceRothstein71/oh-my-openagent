@@ -151,7 +151,9 @@ Describe the first implementation section here.
 
   test("warns when a structured plan has malformed checkboxes", async () => {
     // given
-    const fixture = createFixture(`# Plan\n\n## Todos\n- [ ] missing a numeric task label`)
+    const fixture = createFixture(
+      `# Plan\n\n## Todos\n- [ ] 1. Canonical task\n- [ ] missing a numeric task label`,
+    )
 
     try {
       // when
@@ -159,6 +161,47 @@ Describe the first implementation section here.
 
       // then
       expect(fixture.output.output).toContain("<plan-format-warning>")
+    } finally {
+      fixture.cleanup()
+    }
+  })
+
+  test("preserves a plan using common task-ID schemes", async () => {
+    // given
+    const fixture = createFixture(`# Plan
+
+## Todos
+- [ ] T1.1 Implement the parser
+- [x] T1.2 Add tests
+
+## Final Verification Wave
+- [ ] F5 Verify the delta
+- [~] H1 Push and open PR - blocked on user
+`)
+    const originalOutput = fixture.output.output
+
+    try {
+      // when
+      await fixture.run()
+
+      // then
+      expect(fixture.output.output).toBe(originalOutput)
+    } finally {
+      fixture.cleanup()
+    }
+  })
+
+  test("preserves a plan whose only rows are rescued by simple-mode fallback", async () => {
+    // given
+    const fixture = createFixture(`# Plan\n\n## Todos\n- [ ] free-form task without numeric label`)
+    const originalOutput = fixture.output.output
+
+    try {
+      // when
+      await fixture.run()
+
+      // then
+      expect(fixture.output.output).toBe(originalOutput)
     } finally {
       fixture.cleanup()
     }
