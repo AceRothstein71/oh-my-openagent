@@ -184,6 +184,36 @@ function fakeUi(widgetRows: string[][]): CapturedUi {
   }
 }
 
+type UpdatedPayload = { readonly runs: readonly { readonly run_id: string; readonly status: string }[] }
+
+function updatedPayload(data: unknown): UpdatedPayload | undefined {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return undefined
+  if (!("runs" in data) || !Array.isArray(data.runs)) return undefined
+  const runs: { run_id: string; status: string }[] = []
+  for (const entry of data.runs) {
+    if (typeof entry !== "object" || entry === null) return undefined
+    if (!("run_id" in entry) || !("status" in entry)) return undefined
+    if (typeof entry.run_id !== "string" || typeof entry.status !== "string") return undefined
+    runs.push({ run_id: entry.run_id, status: entry.status })
+  }
+  return { runs }
+}
+
+function updatedPayloadCollector(): {
+  readonly payloads: UpdatedPayload[]
+  readonly emit: (name: string, data: unknown) => void
+} {
+  const payloads: UpdatedPayload[] = []
+  return {
+    payloads,
+    emit: (name, data) => {
+      if (name !== "omo.dag.updated") return
+      const payload = updatedPayload(data)
+      if (payload !== undefined) payloads.push(payload)
+    },
+  }
+}
+
 describe("assembled DAG runtime", () => {
   test("#given a running DAG node #when its assembled child emits progress #then RPC and the live widget share one activity subscription that tears down", async () => {
     // given
@@ -844,6 +874,99 @@ describe("assembled DAG runtime", () => {
     expect(dagEvents(cwd, runId).some((event) => event.type === "dag.run.resumed")).toBe(false)
     secondRuntime.dispose()
   })
+
+  test("#given a paused run owned by a predecessor session id #when a restarted session attaches #then recovery adopts it and the first wholesale snapshot already shows the recovered run", async () => {
+    // given
+    const cwd = fs.mkdtempSync(join(tmpdir(), "omo-senpi-dag-adopt-"))
+    cleanupRoots.push(cwd)
+    const runId = "dag-adopt-orphan" as DagRunId
+    await seedPendingRun(cwd, runId, "session-old")
+    const store = dagStore(cwd)
+    const pending = store.readCheckpoint<DagRunRecordV1>(runId)
+    if (pending === null) throw new Error("expected seeded pending run")
+    store.writeCheckpoint(runId, { ...pending, status: "paused", previousLeaseHolderPid: 2_147_483_647 })
+
+    const runner = new ScriptedRunner()
+    const updated = updatedPayloadCollector()
+    const pi = Object.assign(new FakeExtensionAPI(), {
+      rpc: { emit: updated.emit, handle: () => undefined },
+    })
+    const engine = composeTaskEngine({
+      pi,
+      omoConfig: loadOmoConfig({ cwd }).config,
+      cwd,
+      sharedParentTools: () => [],
+      runnerFactories: { inProcess: () => runner, process: () => runner },
+    })
+    engine.runtime.captureFrom({ sessionManager: { getSessionId: () => "session-new" } })
+    const bridgeTimers = new ManualTimers()
+    const runtime = createDagRuntime({ pi, engine, logger: logger(), bridgeTimers })
+
+    // when - attach adopts the orphaned run and dispatches its node
+    const attaching = runtime.attach()
+    await within(runner.whenStarted(1))
+    bridgeTimers.flush(50)
+
+    // then - nothing may reach the wholesale channel while recovery is mid-flight
+    expect(updated.payloads).toEqual([])
+
+    runner.handles[0]?.settle("adopted output")
+    await within(attaching)
+    bridgeTimers.flush(50)
+    await Promise.resolve()
+
+    expect(updated.payloads).toHaveLength(1)
+    expect(updated.payloads[0]?.runs.map((run) => run.run_id)).toContain(runId)
+    expect(runtime.manager.record(runId, "session-new").parentSessionId).toBe("session-new")
+    expect(dagEvents(cwd, runId).some((event) => event.type === "dag.run.resumed")).toBe(true)
+    runtime.dispose()
+  }, { timeout: 15_000 })
+
+  test("#given a paused same-session run #when attach recovers it #then the wholesale channel stays silent until recovery settles and the first snapshot shows the recovered run", async () => {
+    // given
+    const cwd = fs.mkdtempSync(join(tmpdir(), "omo-senpi-dag-attach-order-"))
+    cleanupRoots.push(cwd)
+    const runId = "dag-attach-order" as DagRunId
+    const sessionId = "session-attach-order"
+    await seedPendingRun(cwd, runId, sessionId)
+    const store = dagStore(cwd)
+    const pending = store.readCheckpoint<DagRunRecordV1>(runId)
+    if (pending === null) throw new Error("expected seeded pending run")
+    store.writeCheckpoint(runId, { ...pending, status: "paused", previousLeaseHolderPid: 2_147_483_647 })
+
+    const runner = new ScriptedRunner()
+    const updated = updatedPayloadCollector()
+    const pi = Object.assign(new FakeExtensionAPI(), {
+      rpc: { emit: updated.emit, handle: () => undefined },
+    })
+    const engine = composeTaskEngine({
+      pi,
+      omoConfig: loadOmoConfig({ cwd }).config,
+      cwd,
+      sharedParentTools: () => [],
+      runnerFactories: { inProcess: () => runner, process: () => runner },
+    })
+    engine.runtime.captureFrom({ sessionManager: { getSessionId: () => sessionId } })
+    const bridgeTimers = new ManualTimers()
+    const runtime = createDagRuntime({ pi, engine, logger: logger(), bridgeTimers })
+
+    // when - recovery dispatches the node and blocks on the unsettled child
+    const attaching = runtime.attach()
+    await within(runner.whenStarted(1))
+    bridgeTimers.flush(50)
+
+    // then - mid-recovery the wholesale channel stays silent
+    expect(updated.payloads).toEqual([])
+
+    runner.handles[0]?.settle("recovered output")
+    await within(attaching)
+    bridgeTimers.flush(50)
+    await Promise.resolve()
+
+    expect(updated.payloads).toHaveLength(1)
+    expect(updated.payloads[0]?.runs.map((run) => `${run.run_id}:${run.status}`)).toEqual([`${runId}:completed`])
+    runtime.dispose()
+  }, { timeout: 15_000 })
 })
 
 describe("dag runtime node spawn policy", () => {

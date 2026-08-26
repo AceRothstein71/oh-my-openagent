@@ -544,6 +544,60 @@ describe("dag rpc bridge", () => {
       expect((updates[1]?.data as { runs: { status: string }[] }).runs[0]?.status).toBe("completed")
     })
 
+    it("#while snapshots are suspended #then nothing lands and releasing emits the recovered state once", () => {
+      // given
+      const { bridge, emitted, timers, setSnapshots } = wireSnapshots([runSnapshot("dag_1", { status: "paused" })])
+      bridge.attach()
+      bridge.setSnapshotsSuspended(true)
+
+      // when recovery churns store mutations under suspension
+      setSnapshots([runSnapshot("dag_1", { status: "running" })])
+      bridge.notifyStoreMutation()
+      timers.advance(DAG_SNAPSHOT_DEBOUNCE_MS * 4)
+      expect(emittedNames(emitted, "omo.dag.updated")).toHaveLength(0)
+
+      // and the suspension lifts once the recovered state is on disk
+      setSnapshots([runSnapshot("dag_1", { status: "running", completedAt: undefined })])
+      bridge.setSnapshotsSuspended(false)
+      timers.advance(DAG_SNAPSHOT_DEBOUNCE_MS)
+
+      // then exactly one honest snapshot of the recovered state went out
+      const updates = emittedNames(emitted, "omo.dag.updated")
+      expect(updates).toHaveLength(1)
+      expect((updates[0]?.data as { runs: { status: string }[] }).runs[0]?.status).toBe("running")
+    })
+
+    it("#when suspension lifts with no runSnapshots provider change #then the pending attach-time snapshot still lands", () => {
+      // given
+      const { bridge, emitted, timers } = wireSnapshots([runSnapshot("dag_1")])
+      bridge.attach()
+      bridge.setSnapshotsSuspended(true)
+      timers.advance(DAG_SNAPSHOT_DEBOUNCE_MS * 2)
+      expect(emittedNames(emitted, "omo.dag.updated")).toHaveLength(0)
+
+      // when
+      bridge.setSnapshotsSuspended(false)
+      timers.advance(DAG_SNAPSHOT_DEBOUNCE_MS)
+
+      // then
+      expect(emittedNames(emitted, "omo.dag.updated")).toHaveLength(1)
+    })
+
+    it("#when a suspended bridge detaches #then the next attach starts unsuspended", () => {
+      // given
+      const { bridge, emitted, timers } = wireSnapshots([runSnapshot("dag_1")])
+      bridge.attach()
+      bridge.setSnapshotsSuspended(true)
+      bridge.detach()
+
+      // when
+      bridge.attach()
+      timers.advance(DAG_SNAPSHOT_DEBOUNCE_MS)
+
+      // then
+      expect(emittedNames(emitted, "omo.dag.updated")).toHaveLength(1)
+    })
+
     it("#when the session has no parent session id #then nothing is emitted on the snapshot channel", () => {
       // given
       const { bridge, emitted, timers } = wireSnapshots([runSnapshot("dag_1")], null)

@@ -61,6 +61,7 @@ export function createDagRpcBridge(pi: SenpiExtensionAPI, deps: DagRpcBridgeDeps
   let activityFlush: TimerHandle | undefined
   let snapshotFlush: TimerHandle | undefined
   let lastSnapshotFingerprint: string | undefined
+  let snapshotsSuspended = false
   let attached = false
   let disposed = false
 
@@ -125,7 +126,7 @@ export function createDagRpcBridge(pi: SenpiExtensionAPI, deps: DagRpcBridgeDeps
 
   const flushSnapshot = (): void => {
     snapshotFlush = undefined
-    if (!attached) return
+    if (!attached || snapshotsSuspended) return
     const parentSessionId = deps.parentSessionId?.()
     if (parentSessionId === undefined || deps.runSnapshots === undefined) return
     const data = dagUpdatedPayload(parentSessionId, deps.runSnapshots())
@@ -136,7 +137,7 @@ export function createDagRpcBridge(pi: SenpiExtensionAPI, deps: DagRpcBridgeDeps
   }
 
   const scheduleSnapshot = (): void => {
-    if (!attached || snapshotFlush !== undefined) return
+    if (!attached || snapshotsSuspended || snapshotFlush !== undefined) return
     snapshotFlush = timers.set(flushSnapshot, snapshotDebounceMs)
   }
 
@@ -155,6 +156,7 @@ export function createDagRpcBridge(pi: SenpiExtensionAPI, deps: DagRpcBridgeDeps
     stopHeartbeat()
     stopActivityFlush()
     stopSnapshotFlush()
+    snapshotsSuspended = false
     // The next attach belongs to a fresh consumer, so it must receive a full snapshot again.
     lastSnapshotFingerprint = undefined
   }
@@ -181,6 +183,15 @@ export function createDagRpcBridge(pi: SenpiExtensionAPI, deps: DagRpcBridgeDeps
     notifyStoreMutation() {
       if (!attached) return
       scheduleSnapshot()
+    },
+    setSnapshotsSuspended(suspended) {
+      if (disposed) return
+      snapshotsSuspended = suspended
+      if (suspended) {
+        stopSnapshotFlush()
+        return
+      }
+      if (attached) scheduleSnapshot()
     },
     publishActivity(event) {
       if (!attached) return
