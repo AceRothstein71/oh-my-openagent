@@ -1,0 +1,12 @@
+ packages/omo-senpi/plugin/extensions/omo-member.js |   4 +-
+ .../omo-senpi/plugin/extensions/omo-memory-mcp.js  |   4 +-
+ packages/omo-senpi/plugin/extensions/omo-task.js   |   4 +-
+ packages/omo-senpi/plugin/extensions/omo.js        |   4 +-
+ .../src/components/task/dag-rpc-bridge-contract.ts |   3 +
+ .../src/components/task/dag-rpc-bridge.test.ts     |  54 +++++++++
+ .../src/components/task/dag-rpc-bridge.ts          |  13 ++-
+ .../src/components/task/dag-runtime.test.ts        | 123 +++++++++++++++++++++
+ .../omo-senpi/src/components/task/dag-runtime.ts   |  23 ++--
+ packages/senpi-task/src/dag/recovery.test.ts       |  42 ++++++-
+ packages/senpi-task/src/dag/recovery.ts            |  15 ++-
+ 11 files changed, 267 insertions(+), 22 deletions(-)

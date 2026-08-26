@@ -1,0 +1,35 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-senpi/src/components/task/dag-runtime.test.ts:
+954 |     const attaching = runtime.attach()
+955 |     await within(runner.whenStarted(1))
+956 |     bridgeTimers.flush(50)
+957 | 
+958 |     // then - mid-recovery the wholesale channel stays silent
+959 |     expect(updated.payloads).toEqual([])
+                                   ^
+error: expect(received).toEqual(expected)
+
+- []
++ [
++   {
++     "runs": [
++       {
++         "run_id": "dag-attach-order",
++         "status": "running",
++       },
++     ],
++   },
++ ]
+
+- Expected  - 1
++ Received  + 10
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7316/packages/omo-senpi/src/components/task/dag-runtime.test.ts:959:30)
+(fail) assembled DAG runtime > #given a paused same-session run #when attach recovers it #then the wholesale channel stays silent until recovery settles and the first snapshot shows the recovered run [184.36ms]
+
+ 0 pass
+ 17 filtered out
+ 1 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [2.26s]
