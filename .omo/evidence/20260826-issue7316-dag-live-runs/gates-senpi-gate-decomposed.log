@@ -1,0 +1,5 @@
+=== decomposed test:senpi gate components ===
+[1] build:senpi-plugin -> BLOCKED (env): git worktree creation fails/hangs in sandbox; timeout 240s; no debris left (git worktree list clean)
+[2] tsgo --noEmit -p packages/omo-senpi/tsconfig.json -> EXIT 0
+[3] bun test packages/omo-senpi -> run2: 2273 pass/7 skip/0 fail; run3: 2273 pass/7 skip/0 fail (run1 had 1 non-reproduced failure, unidentified before log rotation; two subsequent full greens)
+[4] bun test ./.agents/skills/senpi-qa/scripts/resolve-evidence-dir.test.mjs -> 10 pass/0 fail

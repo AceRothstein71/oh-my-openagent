@@ -1,0 +1,18 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/omo-senpi/src/components/task/dag-runtime.test.ts:
+39 |   return { promise, resolve }
+40 | }
+41 | 
+42 | function within<T>(promise: Promise<T>, ms = 300): Promise<T> {
+43 |   return new Promise<T>((resolve, reject) => {
+44 |     const timeout = setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms)
+                                                     ^
+error: timed out after 300ms
+      at <anonymous> (/home/viprix/projects/oom-wt-7316/packages/omo-senpi/src/components/task/dag-runtime.test.ts:44:49)
+(fail) assembled DAG runtime > #given a paused run owned by a predecessor session id #when a restarted session attaches #then recovery adopts it and the first wholesale snapshot already shows the recovered run [445.05ms]
+
+ 0 pass
+ 17 filtered out
+ 1 fail
+Ran 1 test across 1 file. [3.54s]

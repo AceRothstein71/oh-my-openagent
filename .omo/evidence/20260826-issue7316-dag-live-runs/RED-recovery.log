@@ -1,0 +1,22 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/senpi-task/src/dag/recovery.test.ts:
+375 |       hostPid: 101,
+376 |       isProcessAlive: () => false,
+377 |     }).resumePausedRuns(parentSessionId)
+378 | 
+379 |     // then
+380 |     expect(outcome?.kind).toBe("resumed")
+                                ^
+error: expect(received).toBe(expected)
+
+Expected: "resumed"
+Received: undefined
+
+      at <anonymous> (/home/viprix/projects/oom-wt-7316/packages/senpi-task/src/dag/recovery.test.ts:380:27)
+(fail) DAG crash recovery > #given a paused run owned by a predecessor session whose host provably died #when the successor session resumes #then the run is adopted into the successor and dispatched [31.93ms]
+
+ 14 pass
+ 1 fail
+ 61 expect() calls
+Ran 15 tests across 1 file. [3.76s]
