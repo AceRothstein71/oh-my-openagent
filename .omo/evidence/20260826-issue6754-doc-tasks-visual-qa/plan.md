@@ -1,6 +1,6 @@
 # Plan - issue 6754: Low-risk document tasks are forced through high-cost visual QA
 
-Worktree: /home/viprix/projects/oom-wt-6754 (branch fix/doc-tasks-visual-qa-6754, base origin/dev @ 8c57e463e)
+Worktree: <repo-root> (branch fix/doc-tasks-visual-qa-6754, base origin/dev @ 8c57e463e)
 
 ## Root cause (verified by reading the real chain, not from memory)
 
