@@ -192,6 +192,7 @@ export {
   joinRendererTokens,
   normalizeRendererText,
   rendererVisibleWidth,
+  truncateRendererText,
 } from "../../renderer-text"
 export {
   formatTaskMode,

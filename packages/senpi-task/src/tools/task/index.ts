@@ -16,6 +16,7 @@ export {
   statusThemeColor,
   taskCallLines,
   taskResultLines,
+  truncateRendererText,
 } from "./renderers"
 export { buildSkillPrepend, createFsSkillLoader } from "./skills"
 export { TASK_TOOL_NAME, createTaskTool } from "./tool"

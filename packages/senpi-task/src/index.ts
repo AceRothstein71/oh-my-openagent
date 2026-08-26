@@ -341,6 +341,7 @@ export {
   statusThemeColor,
   taskCallLines,
   taskResultLines,
+  truncateRendererText,
   validateTaskTarget,
   waitForForegroundTask,
 } from "./tools/task"

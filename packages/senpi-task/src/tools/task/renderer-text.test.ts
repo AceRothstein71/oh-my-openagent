@@ -5,6 +5,7 @@ import {
   linesComponent,
   normalizeRendererText,
   rendererVisibleWidth,
+  truncateRendererText,
 } from "./renderers"
 
 const TERMINAL_CONTROL_PATTERN = /[\u0000-\u001f\u007f-\u009f]/u
@@ -52,6 +53,30 @@ describe("renderer text", () => {
     // then
     expect(normalized).toEqual(cases.map(({ expected }) => expected))
     for (const value of normalized) expectNoTerminalControls(value)
+  })
+
+  test("#given text wider than the target width #when truncateRendererText clips it #then the result fits the width, carries the suffix, and keeps no control sequences", () => {
+    // given
+    const text = "짧은 한국어 and a long English tail that must be clipped at the visible width"
+
+    // when
+    const truncated = truncateRendererText(text, 24)
+
+    // then
+    expect(truncated).toContain("...")
+    expectNoTerminalControls(truncated)
+    expect(rendererVisibleWidth(truncated)).toBeLessThanOrEqual(24)
+  })
+
+  test("#given text narrower than the target width #when truncateRendererText clips it #then the text is returned unchanged without a suffix", () => {
+    // given
+    const text = "짧은 텍스트 short"
+
+    // when
+    const truncated = truncateRendererText(text, 80)
+
+    // then
+    expect(truncated).toBe(text)
   })
 })
 

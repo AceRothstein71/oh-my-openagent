@@ -17,6 +17,11 @@ export function excerptRendererText(value: string, width = DEFAULT_EXCERPT_WIDTH
   return stripTerminalControls(piTui().truncateToWidth(normalized, width, ELLIPSIS))
 }
 
+// Goes through the lazy boundary so callers never bind the pi-tui barrel statically.
+export function truncateRendererText(value: string, width: number, suffix = ELLIPSIS): string {
+  return stripTerminalControls(piTui().truncateToWidth(value, width, suffix))
+}
+
 export function excerptRendererPromptText(value: string, width = DEFAULT_EXCERPT_WIDTH): string {
   const normalized = normalizeRendererText(value)
   if (width <= 0) return ""
