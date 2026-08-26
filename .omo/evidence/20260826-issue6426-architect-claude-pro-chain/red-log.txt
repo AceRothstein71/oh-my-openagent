@@ -1,0 +1,35 @@
+bun test v1.3.14 (0d9b296a)
+
+packages/senpi-task/src/category/architect-chain-fallback.test.ts:
+37 |       expect(result.kind).toBe("resolved")
+38 |       if (result.kind !== "resolved") throw new Error("Expected resolved")
+39 |       expect(result.spec.provider).toBe("anthropic")
+40 |       expect(result.spec.modelId).toBe("claude-fable-5")
+41 |       expect(result.spec.variant).toBe("xhigh")
+42 |       expect(result.spec.fallback_models).toBeDefined()
+                                               ^
+error: expect(received).toBeDefined()
+
+Received: undefined
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6426/packages/senpi-task/src/category/architect-chain-fallback.test.ts:42:43)
+(fail) architect chain runtime fallback > #given a registry that lists fable-5 plus the plan-included opus-5 > #when architect resolves #then the spec carries a later in-family runtime fallback rung [6.90ms]
+51 |     test("#when inspected #then it has more than one rung so quota-dead rungs can advance", () => {
+52 |       // given / when
+53 |       const chain = CATEGORY_FALLBACK_CHAINS.architect
+54 |
+55 |       // then
+56 |       expect(chain.length).toBeGreaterThan(1)
+                                ^
+error: expect(received).toBeGreaterThan(expected)
+
+Expected: > 1
+Received: 1
+
+      at <anonymous> (/home/viprix/projects/oom-wt-6426/packages/senpi-task/src/category/architect-chain-fallback.test.ts:56:28)
+(fail) architect chain runtime fallback > #given the builtin architect fallback chain > #when inspected #then it has more than one rung so quota-dead rungs can advance [0.17ms]
+
+ 2 pass
+ 2 fail
+ 10 expect() calls
+Ran 4 tests across 1 file. [2.64s]

@@ -1,0 +1,29 @@
+=== GATE ROUND 1 ===
+Wed Aug 26 08:13:07 AM UTC 2026
+
+--- focused: bun test packages/senpi-task/src/category ---
+ 76 pass
+ 0 fail
+ 293 expect() calls
+Ran 76 tests across 9 files. [2.28s]
+
+--- focused: bun test packages/senpi-task/src/runners ---
+ 1 skip
+ 0 fail
+ 364 expect() calls
+Ran 162 tests across 31 files. [7.99s]
+
+--- full: bun test packages/senpi-task ---
+ 1 skip
+ 0 fail
+ 5606 expect() calls
+Ran 1760 tests across 252 files. [59.36s]
+
+--- tsgo ---
+TSGO_EXIT:0
+
+--- git diff --check ---
+DIFFCHECK_EXIT:0
+
+--- hygiene grep on changed paths ---
+HYGIENE_EXIT:1 (1 = zero matches)

@@ -1,0 +1,16 @@
+PASS: scenario 1 primary provider is anthropic
+PASS: scenario 1 primary model is claude-fable-5 (preferred where reachable)
+PASS: scenario 1 primary variant is xhigh
+PASS: scenario 1 spec carries exactly one fallback rung (got 1)
+PASS: scenario 1 fallback rung is anthropic/claude-opus-5
+PASS: scenario 1 fallback rung variant is xhigh
+PASS: scenario 2 runtime settings enable modelFallback
+PASS: scenario 2 runtime fallback chain contains claude-opus-5
+PASS: scenario 3 architect stays unavailable without fable-5 (got model_unavailable)
+PASS: scenario 3 architect not listed as available
+PASS: scenario 3 viable chain produces no chain-dead details
+PASS: scenario 4 architect unavailable with no Claude model
+PASS: scenario 4 attempted_chain lists both rungs
+PASS: scenario 4 missing_providers includes anthropic
+PASS: scenario 5 explicit omo.json pin still bypasses the gate
+QA RESULT: ALL CHECKS PASSED
