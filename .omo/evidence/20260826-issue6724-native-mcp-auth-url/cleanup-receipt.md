@@ -1,6 +1,6 @@
 # Cleanup Receipt - issue #6724 lane
 
-Worktree: /home/viprix/projects/oom-wt-6724 (branch fix/6724-native-mcp-auth-url)
+Worktree: ../oom-wt-6724 (branch fix/6724-native-mcp-auth-url)
 
 ## Transients created and their state
 

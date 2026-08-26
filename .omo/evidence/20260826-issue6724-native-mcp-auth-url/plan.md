@@ -1,6 +1,6 @@
 # Plan: Fix issue #6724 - Native /mcp auth overwrites the OAuth URL without opening a browser
 
-Worktree: /home/viprix/projects/oom-wt-6724 (branch fix/6724-native-mcp-auth-url, base origin/dev @ 8c57e463e)
+Worktree: ../oom-wt-6724 (branch fix/6724-native-mcp-auth-url, base origin/dev @ 8c57e463e)
 Evidence dir: .omo/evidence/20260826-issue6724-native-mcp-auth-url/
 QA sandbox: /tmp/opencode/issue-6724/
 
