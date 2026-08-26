@@ -1,7 +1,7 @@
 # Evidence: issue #6751 - runtime_fallback position reset mid-cycle
 
 Branch: fix/6751-runtime-fallback-position-reset (base origin/dev @ 8c57e463e)
-Worktree: /home/viprix/projects/oom-wt-6751
+Worktree: ../oom-wt-6751
 Date: 2026-08-26
 
 ## WHAT WAS TESTED

@@ -1,6 +1,6 @@
 # Cleanup receipt
 
-Worktree: /home/viprix/projects/oom-wt-6751 (issue #6751 fix lane)
+Worktree: ../oom-wt-6751 (issue #6751 fix lane)
 
 ## Temporary artifacts and their locations
 

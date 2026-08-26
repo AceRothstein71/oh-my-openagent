@@ -1,6 +1,6 @@
 # Plan: Fix issue #6751 - runtime_fallback resets fallback position mid-cycle
 
-Worktree: /home/viprix/projects/oom-wt-6751 (branch fix/6751-runtime-fallback-position-reset, base origin/dev @ 8c57e463e)
+Worktree: ../oom-wt-6751 (branch fix/6751-runtime-fallback-position-reset, base origin/dev @ 8c57e463e)
 
 ## Root causes (mapped from full vertical read)
 
