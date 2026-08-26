@@ -64,3 +64,41 @@ export function isModelAvailable(
 ): boolean {
 	return fuzzyMatchModel(targetModel, availableModels) !== null
 }
+
+/**
+ * Exact model-ID match across providers: no substring tolerance, unlike
+ * {@link fuzzyMatchModel}. A variant sibling (`minimax-m2.7-highspeed` for
+ * target `minimax-m2.7`) never matches (#7325). Shortest full id wins.
+ */
+export function findModelIdAcrossProviders(
+	targetModelID: string,
+	available: ReadonlySet<string>,
+	excludeProviders?: ReadonlySet<string>,
+): string | null {
+	if (available.size === 0) {
+		return null
+	}
+
+	const targetNormalized = normalizeModelName(targetModelID)
+	if (!targetNormalized) {
+		return null
+	}
+
+	const matches = Array.from(available).filter((model) => {
+		const separator = model.indexOf("/")
+		const provider = separator === -1 ? undefined : model.slice(0, separator)
+		if (excludeProviders?.has(provider ?? "")) {
+			return false
+		}
+		const modelID = separator === -1 ? model : model.slice(separator + 1)
+		return normalizeModelName(modelID) === targetNormalized
+	})
+
+	if (matches.length === 0) {
+		return null
+	}
+
+	return matches.reduce((shortest, current) =>
+		current.length < shortest.length ? current : shortest,
+	)
+}

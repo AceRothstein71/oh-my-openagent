@@ -148,6 +148,33 @@ describe("resolveModelForDelegateTask", () => {
     })
   })
 
+  test("#given only a wrong-variant near-name on another provider #when fallback resolves #then the substring rung is skipped (#7325)", () => {
+    const result = resolveModelForDelegateTask({
+      availableModels: new Set(["openrouter/minimax-m2.7-highspeed"]),
+      fallbackChain: [{ providers: ["gone-provider"], model: "minimax-m2.7" }],
+      systemDefaultModel: "system/default",
+    }, noCacheDeps)
+
+    expect(result).toEqual({ model: "system/default" })
+  })
+
+  test("#given the same model id exists under another provider #when fallback resolves #then the exact cross-provider id wins without pulling near-name variants (#7325)", () => {
+    const fallbackEntry = { providers: ["gone-provider"], model: "minimax-m2.7" }
+    const result = resolveModelForDelegateTask({
+      availableModels: new Set([
+        "openrouter/minimax-m2.7-highspeed",
+        "minimax/minimax-m2.7",
+      ]),
+      fallbackChain: [fallbackEntry],
+    }, noCacheDeps)
+
+    expect(result).toEqual({
+      model: "minimax/minimax-m2.7",
+      fallbackEntry,
+      matchedFallback: true,
+    })
+  })
+
   test("#given custom and later-rung providers expose the same model #when fallback resolves #then the custom provider keeps the earlier variant", () => {
     const result = resolveModelForDelegateTask({
       availableModels: new Set([

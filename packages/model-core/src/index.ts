@@ -28,6 +28,7 @@ export * from "./model-string-parser"
 export * from "./model-sanitizer"
 export {
 	fuzzyMatchModel,
+	findModelIdAcrossProviders,
 	isModelAvailable,
 } from "./model-availability"
 export {

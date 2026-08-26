@@ -111,6 +111,23 @@ export async function tryFallbackRetry(args: {
       task.model?.providerID,
     )
     const candidateModelID = deps.transformModelForProvider(candidateProviderID, candidate.model)
+    const cachedProviderModels = providerModelsCache?.models[candidateProviderID]
+    if (cachedProviderModels) {
+      const listedModelIDs = new Set(
+        cachedProviderModels.map((entry) =>
+          canonicalizeModelID(typeof entry === "string" ? entry : entry.id)
+        ),
+      )
+      if (!listedModelIDs.has(canonicalizeModelID(candidateModelID))) {
+        deps.log("[background-agent] Skipping fallback missing from provider catalog:", {
+          taskId: task.id,
+          source,
+          model: candidate.model,
+          provider: candidateProviderID,
+        })
+        continue
+      }
+    }
     const isNoOpFallback =
       !!task.model &&
       candidateProviderID.toLowerCase() === task.model.providerID.toLowerCase() &&

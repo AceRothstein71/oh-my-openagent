@@ -1,4 +1,5 @@
 import {
+  findModelIdAcrossProviders,
   fuzzyMatchModel,
   normalizeModel,
   parseModelString,
@@ -247,13 +248,11 @@ export function resolveModelForDelegateTask(
             .filter((candidate) => candidate.model === entry.model)
             .flatMap((candidate) => candidate.providers),
         )
-        const crossProviderCandidates = new Set(
-          [...input.availableModels].filter((model) => {
-            const [provider] = model.split("/")
-            return provider !== undefined && !laterRungProviders.has(provider)
-          }),
+        const crossProviderMatch = findModelIdAcrossProviders(
+          entry.model,
+          input.availableModels,
+          laterRungProviders,
         )
-        const crossProviderMatch = fuzzyMatchModel(entry.model, crossProviderCandidates)
         if (crossProviderMatch) {
           if (explicitHighModel && entry.variant === "high" && crossProviderMatch === explicitHighBaseModel) {
             return { model: explicitHighModel, fallbackEntry: entry, matchedFallback: true }
