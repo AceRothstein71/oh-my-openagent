@@ -1901,7 +1901,7 @@
             "enum": [
               "goal",
               "refactor",
-              "start-work",
+              "ulw-execute",
               "stop-continuation",
               "remove-ai-slops",
               "hyperplan"
@@ -11735,6 +11735,19 @@
           },
           "additionalProperties": false
         },
+        "ulw_execute": {
+          "type": "object",
+          "properties": {
+            "auto_commit": {
+              "default": true,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "auto_commit"
+          ],
+          "additionalProperties": false
+        },
         "start_work": {
           "type": "object",
           "properties": {
@@ -16647,7 +16660,7 @@
                   "enum": [
                     "goal",
                     "refactor",
-                    "start-work",
+                    "ulw-execute",
                     "stop-continuation",
                     "remove-ai-slops",
                     "hyperplan"
@@ -26479,6 +26492,19 @@
                     "additionalProperties": false
                   }
                 },
+                "additionalProperties": false
+              },
+              "ulw_execute": {
+                "type": "object",
+                "properties": {
+                  "auto_commit": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "auto_commit"
+                ],
                 "additionalProperties": false
               },
               "start_work": {
