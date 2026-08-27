@@ -29,7 +29,8 @@ describe("CATEGORY_FALLBACK_CHAINS", () => {
       "visual-engineering": [
         { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"], model: "claude-opus-5", variant: "max" },
         { providers: ["kimi-coding", "kimi-for-coding", "moonshotai", "opencode-go"], model: "kimi-k3", variant: "max" },
-        { providers: ["zai-coding-plan", "opencode-go"], model: "glm-5.2", variant: "max" },
+        { providers: ["zai-coding-plan"], model: "glm-4.6v" },
+        { providers: ["opencode-go"], model: "qwen3.7-plus" },
         { providers: ["openai", "openai-codex", "github-copilot", "opencode"], model: "gpt-5.6-sol", variant: "medium" }
       ],
       architect: [

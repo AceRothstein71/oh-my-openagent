@@ -306,9 +306,9 @@ describe("resolveCategory", () => {
     })
   })
 
-  test("#given visual-engineering primary is unavailable and the ZAI GLM rung is available #when resolved #then delegate-core fallback chain preserves the max variant", () => {
+  test("#given visual-engineering primary is unavailable and the ZAI vision rung is available #when resolved #then the vision-capable fallback is selected", () => {
     // given
-    const models = registry([model("zai-coding-plan", "glm-5.2")])
+    const models = registry([model("zai-coding-plan", "glm-4.6v")])
 
     // when
     const result = resolveCategory("visual-engineering", {}, models)
@@ -316,13 +316,12 @@ describe("resolveCategory", () => {
     // then
     const resolved = expectResolved(result)
     expect(resolved.spec.provider).toBe("zai-coding-plan")
-    expect(resolved.spec.modelId).toBe("glm-5.2")
+    expect(resolved.spec.modelId).toBe("glm-4.6v")
     expect(resolved.spec.variant).toBe("max")
     expect(resolved.modelSelection.matchedFallback).toBe(true)
     expect(resolved.modelSelection.fallbackEntry).toEqual({
-      providers: ["zai-coding-plan", "opencode-go"],
-      model: "glm-5.2",
-      variant: "max",
+      providers: ["zai-coding-plan"],
+      model: "glm-4.6v",
     })
   })
 
