@@ -15,6 +15,7 @@ import {
 } from "./executor"
 import { prepareDelegateTaskArgs } from "./tool-argument-preparation"
 import { createDelegateTaskPresentation } from "./tool-description"
+import { loadFreshConfigSnapshot } from "./fresh-config-snapshot"
 import type { AvailableSkill } from "../../agents/dynamic-agent-prompt-builder"
 import { mergeNativeSkillInfos, type NativeSkillEntry } from "../skill/native-skills"
 import type { SkillInfo } from "../skill/types"
@@ -144,10 +145,17 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
         ? `${parentContext.model.providerID}/${parentContext.model.modelID}`
         : undefined
 
+      const freshModelConfig = loadFreshConfigSnapshot(options.directory, options.configEnvironment)
       const currentModelConfig = options.loadCurrentModelConfig?.()
-      const modelOptions = currentModelConfig === undefined
-        ? options
-        : { ...options, userCategories: currentModelConfig.categories, agentOverrides: currentModelConfig.agents }
+      const modelOptions = freshModelConfig !== undefined
+        ? {
+          ...options,
+          userCategories: freshModelConfig.userCategories,
+          agentOverrides: freshModelConfig.agentOverrides,
+        }
+        : currentModelConfig === undefined
+          ? options
+          : { ...options, userCategories: currentModelConfig.categories, agentOverrides: currentModelConfig.agents }
 
       let agentToUse: string
       let categoryModel: DelegatedModelConfig | undefined
