@@ -9,8 +9,10 @@ import {
   materializeProvisionedExecutable,
   provisionEmbeddedRuntime,
   remapSenpiEnvironment,
+  runningExecutablePath,
   runCompiledLauncher,
   selectRuntimeManifest,
+  shouldReexecAfterProvisioning,
   versionLine,
   updateLine,
   type EmbeddedManifest,
@@ -23,6 +25,16 @@ const sha = (value: string) => createHash("sha256").update(value).digest("hex")
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
 
 describe("compiled omo entry launcher parity", () => {
+  test("uses the launched Windows executable path for self-provisioning identity", () => {
+    expect(runningExecutablePath("C:\\runtime\\omo.exe", "B:\\~BUN\\root\\omo.exe", "win32")).toBe(
+      "C:\\runtime\\omo.exe",
+    )
+    expect(runningExecutablePath("bun", "/usr/local/bin/bun", "win32")).toBe("/usr/local/bin/bun")
+    expect(runningExecutablePath("/runtime/omo", "/usr/local/bin/bun", "darwin")).toBe("/usr/local/bin/bun")
+    expect(shouldReexecAfterProvisioning("win32")).toBe(false)
+    expect(shouldReexecAfterProvisioning("darwin")).toBe(true)
+  })
+
   test("early commands pass through without an extension", () => {
     expect(buildSenpiArgs(["install", "x"], "/provisioned")).toEqual(["install", "x"])
   })
@@ -59,14 +71,39 @@ describe("compiled omo entry launcher parity", () => {
 })
 
 describe("embedded runtime provisioning", () => {
-  test("materializes the executable through a temporary non-executable path", () => {
+  test("materializes the executable directly on Windows", () => {
     const root = temp()
     const source = join(root, "source.exe")
     const destination = join(root, "runtime", "omo.exe")
     mkdirSync(join(root, "runtime"), { recursive: true })
     writeFileSync(source, "compiled binary")
 
-    materializeProvisionedExecutable(source, destination)
+    materializeProvisionedExecutable(source, destination, "win32")
+
+    expect(readFileSync(destination, "utf8")).toBe("compiled binary")
+  })
+
+  test("does not overwrite an existing Windows provisioned executable", () => {
+    const root = temp()
+    const source = join(root, "source.exe")
+    const destination = join(root, "runtime", "omo.exe")
+    mkdirSync(join(root, "runtime"), { recursive: true })
+    writeFileSync(source, "new binary")
+    writeFileSync(destination, "existing binary")
+
+    materializeProvisionedExecutable(source, destination, "win32")
+
+    expect(readFileSync(destination, "utf8")).toBe("existing binary")
+  })
+
+  test("materializes the executable through a temporary non-executable path on POSIX", () => {
+    const root = temp()
+    const source = join(root, "source.exe")
+    const destination = join(root, "runtime", "omo.exe")
+    mkdirSync(join(root, "runtime"), { recursive: true })
+    writeFileSync(source, "compiled binary")
+
+    materializeProvisionedExecutable(source, destination, "darwin")
 
     expect(readFileSync(destination, "utf8")).toBe("compiled binary")
     expect(existsSync(`${destination}.tmp-${process.pid}`)).toBe(false)
