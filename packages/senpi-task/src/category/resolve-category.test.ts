@@ -47,7 +47,7 @@ const gpt56CategoryCases = [
     mixedWinner: { provider: "github-copilot", modelId: "gpt-5.6-sol", variant: "medium" },
     copilotVariant: "medium",
     copilotFallbackEntry: {
-      providers: ["openai", "quotio-openai", "github-copilot", "opencode", "vercel"] as string[],
+      providers: ["openai", "openai-codex", "github-copilot", "opencode"] as string[],
       model: "gpt-5.6-sol",
       variant: "medium",
     },
@@ -59,7 +59,7 @@ const gpt56CategoryCases = [
     mixedWinner: { provider: "github-copilot", modelId: "gpt-5.6-terra", variant: "high" },
     copilotVariant: "high",
     copilotFallbackEntry: {
-      providers: ["openai", "quotio-openai", "github-copilot", "opencode", "vercel"] as string[],
+      providers: ["openai", "openai-codex", "github-copilot", "opencode"] as string[],
       model: "gpt-5.6-terra",
       variant: "high",
     },
@@ -306,22 +306,23 @@ describe("resolveCategory", () => {
     })
   })
 
-  test("#given visual-engineering primary is unavailable and the Go Qwen vision rung is available #when resolved #then delegate-core resolves the vision-capable fallback with the category-default variant", () => {
+  test("#given visual-engineering primary is unavailable and the ZAI GLM rung is available #when resolved #then delegate-core fallback chain preserves the max variant", () => {
     // given
-    const models = registry([model("opencode-go", "qwen3.7-plus")])
+    const models = registry([model("zai-coding-plan", "glm-5.2")])
 
     // when
     const result = resolveCategory("visual-engineering", {}, models)
 
     // then
     const resolved = expectResolved(result)
-    expect(resolved.spec.provider).toBe("opencode-go")
-    expect(resolved.spec.modelId).toBe("qwen3.7-plus")
+    expect(resolved.spec.provider).toBe("zai-coding-plan")
+    expect(resolved.spec.modelId).toBe("glm-5.2")
     expect(resolved.spec.variant).toBe("max")
     expect(resolved.modelSelection.matchedFallback).toBe(true)
     expect(resolved.modelSelection.fallbackEntry).toEqual({
-      providers: ["opencode-go", "vercel"],
-      model: "qwen3.7-plus",
+      providers: ["zai-coding-plan", "opencode-go"],
+      model: "glm-5.2",
+      variant: "max",
     })
   })
 
@@ -478,7 +479,7 @@ describe("builtin category defaults", () => {
       ["quick", "kimi-coding/kimi-for-coding-highspeed", undefined],
       ["unspecified-low", "xai/grok-4.6", "xhigh"],
       ["architect", "anthropic/claude-fable-5", "xhigh"],
-      ["unspecified-high", "kimi-coding/k3", "max"],
+      ["unspecified-high", "anthropic/claude-opus-5", "xhigh"],
       ["writing", "kimi-coding/k3", "low"],
     ])
 
