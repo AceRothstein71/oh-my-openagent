@@ -15,8 +15,8 @@ var __export = (target, all) => {
 };
 
 // components/codegraph/src/cli.ts
-import { realpathSync as realpathSync9 } from "node:fs";
-import { basename as basename7, resolve as resolve10 } from "node:path";
+import { realpathSync as realpathSync10 } from "node:fs";
+import { basename as basename7, resolve as resolve11 } from "node:path";
 import { stderr as processStderr5 } from "node:process";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 
@@ -11428,9 +11428,9 @@ function defaultWorkerCliPath() {
 }
 
 // components/codegraph/src/serve.ts
-import { existsSync as existsSync11, realpathSync as realpathSync8 } from "node:fs";
+import { existsSync as existsSync11, realpathSync as realpathSync9 } from "node:fs";
 import { homedir as homedir13 } from "node:os";
-import { basename as basename6, join as join22, resolve as resolve9 } from "node:path";
+import { basename as basename6, join as join22, resolve as resolve10 } from "node:path";
 import {
   cwd as processCwd3,
   env as processEnv6,
@@ -11442,6 +11442,8 @@ import { fileURLToPath as fileURLToPath3 } from "node:url";
 
 // components/codegraph/src/mcp-bridge.ts
 import { spawn as spawn3 } from "node:child_process";
+import { realpathSync as realpathSync8 } from "node:fs";
+import { resolve as resolve9 } from "node:path";
 
 // ../../mcp-stdio-core/src/record.ts
 function isPlainRecord2(value) {
@@ -11808,7 +11810,7 @@ async function runBridgedCodegraphProcess(command, args, options) {
   });
   const clientForwardingDone = forwardClientToCodegraph(options.input, childInput, pendingResponses, (mode2) => {
     defaultResponseMode = mode2;
-  }, () => parentWatchdogFired);
+  }, () => parentWatchdogFired, options.secondaryRepoSync === undefined ? undefined : createSecondaryRepoSyncGate(options.secondaryRepoSync));
   const responseForwardingDone = forwardCodegraphToClient(childOutput, options.output, pendingResponses, () => defaultResponseMode, () => parentWatchdogFired);
   const bridgeDone = Promise.all([clientForwardingDone, responseForwardingDone]);
   const childAndResponsesDone = Promise.all([childExit, responseForwardingDone]).then(([exitCode]) => exitCode);
@@ -11841,7 +11843,7 @@ function isWatchdogTeardownError(error) {
     return false;
   return error.code === "ERR_STREAM_PREMATURE_CLOSE" || error.code === "ERR_STREAM_DESTROYED" || error.code === "ERR_STREAM_WRITE_AFTER_END" || error.code === "EPIPE";
 }
-async function forwardClientToCodegraph(input, childInput, pendingResponses, setDefaultResponseMode, tolerateWatchdogClose) {
+async function forwardClientToCodegraph(input, childInput, pendingResponses, setDefaultResponseMode, tolerateWatchdogClose, syncSecondaryRepo) {
   try {
     for await (const message of readStdioJsonRpcMessages(input)) {
       if (message.kind === "parse_error") {
@@ -11857,6 +11859,8 @@ async function forwardClientToCodegraph(input, childInput, pendingResponses, set
           toolName: jsonRpcToolName(message.payload)
         });
       }
+      if (syncSecondaryRepo !== undefined)
+        await syncSecondaryRepo(message.payload);
       await writeLine(childInput, JSON.stringify(message.payload));
     }
     childInput.end();
@@ -11904,6 +11908,60 @@ function jsonRpcToolName(payload) {
     return null;
   const name = params["name"];
   return typeof name === "string" ? name : null;
+}
+function createSecondaryRepoSyncGate(hooks) {
+  const entries = new Map;
+  let canonicalDefault = null;
+  return async (payload) => {
+    const rawProjectPath = extractToolCallProjectPath(payload);
+    if (rawProjectPath === null)
+      return;
+    if (canonicalDefault === null)
+      canonicalDefault = canonicalizeExistingPath(hooks.defaultProjectRoot);
+    const target = canonicalizeExistingPath(rawProjectPath);
+    if (target === canonicalDefault)
+      return;
+    const nowMsValue = Date.now();
+    const existing = entries.get(target);
+    if (existing?.inflight !== undefined) {
+      await existing.inflight;
+      return;
+    }
+    if (existing !== undefined && nowMsValue - existing.lastAttemptAt < hooks.debounceMs)
+      return;
+    const inflight = hooks.syncProject(target).catch(() => {
+      return;
+    });
+    entries.set(target, { lastAttemptAt: nowMsValue, inflight });
+    try {
+      await inflight;
+    } finally {
+      const current = entries.get(target);
+      if (current?.inflight === inflight)
+        entries.set(target, { lastAttemptAt: current.lastAttemptAt });
+    }
+  };
+}
+function extractToolCallProjectPath(payload) {
+  if (jsonRpcMethod(payload) !== "tools/call" || !isPlainRecord2(payload))
+    return null;
+  const params = payload["params"];
+  if (!isPlainRecord2(params))
+    return null;
+  const args = params["arguments"];
+  if (!isPlainRecord2(args))
+    return null;
+  const projectPath = args["projectPath"];
+  if (typeof projectPath !== "string" || projectPath.trim().length === 0)
+    return null;
+  return projectPath;
+}
+function canonicalizeExistingPath(path) {
+  try {
+    return realpathSync8(path);
+  } catch {
+    return resolve9(path);
+  }
 }
 function clarifyCodegraphResponse(payload, pendingResponse) {
   if (pendingResponse?.method === "tools/list")
@@ -12053,6 +12111,54 @@ function requestedProtocolVersion(params) {
   return params["protocolVersion"];
 }
 
+// components/codegraph/src/secondary-sync.ts
+var DEFAULT_SECONDARY_SYNC_DEBOUNCE_MS = 2000;
+var SECONDARY_SYNC_TIMEOUT_MS = 30000;
+function createSecondaryRepoSyncFn(options) {
+  return async (projectRoot) => {
+    await runSessionStartCodegraphCommand(projectRoot, options.command, ["sync"], {
+      env: options.env,
+      timeoutMs: options.timeoutMs ?? SECONDARY_SYNC_TIMEOUT_MS
+    });
+  };
+}
+
+// components/codegraph/src/serve-readiness.ts
+import { statSync as statSync5 } from "node:fs";
+var DEFAULT_INITIAL_GRAPH_TIMEOUT_MS = 30000;
+var DEFAULT_POLL_INTERVAL_MS = 250;
+async function waitForInitialCodegraphGraph(projectRoot, options) {
+  const nowMs = options.nowMs ?? Date.now;
+  const probe = options.probe ?? probeCodegraphProject;
+  if (isGraphReady(probe(projectRoot)))
+    return "ready";
+  const lockPath = resolveSessionStartStatePaths(options.homeDir, projectRoot).lockPath;
+  if (!liveBootstrapLock(lockPath, nowMs()))
+    return "idle";
+  const deadline = nowMs() + (options.timeoutMs ?? DEFAULT_INITIAL_GRAPH_TIMEOUT_MS);
+  while (nowMs() < deadline) {
+    await delay3(options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
+    if (isGraphReady(probe(projectRoot)))
+      return "ready";
+  }
+  return "bootstrap-in-flight-timeout";
+}
+function isGraphReady(state) {
+  return state.kind === "initialized" || state.kind === "nested-root";
+}
+function liveBootstrapLock(lockPath, nowMsValue) {
+  try {
+    return nowMsValue - statSync5(lockPath).mtimeMs < DEFAULT_SESSION_START_LOCK_STALE_MS;
+  } catch {
+    return false;
+  }
+}
+function delay3(ms) {
+  return new Promise((resolveDelay) => {
+    setTimeout(resolveDelay, ms);
+  });
+}
+
 // components/codegraph/src/serve.ts
 var CODEGRAPH_SKIP_HINT = `CodeGraph MCP skipped: codegraph binary not found. Install CodeGraph or set OMO_CODEGRAPH_BIN.
 `;
@@ -12127,6 +12233,22 @@ async function runCodegraphServe(options = {}) {
   const runProcess = options.runProcess ?? runBridgedCodegraphProcess;
   const codegraphEnv = codegraphEnvForConfig(trustedInstallDir, homeDir, codegraphConfig.daemon !== false, options.buildEnv);
   const mergedEnv = buildCodegraphChildEnv({ ambientEnv: env, codegraphEnv, runtimeEnv: env });
+  const readiness = options.waitForInitialGraph === undefined ? await waitForInitialCodegraphGraph(projectCwd, {
+    homeDir,
+    ...options.pollIntervalMs === undefined ? {} : { pollIntervalMs: options.pollIntervalMs },
+    ...options.initialReadinessTimeoutMs === undefined ? {} : { timeoutMs: options.initialReadinessTimeoutMs }
+  }) : await options.waitForInitialGraph(projectCwd);
+  if (readiness !== "ready")
+    writeReadinessDebug(readiness);
+  const secondaryRepoSync = options.secondaryRepoSync ?? {
+    defaultProjectRoot: projectCwd,
+    debounceMs: options.secondarySyncDebounceMs ?? DEFAULT_SECONDARY_SYNC_DEBOUNCE_MS,
+    syncProject: createSecondaryRepoSyncFn({
+      command: resolution.command,
+      env: mergedEnv,
+      ...options.secondarySyncTimeoutMs === undefined ? {} : { timeoutMs: options.secondarySyncTimeoutMs }
+    })
+  };
   return runProcess(resolution.command, [...resolution.argsPrefix, "serve", "--mcp"], {
     cwd: projectCwd,
     env: mergedEnv,
@@ -12134,8 +12256,15 @@ async function runCodegraphServe(options = {}) {
     output: options.stdout ?? processStdout3,
     stderr: options.stderr ?? processStderr4,
     stdio: "pipe",
-    parentWatchdog: options.parentWatchdog ?? {}
+    parentWatchdog: options.parentWatchdog ?? {},
+    secondaryRepoSync
   });
+}
+function writeReadinessDebug(readiness) {
+  if (processEnv6["OMO_CODEGRAPH_DEBUG"] !== "1")
+    return;
+  processStderr4.write(`[codegraph-serve] initial graph readiness: ${readiness}
+`);
 }
 async function runUnavailableMcp(reason, options) {
   (options.stderr ?? processStderr4).write(reason);
@@ -12182,11 +12311,11 @@ function resolveProjectCwd(env, fallback) {
     const candidate = env[key]?.trim();
     if (candidate === undefined || candidate.length === 0)
       continue;
-    const resolved = resolve9(candidate);
+    const resolved = resolve10(candidate);
     if (existsSync11(resolved))
       return resolved;
   }
-  return resolve9(fallback);
+  return resolve10(fallback);
 }
 function provisionedBinFromInstallDir(installDir) {
   return resolvePinnedCodegraphBin(installDir);
@@ -12208,7 +12337,7 @@ function isDirectInvocation(argvPath) {
   const moduleName = basename6(modulePath);
   if (moduleName !== "serve.js" && moduleName !== "serve.ts")
     return false;
-  return realpathSync8(resolve9(argvPath)) === realpathSync8(modulePath);
+  return realpathSync9(resolve10(argvPath)) === realpathSync9(modulePath);
 }
 
 // components/codegraph/src/sweep-cli.ts
@@ -12319,7 +12448,7 @@ function isDirectInvocation2(argvPath) {
   const moduleName = basename7(modulePath);
   if (moduleName !== "cli.js" && moduleName !== "cli.ts")
     return false;
-  return realpathSync9(resolve10(argvPath)) === realpathSync9(modulePath);
+  return realpathSync10(resolve11(argvPath)) === realpathSync10(modulePath);
 }
 export {
   runCodegraphCli

@@ -15,14 +15,14 @@ var __export = (target, all) => {
 };
 
 // src/serve.ts
-import { existsSync as existsSync7, realpathSync as realpathSync3 } from "node:fs";
-import { homedir as homedir6 } from "node:os";
-import { basename as basename4, join as join12, resolve as resolve5 } from "node:path";
+import { existsSync as existsSync7, realpathSync as realpathSync6 } from "node:fs";
+import { homedir as homedir7 } from "node:os";
+import { basename as basename6, join as join15, resolve as resolve7 } from "node:path";
 import {
   cwd as processCwd,
-  env as processEnv,
+  env as processEnv2,
   stdin as processStdin,
-  stderr as processStderr,
+  stderr as processStderr2,
   stdout as processStdout
 } from "node:process";
 import { fileURLToPath } from "node:url";
@@ -603,30 +603,67 @@ function resolveCodegraphCommand(options = {}) {
   };
 }
 
-// ../../../../utils/src/codegraph/exclusion.ts
+// ../../../../utils/src/codegraph/paths.ts
+import { createHash as createHash2 } from "node:crypto";
 import { realpathSync } from "node:fs";
-import { homedir as homedir4, tmpdir as osTmpdir } from "node:os";
-import { isAbsolute, join as join6, resolve as resolve2 } from "node:path";
+import { homedir as homedir4 } from "node:os";
+import { basename as basename3, join as join6, resolve as resolve2 } from "node:path";
+function sanitizeBase(value) {
+  const sanitized = value.replace(/[^A-Za-z0-9._-]/g, "-").replace(/-+/g, "-");
+  return sanitized.length > 0 ? sanitized : "workspace";
+}
+function codegraphDataRoot(homeDir) {
+  return join6(homeDir, ".omo", "codegraph");
+}
+function canonicalizeCodegraphPath(path) {
+  const resolved = resolve2(path);
+  try {
+    return realpathSync(resolved);
+  } catch (error) {
+    if (error instanceof Error)
+      return resolved;
+    throw error;
+  }
+}
+function workspaceStorageName(workspace) {
+  const resolved = canonicalizeCodegraphPath(workspace);
+  const hash = createHash2("sha256").update(resolved).digest("hex").slice(0, 16);
+  return `${sanitizeBase(basename3(resolved))}-${hash}`;
+}
+function resolveCodegraphWorkspacePaths(workspace, options = {}) {
+  const resolvedWorkspace = canonicalizeCodegraphPath(workspace);
+  const dataRoot = codegraphDataRoot(options.homeDir ?? homedir4());
+  return {
+    dataDir: join6(dataRoot, "projects", workspaceStorageName(resolvedWorkspace)),
+    dataRoot,
+    projectLink: join6(resolvedWorkspace, ".codegraph")
+  };
+}
+
+// ../../../../utils/src/codegraph/exclusion.ts
+import { realpathSync as realpathSync2 } from "node:fs";
+import { homedir as homedir5, tmpdir as osTmpdir } from "node:os";
+import { isAbsolute, join as join7, resolve as resolve3 } from "node:path";
 var POSIX_DEFAULT_EXCLUDED_ROOTS = ["/tmp", "/private/tmp"];
 function expandHome(path, homeDir) {
   if (path === "~")
     return homeDir;
   if (path.startsWith("~/") || path.startsWith("~\\"))
-    return join6(homeDir, path.slice(2));
+    return join7(homeDir, path.slice(2));
   return path;
 }
 function realpathIfPossible(path) {
   try {
-    return realpathSync(path);
+    return realpathSync2(path);
   } catch (error) {
     if (error instanceof Error)
-      return resolve2(path);
+      return resolve3(path);
     throw error;
   }
 }
 function resolveConfiguredRoot(path, homeDir) {
   const expanded = expandHome(path, homeDir);
-  return realpathIfPossible(isAbsolute(expanded) ? expanded : join6(homeDir, expanded));
+  return realpathIfPossible(isAbsolute(expanded) ? expanded : join7(homeDir, expanded));
 }
 function normalizeForComparison(path, platform) {
   const normalized = path.replaceAll("\\", "/").replace(/\/+$/, "");
@@ -645,14 +682,14 @@ function defaultExcludedRoots(platform, tmpdir) {
 }
 function shouldExcludeCodegraphProject(workspace, options = {}) {
   const platform = options.platform ?? process.platform;
-  const homeDir = options.homeDir ?? homedir4();
+  const homeDir = options.homeDir ?? homedir5();
   const tmpdir = options.tmpdir ?? osTmpdir();
-  const resolvedWorkspace = realpathIfPossible(resolve2(workspace));
+  const resolvedWorkspace = realpathIfPossible(resolve3(workspace));
   if (hasOmoPathSegment(resolvedWorkspace)) {
     return { excluded: true, matchedRoot: ".omo", reason: "omo-state" };
   }
   for (const root of defaultExcludedRoots(platform, tmpdir)) {
-    const resolvedRoot = realpathIfPossible(resolve2(root));
+    const resolvedRoot = realpathIfPossible(resolve3(root));
     if (pathIsWithin(resolvedWorkspace, resolvedRoot, platform)) {
       return { excluded: true, matchedRoot: root, reason: "tmp-root" };
     }
@@ -669,7 +706,7 @@ function shouldExcludeCodegraphProject(workspace, options = {}) {
   return { excluded: false };
 }
 // ../../shared/src/config-loader.ts
-import { homedir as homedir5 } from "node:os";
+import { homedir as homedir6 } from "node:os";
 
 // ../../../../../node_modules/.bun/zod@4.4.3/node_modules/zod/v4/core/core.js
 var _a;
@@ -7641,7 +7678,7 @@ function mergeOmoConfigRecords(base, override, parentKey) {
 
 // ../../../../omo-config-core/src/loader/paths.ts
 import { userInfo } from "node:os";
-import { dirname as dirname2, join as join7, posix, resolve as resolve3 } from "node:path";
+import { dirname as dirname2, join as join8, posix, resolve as resolve4 } from "node:path";
 
 // ../../../../omo-config-core/src/internal/posix-path.ts
 function toPosixPath(path) {
@@ -7649,12 +7686,12 @@ function toPosixPath(path) {
 }
 
 // ../../../../omo-config-core/src/loader/types.ts
-import { existsSync as existsSync4, lstatSync, readFileSync as readFileSync2, realpathSync as realpathSync2 } from "node:fs";
+import { existsSync as existsSync4, lstatSync, readFileSync as readFileSync2, realpathSync as realpathSync3 } from "node:fs";
 var DEFAULT_READ_FILE_SYSTEM = {
   existsSync: existsSync4,
   lstatSync,
   readFileSync: readFileSync2,
-  realpathSync: realpathSync2
+  realpathSync: realpathSync3
 };
 
 // ../../../../omo-config-core/src/loader/paths.ts
@@ -7662,20 +7699,20 @@ var MAX_PROJECT_CONFIG_DIRECTORY_DEPTH = 256;
 var ACCOUNT_HOME_DIR = userInfo().homedir;
 function resolveHomeDir(env = process.env) {
   const homeDir = env.HOME ?? env.USERPROFILE ?? process.cwd();
-  return homeDir.startsWith("/") ? posix.resolve(homeDir) : toPosixPath(resolve3(homeDir));
+  return homeDir.startsWith("/") ? posix.resolve(homeDir) : toPosixPath(resolve4(homeDir));
 }
 function resolveUserOmoConfigPath(env = process.env) {
-  return join7(resolveUserOmoConfigDirectory(env), "omo.jsonc");
+  return join8(resolveUserOmoConfigDirectory(env), "omo.jsonc");
 }
 function resolveUserOmoConfigDirectory(env = process.env) {
-  return join7(resolveHomeDir(env), ".omo");
+  return join8(resolveHomeDir(env), ".omo");
 }
 function detectUserOmoJsonPath(env, fileSystem) {
   const configDir = resolveUserOmoConfigDirectory(env);
-  const jsoncPath = join7(configDir, "omo.jsonc");
+  const jsoncPath = join8(configDir, "omo.jsonc");
   if (fileSystem.existsSync(jsoncPath))
     return jsoncPath;
-  const jsonPath = join7(configDir, "omo.json");
+  const jsonPath = join8(configDir, "omo.json");
   return fileSystem.existsSync(jsonPath) ? jsonPath : jsoncPath;
 }
 function isSymlinkedProjectPath(path, fileSystem) {
@@ -7693,13 +7730,13 @@ function isLoadableProjectConfigFile(path, fileSystem) {
   return fileSystem.existsSync(path) && !isSymlinkedProjectPath(path, fileSystem);
 }
 function detectOmoJsonPath(dir, fileSystem) {
-  const omoDir = join7(dir, ".omo");
+  const omoDir = join8(dir, ".omo");
   if (isSymlinkedProjectPath(omoDir, fileSystem))
     return null;
-  const jsoncPath = join7(omoDir, "omo.jsonc");
+  const jsoncPath = join8(omoDir, "omo.jsonc");
   if (isLoadableProjectConfigFile(jsoncPath, fileSystem))
     return jsoncPath;
-  const jsonPath = join7(omoDir, "omo.json");
+  const jsonPath = join8(omoDir, "omo.json");
   return isLoadableProjectConfigFile(jsonPath, fileSystem) ? jsonPath : null;
 }
 function realpathOrSelf(path, fileSystem) {
@@ -7712,8 +7749,8 @@ function realpathOrSelf(path, fileSystem) {
   }
 }
 function findProjectConfigPathsFarthestFirst(cwd, homeDir, fileSystem, accountHomeDir = homeDir) {
-  const startDir = resolve3(cwd);
-  const boundaryDirs = [...new Set([resolve3(homeDir), resolve3(accountHomeDir)])];
+  const startDir = resolve4(cwd);
+  const boundaryDirs = [...new Set([resolve4(homeDir), resolve4(accountHomeDir)])];
   const realBoundaryDirs = new Set(boundaryDirs.map((path) => realpathOrSelf(path, fileSystem)));
   const nearestFirst = [];
   let currentDir = startDir;
@@ -7984,7 +8021,7 @@ class OmoConfigWriteError extends Error {
 
 // ../../../../omo-config-core/src/writer/writer.ts
 import { randomUUID as randomUUID2 } from "node:crypto";
-import { dirname as dirname3, join as join8, posix as posix2 } from "node:path";
+import { dirname as dirname3, join as join9, posix as posix2 } from "node:path";
 
 // ../../../../omo-config-core/src/internal/jsonc-parse.ts
 function stripBom(content) {
@@ -8049,13 +8086,13 @@ function resolveWritePath(options) {
     const jsoncPath2 = resolveUserOmoConfigPath(options.env);
     if (fileSystem.existsSync(jsoncPath2))
       return jsoncPath2;
-    const jsonPath2 = join8(dirname3(jsoncPath2), "omo.json");
+    const jsonPath2 = join9(dirname3(jsoncPath2), "omo.json");
     return fileSystem.existsSync(jsonPath2) ? jsonPath2 : jsoncPath2;
   }
-  const jsoncPath = join8(options.projectDir ?? process.cwd(), ".omo", "omo.jsonc");
+  const jsoncPath = join9(options.projectDir ?? process.cwd(), ".omo", "omo.jsonc");
   if (fileSystem.existsSync(jsoncPath))
     return jsoncPath;
-  const jsonPath = join8(dirname3(jsoncPath), "omo.json");
+  const jsonPath = join9(dirname3(jsoncPath), "omo.json");
   return fileSystem.existsSync(jsonPath) ? jsonPath : jsoncPath;
 }
 function directoryPath(path) {
@@ -8175,7 +8212,7 @@ function moveMigrationBackup(fileSystem, sourcePath, backupPath) {
 }
 
 // ../../../../omo-config-core/src/migration/commit.ts
-import { basename as basename3, dirname as dirname4, join as join9, resolve as resolve4 } from "node:path";
+import { basename as basename4, dirname as dirname4, join as join10, resolve as resolve5 } from "node:path";
 
 // ../../../../omo-config-core/src/migration/merge.ts
 function displayValue(value) {
@@ -8351,18 +8388,18 @@ function validateTarget(targetPath, document) {
 }
 function writerInput(targetPath, env) {
   const homeDir = resolveHomeDir(env);
-  const userDirectory = toPosixPath(join9(homeDir, ".omo"));
-  const fileName = basename3(targetPath);
+  const userDirectory = toPosixPath(join10(homeDir, ".omo"));
+  const fileName = basename4(targetPath);
   if (toPosixPath(dirname4(targetPath)) === userDirectory && (fileName === "omo.json" || fileName === "omo.jsonc")) {
     return { scope: "user" };
   }
-  if (basename3(dirname4(targetPath)) === ".omo" && (fileName === "omo.json" || fileName === "omo.jsonc")) {
+  if (basename4(dirname4(targetPath)) === ".omo" && (fileName === "omo.json" || fileName === "omo.jsonc")) {
     return { projectDir: dirname4(dirname4(targetPath)), scope: "project" };
   }
   throw new MigrationTransactionError(`Migration target is not an omo config path: ${targetPath}`);
 }
 function sameResolvedPath(a, b) {
-  return toPosixPath(resolve4(a)) === toPosixPath(resolve4(b));
+  return toPosixPath(resolve5(a)) === toPosixPath(resolve5(b));
 }
 var writeOmoMigrationTarget = (input) => {
   const options = writerInput(input.targetPath, input.env);
@@ -8412,9 +8449,9 @@ function writePreparedTarget(input) {
 }
 
 // ../../../../omo-config-core/src/migration/journal.ts
-import { join as join10 } from "node:path";
+import { join as join11 } from "node:path";
 function migrationJournalPath(env) {
-  return toPosixPath(join10(resolveHomeDir(env), ".omo", ".migration-journal.json"));
+  return toPosixPath(join11(resolveHomeDir(env), ".omo", ".migration-journal.json"));
 }
 function isFileExistsError2(error) {
   return error instanceof Error && Reflect.get(error, "code") === "EEXIST";
@@ -8502,14 +8539,14 @@ function removeMigrationJournal(fileSystem, env) {
 }
 
 // ../../../../omo-config-core/src/migration/lock.ts
-import { join as join11 } from "node:path";
+import { join as join12 } from "node:path";
 var DEFAULT_LEASE_DURATION_MS = 30000;
 var GUARD_LEASE_DURATION_MS = 1000;
 var LIVE_OWNER_STALE_LEASE_MULTIPLIER = 2;
 var MUTATION_GUARD_RETRY_DELAYS_MS = [2, 4, 8, 16, 32];
 var MUTATION_GUARD_SLEEP_VIEW = new Int32Array(new SharedArrayBuffer(4));
 function migrationLockPath(env) {
-  return toPosixPath(join11(resolveHomeDir(env), ".omo", ".migration.lock"));
+  return toPosixPath(join12(resolveHomeDir(env), ".omo", ".migration.lock"));
 }
 function mutationGuardPath(env) {
   return `${migrationLockPath(env)}.guard`;
@@ -8586,7 +8623,7 @@ function releaseMutationGuard(input) {
 function acquireMigrationLock(input) {
   const leaseDurationMs = input.leaseDurationMs ?? DEFAULT_LEASE_DURATION_MS;
   const path = migrationLockPath(input.env);
-  input.fileSystem.mkdirSync(toPosixPath(join11(resolveHomeDir(input.env), ".omo")), { recursive: true });
+  input.fileSystem.mkdirSync(toPosixPath(join12(resolveHomeDir(input.env), ".omo")), { recursive: true });
   for (let attempt = 0;attempt < 3; attempt += 1) {
     const currentContent = leaseContent(input.process, input.clock, leaseDurationMs);
     try {
@@ -8969,7 +9006,7 @@ var ENV_BOOLEAN_SETTINGS = [
 ];
 function resolveHomeDir2(options) {
   const env = options.env ?? process.env;
-  return options.homeDir ?? env.HOME ?? env.USERPROFILE ?? homedir5();
+  return options.homeDir ?? env.HOME ?? env.USERPROFILE ?? homedir6();
 }
 function environmentWithHome(env, homeDir) {
   return { ...env, HOME: homeDir };
@@ -9108,6 +9145,8 @@ function getCodexOmoConfig(options = {}) {
 
 // src/mcp-bridge.ts
 import { spawn } from "node:child_process";
+import { realpathSync as realpathSync4 } from "node:fs";
+import { resolve as resolve6 } from "node:path";
 
 // ../../../../mcp-stdio-core/src/record.ts
 function isPlainRecord2(value) {
@@ -9157,7 +9196,7 @@ ${body}` : `${body}
   await writeChunk(output, payload);
 }
 function writeChunk(output, chunk) {
-  return new Promise((resolve5, reject) => {
+  return new Promise((resolve6, reject) => {
     let settled = false;
     const onError = (error) => {
       if (settled)
@@ -9177,7 +9216,7 @@ function writeChunk(output, chunk) {
           return;
         }
         output.removeListener("error", onError);
-        resolve5();
+        resolve6();
       });
     } catch (error) {
       output.removeListener("error", onError);
@@ -9492,7 +9531,7 @@ async function runBridgedCodegraphProcess(command, args, options) {
   });
   const clientForwardingDone = forwardClientToCodegraph(options.input, childInput, pendingResponses, (mode2) => {
     defaultResponseMode = mode2;
-  }, () => parentWatchdogFired);
+  }, () => parentWatchdogFired, options.secondaryRepoSync === undefined ? undefined : createSecondaryRepoSyncGate(options.secondaryRepoSync));
   const responseForwardingDone = forwardCodegraphToClient(childOutput, options.output, pendingResponses, () => defaultResponseMode, () => parentWatchdogFired);
   const bridgeDone = Promise.all([clientForwardingDone, responseForwardingDone]);
   const childAndResponsesDone = Promise.all([childExit, responseForwardingDone]).then(([exitCode]) => exitCode);
@@ -9525,7 +9564,7 @@ function isWatchdogTeardownError(error) {
     return false;
   return error.code === "ERR_STREAM_PREMATURE_CLOSE" || error.code === "ERR_STREAM_DESTROYED" || error.code === "ERR_STREAM_WRITE_AFTER_END" || error.code === "EPIPE";
 }
-async function forwardClientToCodegraph(input, childInput, pendingResponses, setDefaultResponseMode, tolerateWatchdogClose) {
+async function forwardClientToCodegraph(input, childInput, pendingResponses, setDefaultResponseMode, tolerateWatchdogClose, syncSecondaryRepo) {
   try {
     for await (const message of readStdioJsonRpcMessages(input)) {
       if (message.kind === "parse_error") {
@@ -9541,6 +9580,8 @@ async function forwardClientToCodegraph(input, childInput, pendingResponses, set
           toolName: jsonRpcToolName(message.payload)
         });
       }
+      if (syncSecondaryRepo !== undefined)
+        await syncSecondaryRepo(message.payload);
       await writeLine(childInput, JSON.stringify(message.payload));
     }
     childInput.end();
@@ -9588,6 +9629,60 @@ function jsonRpcToolName(payload) {
     return null;
   const name = params["name"];
   return typeof name === "string" ? name : null;
+}
+function createSecondaryRepoSyncGate(hooks) {
+  const entries = new Map;
+  let canonicalDefault = null;
+  return async (payload) => {
+    const rawProjectPath = extractToolCallProjectPath(payload);
+    if (rawProjectPath === null)
+      return;
+    if (canonicalDefault === null)
+      canonicalDefault = canonicalizeExistingPath(hooks.defaultProjectRoot);
+    const target = canonicalizeExistingPath(rawProjectPath);
+    if (target === canonicalDefault)
+      return;
+    const nowMsValue = Date.now();
+    const existing = entries.get(target);
+    if (existing?.inflight !== undefined) {
+      await existing.inflight;
+      return;
+    }
+    if (existing !== undefined && nowMsValue - existing.lastAttemptAt < hooks.debounceMs)
+      return;
+    const inflight = hooks.syncProject(target).catch(() => {
+      return;
+    });
+    entries.set(target, { lastAttemptAt: nowMsValue, inflight });
+    try {
+      await inflight;
+    } finally {
+      const current = entries.get(target);
+      if (current?.inflight === inflight)
+        entries.set(target, { lastAttemptAt: current.lastAttemptAt });
+    }
+  };
+}
+function extractToolCallProjectPath(payload) {
+  if (jsonRpcMethod(payload) !== "tools/call" || !isPlainRecord2(payload))
+    return null;
+  const params = payload["params"];
+  if (!isPlainRecord2(params))
+    return null;
+  const args = params["arguments"];
+  if (!isPlainRecord2(args))
+    return null;
+  const projectPath = args["projectPath"];
+  if (typeof projectPath !== "string" || projectPath.trim().length === 0)
+    return null;
+  return projectPath;
+}
+function canonicalizeExistingPath(path) {
+  try {
+    return realpathSync4(path);
+  } catch {
+    return resolve6(path);
+  }
 }
 function clarifyCodegraphResponse(payload, pendingResponse) {
   if (pendingResponse?.method === "tools/list")
@@ -9737,12 +9832,430 @@ function requestedProtocolVersion(params) {
   return params["protocolVersion"];
 }
 
+// src/session-start-command.ts
+import { env as processEnv, stderr as processStderr } from "node:process";
+
+// ../../../../utils/src/process-tree.ts
+import { spawn as spawn2 } from "node:child_process";
+import { StringDecoder } from "node:string_decoder";
+
+// ../../../../utils/src/process-tree-termination.ts
+import { execFile as execFile2 } from "node:child_process";
+async function terminateProcessTree(pid, options) {
+  return options.platform === "win32" ? terminateWindowsProcessTree(pid, options) : terminatePosixProcessTree(pid, options);
+}
+async function terminatePosixProcessTree(pid, options) {
+  const attempts = [];
+  const knownPids = new Set(await listPosixTreePids(pid));
+  attempts.push(attemptPosixSignal(pid, "SIGTERM", "process-group"));
+  await waitForDirectChild(options.childClosed, options.graceMs);
+  for (const treePid of await listPosixTreePids(pid))
+    knownPids.add(treePid);
+  const gracefulSurvivors = [...knownPids].filter(isProcessAlive2);
+  if (gracefulSurvivors.length > 0) {
+    attempts.push(attemptPosixSignal(pid, "SIGKILL", "process-group"));
+    for (const survivorPid of gracefulSurvivors) {
+      attempts.push(attemptPosixSignal(survivorPid, "SIGKILL", "process"));
+    }
+  }
+  const [survivorPids] = await Promise.all([
+    waitForSurvivors([...knownPids], options.waitMs),
+    waitForDirectChild(options.childClosed, options.waitMs)
+  ]);
+  return { attempts, survivorPids };
+}
+async function terminateWindowsProcessTree(pid, options) {
+  const attempts = [];
+  attempts.push(await attemptWindowsTreeSignal(pid, "SIGTERM"));
+  await waitForDirectChild(options.childClosed, options.graceMs);
+  if (isProcessAlive2(pid))
+    attempts.push(await attemptWindowsTreeSignal(pid, "SIGKILL"));
+  const [survivorPids] = await Promise.all([
+    waitForSurvivors([pid], options.waitMs),
+    waitForDirectChild(options.childClosed, options.waitMs)
+  ]);
+  return { attempts, survivorPids };
+}
+function attemptPosixSignal(pid, signal, target) {
+  try {
+    process.kill(target === "process-group" ? -pid : pid, signal);
+    return { outcome: "sent", pid, signal, target };
+  } catch (error) {
+    if (!(error instanceof Error))
+      throw error;
+    const code = "code" in error ? error.code : undefined;
+    if (code === "ESRCH")
+      return { outcome: "missing", pid, signal, target };
+    if (code === "EPERM")
+      return { error: error.message, outcome: "denied", pid, signal, target };
+    return { error: error.message, outcome: "failed", pid, signal, target };
+  }
+}
+function attemptWindowsTreeSignal(pid, signal) {
+  const args = ["/PID", String(pid), "/T", ...signal === "SIGKILL" ? ["/F"] : []];
+  return new Promise((resolvePromise) => {
+    execFile2("taskkill.exe", args, { timeout: 5000, windowsHide: true }, (error) => {
+      if (error === null) {
+        resolvePromise({ outcome: "sent", pid, signal, target: "process-tree" });
+        return;
+      }
+      const code = "code" in error ? error.code : undefined;
+      const outcome = code === "EPERM" ? "denied" : code === "ESRCH" ? "missing" : "failed";
+      resolvePromise({ error: error.message, outcome, pid, signal, target: "process-tree" });
+    });
+  });
+}
+async function listPosixTreePids(rootPid) {
+  try {
+    const rows = parseProcessRows(await execFileText("ps", ["-eo", "pid=,ppid=,pgid="]));
+    const selected = new Set([rootPid]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const row of rows) {
+        if (selected.has(row.pid) || row.pgid !== rootPid && !selected.has(row.ppid))
+          continue;
+        selected.add(row.pid);
+        changed = true;
+      }
+    }
+    return [...selected];
+  } catch (error) {
+    if (error instanceof Error)
+      return [rootPid];
+    throw error;
+  }
+}
+function parseProcessRows(output) {
+  const rows = [];
+  for (const line of output.split(/\r?\n/)) {
+    const match = /^\s*(\d+)\s+(\d+)\s+(\d+)\s*$/.exec(line);
+    const pidText = match?.[1];
+    const ppidText = match?.[2];
+    const pgidText = match?.[3];
+    if (pidText === undefined || ppidText === undefined || pgidText === undefined)
+      continue;
+    const pid = Number(pidText);
+    const ppid = Number(ppidText);
+    const pgid = Number(pgidText);
+    if (![pid, ppid, pgid].every(Number.isSafeInteger))
+      continue;
+    rows.push({ pgid, pid, ppid });
+  }
+  return rows;
+}
+function execFileText(command, args) {
+  return new Promise((resolvePromise, reject) => {
+    execFile2(command, [...args], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024, windowsHide: true }, (error, stdout) => {
+      if (error !== null) {
+        reject(error);
+        return;
+      }
+      resolvePromise(stdout);
+    });
+  });
+}
+async function waitForSurvivors(pids, waitMs) {
+  const deadline = Date.now() + waitMs;
+  let survivors = pids.filter(isProcessAlive2);
+  while (survivors.length > 0 && Date.now() < deadline) {
+    await delay(Math.min(25, Math.max(0, deadline - Date.now())));
+    survivors = survivors.filter(isProcessAlive2);
+  }
+  return survivors;
+}
+function waitForDirectChild(childClosed, waitMs) {
+  return Promise.race([childClosed, delay(waitMs)]);
+}
+function isProcessAlive2(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (!(error instanceof Error))
+      throw error;
+    const code = "code" in error ? error.code : undefined;
+    if (code === "ESRCH")
+      return false;
+    return code === "EPERM";
+  }
+}
+function delay(ms) {
+  if (ms <= 0)
+    return Promise.resolve();
+  return new Promise((resolvePromise) => {
+    setTimeout(resolvePromise, ms);
+  });
+}
+
+// ../../../../utils/src/process-tree.ts
+var DEFAULT_TERMINATION_GRACE_MS = 1000;
+var DEFAULT_TERMINATION_WAIT_MS = 2000;
+function runProcessWithTreeTimeout(options) {
+  return new Promise((resolvePromise) => {
+    const child = spawn2(options.command, [...options.args], {
+      cwd: options.cwd,
+      detached: process.platform !== "win32",
+      env: options.env,
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true
+    });
+    let stderr = "";
+    let stderrBytes = 0;
+    let stdout = "";
+    let stdoutBytes = 0;
+    let timedOut = false;
+    let overflowed = false;
+    let settled = false;
+    let treeTermination;
+    let resolveChildClosed = () => {
+      return;
+    };
+    const childClosed = new Promise((resolveClosed) => {
+      resolveChildClosed = resolveClosed;
+    });
+    const stderrDecoder = new StringDecoder("utf8");
+    const stdoutDecoder = new StringDecoder("utf8");
+    const startTermination = () => {
+      if (treeTermination !== undefined)
+        return treeTermination;
+      treeTermination = child.pid === undefined ? Promise.resolve({ attempts: [], survivorPids: [] }) : terminateProcessTree(child.pid, {
+        childClosed,
+        graceMs: options.terminationGraceMs ?? DEFAULT_TERMINATION_GRACE_MS,
+        platform: process.platform,
+        waitMs: options.terminationWaitMs ?? DEFAULT_TERMINATION_WAIT_MS
+      });
+      treeTermination = treeTermination.then((report) => {
+        try {
+          options.onTerminationReport?.(report);
+        } catch (error) {
+          stderr += `[process-tree] termination observer failed: ${error instanceof Error ? error.message : String(error)}
+`;
+        }
+        return report;
+      });
+      return treeTermination;
+    };
+    const capture = (target, chunk) => {
+      if (overflowed)
+        return;
+      const currentBytes = target === "stdout" ? stdoutBytes : stderrBytes;
+      if (currentBytes + chunk.length > options.maxBuffer) {
+        overflowed = true;
+        startTermination().then(() => settle(1, null));
+        return;
+      }
+      if (target === "stdout") {
+        stdoutBytes += chunk.length;
+        stdout += stdoutDecoder.write(chunk);
+      } else {
+        stderrBytes += chunk.length;
+        stderr += stderrDecoder.write(chunk);
+      }
+    };
+    child.stdout.on("data", (chunk) => capture("stdout", chunk));
+    child.stderr.on("data", (chunk) => capture("stderr", chunk));
+    let removeTimeoutSignal = () => {
+      return;
+    };
+    let timeout;
+    const settle = async (exitCode, signal) => {
+      if (settled)
+        return;
+      settled = true;
+      clearTimeout(timeout);
+      removeTimeoutSignal();
+      const termination = treeTermination === undefined ? null : await treeTermination;
+      stderr += stderrDecoder.end();
+      stdout += stdoutDecoder.end();
+      resolvePromise({ exitCode, signal, stderr, stdout, termination, timedOut });
+    };
+    const triggerTimeout = () => {
+      if (settled)
+        return;
+      timedOut = true;
+      startTermination().then(() => settle(124, child.signalCode));
+    };
+    timeout = setTimeout(triggerTimeout, options.timeoutMs);
+    timeout.unref();
+    if (options.timeoutSignal?.aborted === true) {
+      triggerTimeout();
+    } else if (options.timeoutSignal !== undefined) {
+      const timeoutSignal = options.timeoutSignal;
+      timeoutSignal.addEventListener("abort", triggerTimeout, { once: true });
+      removeTimeoutSignal = () => timeoutSignal.removeEventListener("abort", triggerTimeout);
+    }
+    child.once("error", () => {
+      resolveChildClosed();
+      settle(1, null);
+    });
+    child.once("close", (code, signal) => {
+      resolveChildClosed();
+      settle(timedOut ? 124 : overflowed ? 1 : code ?? 1, signal);
+    });
+  });
+}
+
+// src/session-start-command.ts
+async function runSessionStartCodegraphCommand(projectRoot, command, args, options) {
+  const invocation = resolveCodegraphCommandInvocation(command, args);
+  return runProcessWithTreeTimeout({
+    args: invocation.args,
+    command: invocation.command,
+    cwd: projectRoot,
+    env: buildCodegraphChildEnv({ ambientEnv: processEnv, codegraphEnv: options.env }),
+    maxBuffer: 1024 * 1024,
+    onTerminationReport: (report) => processStderr.write(`[codegraph-session-start] process tree termination ${JSON.stringify(report)}
+`),
+    timeoutMs: options.timeoutMs
+  }).then(({ exitCode, stderr, stdout, timedOut }) => ({ exitCode, stderr, stdout, timedOut }));
+}
+function resolveCodegraphCommandInvocation(command, args, platform = process.platform) {
+  return resolveServeProcessInvocation(command, args, platform);
+}
+
+// src/secondary-sync.ts
+var DEFAULT_SECONDARY_SYNC_DEBOUNCE_MS = 2000;
+var SECONDARY_SYNC_TIMEOUT_MS = 30000;
+function createSecondaryRepoSyncFn(options) {
+  return async (projectRoot) => {
+    await runSessionStartCodegraphCommand(projectRoot, options.command, ["sync"], {
+      env: options.env,
+      timeoutMs: options.timeoutMs ?? SECONDARY_SYNC_TIMEOUT_MS
+    });
+  };
+}
+
+// src/serve-readiness.ts
+import { statSync as statSync2 } from "node:fs";
+
+// src/cache-gc.ts
+var NON_FATAL_GC_ERROR_CODES = new Set(["EACCES", "EBUSY", "ENOENT", "ENOTEMPTY", "ENOTDIR", "EPERM"]);
+
+// src/session-start-paths.ts
+import { basename as basename5, dirname as dirname6, join as join13 } from "node:path";
+function resolveSessionStartStatePaths(homeDir, projectRoot) {
+  const canonicalProjectRoot = canonicalizeCodegraphPath(projectRoot);
+  const workspacePaths = resolveCodegraphWorkspacePaths(canonicalProjectRoot, { homeDir });
+  const projectKey = basename5(workspacePaths.dataDir);
+  const stateDirectory = join13(workspacePaths.dataRoot, "session-start");
+  return {
+    canonicalProjectRoot,
+    cooldownPath: join13(stateDirectory, "cooldowns", `${projectKey}.json`),
+    lockPath: join13(stateDirectory, "locks", `${projectKey}.lock`),
+    outcomePath: join13(workspacePaths.dataRoot, "session-start.jsonl"),
+    stateDirectory
+  };
+}
+
 // src/session-start-cooldown.ts
 var DEFAULT_SESSION_START_COOLDOWN_MS = 15 * 60 * 1000;
 var MAX_SESSION_START_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
+// src/session-start-project.ts
+import { realpathSync as realpathSync5, statSync } from "node:fs";
+import { dirname as dirname7, join as join14 } from "node:path";
+function probeCodegraphProject(projectRoot, options = {}) {
+  const resolved = resolveProjectRoot(projectRoot);
+  if (resolved.kind === "inconclusive")
+    return resolved;
+  const probeDatabase = options.probeDatabase ?? probeDatabaseAt;
+  const exact = probeResolvedExactProject(resolved.projectRoot, probeDatabase);
+  if (exact.kind !== "uninitialized")
+    return exact;
+  return probeResolvedAncestors(resolved.projectRoot, probeDatabase);
+}
+function probeResolvedExactProject(projectRoot, probeDatabase) {
+  const exact = probeDatabase(projectRoot);
+  if (exact.kind === "present")
+    return { kind: "initialized" };
+  if (exact.kind === "inconclusive")
+    return exact;
+  return { kind: "uninitialized" };
+}
+function probeResolvedAncestors(projectRoot, probeDatabase) {
+  let ancestorRoot = dirname7(projectRoot);
+  while (ancestorRoot !== projectRoot) {
+    const database = probeDatabase(ancestorRoot);
+    if (database.kind === "present")
+      return { ancestorRoot, kind: "nested-root" };
+    if (database.kind === "inconclusive")
+      return database;
+    const parent = dirname7(ancestorRoot);
+    if (parent === ancestorRoot)
+      break;
+    ancestorRoot = parent;
+  }
+  return { kind: "uninitialized" };
+}
+function resolveProjectRoot(projectRoot) {
+  try {
+    return { kind: "resolved", projectRoot: realpathSync5(projectRoot) };
+  } catch (error) {
+    if (error instanceof Error)
+      return { kind: "inconclusive", reason: error.message };
+    throw error;
+  }
+}
+function probeDatabaseAt(directory) {
+  try {
+    statSync(join14(directory, ".codegraph", "codegraph.db"));
+    return { kind: "present" };
+  } catch (error) {
+    if (!(error instanceof Error))
+      throw error;
+    const code = errorCode(error);
+    if (code === "ENOENT" || code === "ENOTDIR")
+      return { kind: "missing" };
+    return { kind: "inconclusive", reason: error.message };
+  }
+}
+function errorCode(error) {
+  if (typeof error !== "object" || error === null)
+    return;
+  const code = Reflect.get(error, "code");
+  return typeof code === "string" ? code : undefined;
+}
+
 // src/session-start-worker.ts
 var SESSION_START_CWD_ENV = "OMO_CODEGRAPH_SESSION_START_CWD";
+// src/hook.ts
+var DEFAULT_SESSION_START_LOCK_STALE_MS = 10 * 60 * 1000;
+
+// src/serve-readiness.ts
+var DEFAULT_INITIAL_GRAPH_TIMEOUT_MS = 30000;
+var DEFAULT_POLL_INTERVAL_MS = 250;
+async function waitForInitialCodegraphGraph(projectRoot, options) {
+  const nowMs = options.nowMs ?? Date.now;
+  const probe = options.probe ?? probeCodegraphProject;
+  if (isGraphReady(probe(projectRoot)))
+    return "ready";
+  const lockPath = resolveSessionStartStatePaths(options.homeDir, projectRoot).lockPath;
+  if (!liveBootstrapLock(lockPath, nowMs()))
+    return "idle";
+  const deadline = nowMs() + (options.timeoutMs ?? DEFAULT_INITIAL_GRAPH_TIMEOUT_MS);
+  while (nowMs() < deadline) {
+    await delay2(options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS);
+    if (isGraphReady(probe(projectRoot)))
+      return "ready";
+  }
+  return "bootstrap-in-flight-timeout";
+}
+function isGraphReady(state) {
+  return state.kind === "initialized" || state.kind === "nested-root";
+}
+function liveBootstrapLock(lockPath, nowMsValue) {
+  try {
+    return nowMsValue - statSync2(lockPath).mtimeMs < DEFAULT_SESSION_START_LOCK_STALE_MS;
+  } catch {
+    return false;
+  }
+}
+function delay2(ms) {
+  return new Promise((resolveDelay) => {
+    setTimeout(resolveDelay, ms);
+  });
+}
 
 // src/serve.ts
 var CODEGRAPH_SKIP_HINT = `CodeGraph MCP skipped: codegraph binary not found. Install CodeGraph or set OMO_CODEGRAPH_BIN.
@@ -9754,8 +10267,8 @@ var CODEGRAPH_EXCLUDED_HINT = `CodeGraph MCP skipped: project excluded by OMO Co
 var CODEGRAPH_VERSION = CODEGRAPH_PINNED_VERSION;
 var PROJECT_CWD_ENV_KEYS = ["OMO_CODEGRAPH_PROJECT_CWD", SESSION_START_CWD_ENV, "PWD"];
 async function runCodegraphServe(options = {}) {
-  const env = options.env ?? processEnv;
-  const homeDir = options.homeDir ?? homedir6();
+  const env = options.env ?? processEnv2;
+  const homeDir = options.homeDir ?? homedir7();
   const wrapperCwd = options.cwd ?? processCwd();
   const projectCwd = resolveProjectCwd(env, wrapperCwd);
   const config2 = options.config ?? getCodexOmoConfig({ cwd: projectCwd, env, homeDir });
@@ -9772,7 +10285,7 @@ async function runCodegraphServe(options = {}) {
     return runUnavailableMcp(CODEGRAPH_EXCLUDED_HINT, options);
   }
   const trustedInstallDir = config2.trustedCodegraphInstallDir;
-  const installDir = trustedInstallDir ?? join12(homeDir, ".omo", "codegraph");
+  const installDir = trustedInstallDir ?? join15(homeDir, ".omo", "codegraph");
   const resolutionOptions = {
     env,
     homeDir,
@@ -9818,18 +10331,41 @@ async function runCodegraphServe(options = {}) {
   const runProcess = options.runProcess ?? runBridgedCodegraphProcess;
   const codegraphEnv = codegraphEnvForConfig(trustedInstallDir, homeDir, codegraphConfig.daemon !== false, options.buildEnv);
   const mergedEnv = buildCodegraphChildEnv({ ambientEnv: env, codegraphEnv, runtimeEnv: env });
+  const readiness = options.waitForInitialGraph === undefined ? await waitForInitialCodegraphGraph(projectCwd, {
+    homeDir,
+    ...options.pollIntervalMs === undefined ? {} : { pollIntervalMs: options.pollIntervalMs },
+    ...options.initialReadinessTimeoutMs === undefined ? {} : { timeoutMs: options.initialReadinessTimeoutMs }
+  }) : await options.waitForInitialGraph(projectCwd);
+  if (readiness !== "ready")
+    writeReadinessDebug(readiness);
+  const secondaryRepoSync = options.secondaryRepoSync ?? {
+    defaultProjectRoot: projectCwd,
+    debounceMs: options.secondarySyncDebounceMs ?? DEFAULT_SECONDARY_SYNC_DEBOUNCE_MS,
+    syncProject: createSecondaryRepoSyncFn({
+      command: resolution.command,
+      env: mergedEnv,
+      ...options.secondarySyncTimeoutMs === undefined ? {} : { timeoutMs: options.secondarySyncTimeoutMs }
+    })
+  };
   return runProcess(resolution.command, [...resolution.argsPrefix, "serve", "--mcp"], {
     cwd: projectCwd,
     env: mergedEnv,
     input: options.stdin ?? processStdin,
     output: options.stdout ?? processStdout,
-    stderr: options.stderr ?? processStderr,
+    stderr: options.stderr ?? processStderr2,
     stdio: "pipe",
-    parentWatchdog: options.parentWatchdog ?? {}
+    parentWatchdog: options.parentWatchdog ?? {},
+    secondaryRepoSync
   });
 }
+function writeReadinessDebug(readiness) {
+  if (processEnv2["OMO_CODEGRAPH_DEBUG"] !== "1")
+    return;
+  processStderr2.write(`[codegraph-serve] initial graph readiness: ${readiness}
+`);
+}
 async function runUnavailableMcp(reason, options) {
-  (options.stderr ?? processStderr).write(reason);
+  (options.stderr ?? processStderr2).write(reason);
   await runUnavailableCodegraphMcpServer({
     input: options.stdin ?? processStdin,
     output: options.stdout ?? processStdout,
@@ -9844,10 +10380,10 @@ async function provisionMissingCodegraph(options) {
     return null;
   if (options.config.auto_provision === false)
     return null;
-  const installDir = options.trustedInstallDir ?? join12(options.homeDir, ".omo", "codegraph");
+  const installDir = options.trustedInstallDir ?? join15(options.homeDir, ".omo", "codegraph");
   const result = await options.ensureProvisioned({
     installDir,
-    lockDir: join12(installDir, ".locks"),
+    lockDir: join15(installDir, ".locks"),
     version: CODEGRAPH_VERSION
   });
   if (!result.provisioned || result.binPath === undefined)
@@ -9873,11 +10409,11 @@ function resolveProjectCwd(env, fallback) {
     const candidate = env[key]?.trim();
     if (candidate === undefined || candidate.length === 0)
       continue;
-    const resolved = resolve5(candidate);
+    const resolved = resolve7(candidate);
     if (existsSync7(resolved))
       return resolved;
   }
-  return resolve5(fallback);
+  return resolve7(fallback);
 }
 function provisionedBinFromInstallDir(installDir) {
   return resolvePinnedCodegraphBin(installDir);
@@ -9887,7 +10423,7 @@ async function runCodegraphServeCli() {
 }
 if (isDirectInvocation(process.argv[1])) {
   runCodegraphServeCli().catch((error) => {
-    processStderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}
+    processStderr2.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}
 `);
     process.exitCode = 1;
   });
@@ -9896,10 +10432,10 @@ function isDirectInvocation(argvPath) {
   if (argvPath === undefined)
     return false;
   const modulePath = fileURLToPath(import.meta.url);
-  const moduleName = basename4(modulePath);
+  const moduleName = basename6(modulePath);
   if (moduleName !== "serve.js" && moduleName !== "serve.ts")
     return false;
-  return realpathSync3(resolve5(argvPath)) === realpathSync3(modulePath);
+  return realpathSync6(resolve7(argvPath)) === realpathSync6(modulePath);
 }
 export {
   resolveServeProcessInvocation,
