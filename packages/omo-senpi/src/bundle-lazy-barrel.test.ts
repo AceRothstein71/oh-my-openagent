@@ -90,7 +90,7 @@ function readAllBundles(): readonly { file: string; source: string }[] {
 }
 
 function findStaticBarrelImport(source: string, specifier: string): string | undefined {
-  const pattern = new RegExp(`from\s*["']${escapeForRegExp(specifier)}["']`, "u")
+  const pattern = new RegExp(`from\\s*["']${escapeForRegExp(specifier)}["']`, "u")
   return pattern.exec(source)?.[0]
 }
 
@@ -98,7 +98,6 @@ function readBundle(file: string): string {
   const path = join(extensionsDir, file)
   expect(existsSync(path), `missing built bundle at ${path}; run build:senpi-plugin first`).toBe(true)
   return readFileSync(path, "utf8")
-}
 }
 
 function readBundlesReaching(guardMessage: string): readonly { file: string; source: string }[] {
