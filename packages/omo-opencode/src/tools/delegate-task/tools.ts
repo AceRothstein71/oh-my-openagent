@@ -160,6 +160,11 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
         ? `${parentContext.model.providerID}/${parentContext.model.modelID}`
         : undefined
 
+      const currentModelConfig = options.loadCurrentModelConfig?.()
+      const modelOptions = currentModelConfig === undefined
+        ? options
+        : { ...options, userCategories: currentModelConfig.categories, agentOverrides: currentModelConfig.agents }
+
       let agentToUse: string
       let categoryModel: DelegatedModelConfig | undefined
       let categoryPromptAppend: string | undefined
@@ -170,7 +175,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       let maxPromptTokens: number | undefined
 
       if (delegateTaskArgs.category) {
-        const resolution = await resolveCategoryExecution(delegateTaskArgs, options, inheritedModel, systemDefaultModel)
+        const resolution = await resolveCategoryExecution(delegateTaskArgs, modelOptions, inheritedModel, systemDefaultModel)
         if (resolution.error) {
           return resolution.error
         }
@@ -210,7 +215,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
           return executeUnstableAgentTask(delegateTaskArgs, ctx, options, parentContext, agentToUse, categoryModel, systemContent, actualModel)
         }
       } else {
-        const resolution = await resolveSubagentExecution(delegateTaskArgs, options, parentContext.agent, categoryExamples)
+        const resolution = await resolveSubagentExecution(delegateTaskArgs, modelOptions, parentContext.agent, categoryExamples)
         if (resolution.error) {
           return resolution.error
         }
