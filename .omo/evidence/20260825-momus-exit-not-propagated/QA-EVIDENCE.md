@@ -2,7 +2,7 @@
 
 Date: 2026-08-25
 Branch: issue/5167-momus-exit-not-propagated (base c7094b8ac)
-Worktree: /home/viprix/projects/oom-wt-5167
+Worktree: task-owned temporary checkout
 
 ## WHAT WAS TESTED
 
@@ -15,6 +15,8 @@ Commands:
 - GREEN (after fix): same command
 - Scoped regression: `bun test packages/senpi-task/src/runners packages/senpi-task/src/tools/task packages/senpi-task/src/manager`
 - Typecheck: `bunx tsgo --noEmit -p packages/senpi-task/tsconfig.json`
+- CI repair: `bun test packages/omo-opencode/src/shared/markdown-link-audit.test.ts`
+- Ubuntu shard: `bun test packages/omo-opencode packages/memory-core`
 
 Behavior under test: when an in-process child's agent loop exits (senpi emits
 `agent_end`, logged as "exiting loop") while its `prompt()` promise never
@@ -43,6 +45,27 @@ GREEN (after fix):
   - stray agent_end after prompt-resolution settlement is ignored; followUp revive still works
 - Scoped regression: 601 pass / 1 skip / 0 fail across 96 files (~20s).
 - tsgo typecheck: exit 0, no errors.
+
+CI repair (2026-08-27):
+- The targeted markdown audit initially identified this document's former
+  machine-local worktree path as its sole offender.
+- The portable worktree description above removes that non-product CI failure.
+- The markdown audit now passes: 16 pass / 0 fail in 1181ms.
+- The Momus outcome regression remains green: 9 pass / 0 fail in 730ms.
+- The local Bun 1.4 full Ubuntu shard command exposed five unrelated
+  auto-update-checker mock-isolation failures; its focused checker file passes
+  5/5. The original CI run's only failure was this markdown audit.
+
+Fresh audit ledger (2026-08-27):
+- Wave 1 scope: complete `origin/dev...HEAD` change set, local CI-evidence
+  repair, in-process runner settlement, regression tests, and generated Senpi
+  bundle. Commands: `git diff --check`, full diff review, focused regression,
+  typecheck, and markdown audit. Findings: P0=0, P1=0, P2=0, P3=0, noise=the
+  unrelated local auto-update-checker suite interaction described above.
+- Wave 2 scope: the same complete vertical plus terminalization callers,
+  retry/abort/revive paths, and evidence portability. Commands: `git diff
+  --check` and fresh full-diff review. Findings: P0=0, P1=0, P2=0, P3=0,
+  noise=unchanged unrelated local auto-update-checker suite interaction.
 
 Isolation: pure unit tests over controllable ChildSession fakes; no real senpi
 binary, no network, no writes outside the repo temp/test dirs.
