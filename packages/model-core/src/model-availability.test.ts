@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { fuzzyMatchModel } from "./model-availability"
+import { findModelIdAcrossProviders, fuzzyMatchModel } from "./model-availability"
 
 describe("fuzzyMatchModel", () => {
 	test("#given kimi dash and dot variants #when matching #then normalizes the version separator symmetrically", () => {
@@ -19,5 +19,19 @@ describe("fuzzyMatchModel", () => {
 		const available = new Set(["openai/gpt-5-4"])
 		const result = fuzzyMatchModel("gpt-5.4", available, ["openai"])
 		expect(result).toBe("openai/gpt-5-4")
+	})
+})
+
+describe("findModelIdAcrossProviders", () => {
+	test("#given a Vercel gateway model ID #when matching a fallback rung #then unwraps only the gateway subprovider", () => {
+		const available = new Set(["vercel/openai/gpt-5.6-terra"])
+		const result = findModelIdAcrossProviders("gpt-5.6-terra", available)
+		expect(result).toBe("vercel/openai/gpt-5.6-terra")
+	})
+
+	test("#given a non-gateway nested model ID #when matching a fallback rung #then does not tolerate a partial model ID", () => {
+		const available = new Set(["custom/openai/gpt-5.6-terra"])
+		const result = findModelIdAcrossProviders("gpt-5.6-terra", available)
+		expect(result).toBeNull()
 	})
 })

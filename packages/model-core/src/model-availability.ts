@@ -6,6 +6,12 @@ function normalizeModelName(name: string): string {
 		.replace(/\b(glm|gpt)-(\d+)[.-](\d+)/g, "$1-$2.$3")
 }
 
+function canonicalModelIDs(provider: string | undefined, modelID: string): readonly string[] {
+	if (provider !== "vercel") return [modelID]
+	const separator = modelID.indexOf("/")
+	return separator === -1 ? [modelID] : [modelID, modelID.slice(separator + 1)]
+}
+
 export function fuzzyMatchModel(
 	target: string,
 	available: Set<string>,
@@ -91,7 +97,8 @@ export function findModelIdAcrossProviders(
 			return false
 		}
 		const modelID = separator === -1 ? model : model.slice(separator + 1)
-		return normalizeModelName(modelID) === targetNormalized
+		return canonicalModelIDs(provider, modelID)
+			.some((candidate) => normalizeModelName(candidate) === targetNormalized)
 	})
 
 	if (matches.length === 0) {
