@@ -117,14 +117,14 @@ describe("tryFallbackRetry", () => {
   describe("#given provider-models cache knows the candidate provider (#7325)", () => {
     test("skips rungs whose model is absent from the provider catalog and advances to a listed rung", async () => {
       readProviderModelsCacheMock.mockReturnValue({
-        models: { openrouter: ["gpt-5.4-mini-fast"] },
+        models: { openrouter: ["gpt-5.4-fast"] },
         connected: ["openrouter"],
         updatedAt: new Date().toISOString(),
       })
       const args = createDefaultArgs({
         fallbackChain: [
           { model: "qwen3.5-plus", providers: ["openrouter"], variant: undefined },
-          { model: "gpt-5.4-mini-fast", providers: ["openrouter"], variant: undefined },
+          { model: "gpt-5.4-fast", providers: ["openrouter"], variant: undefined },
         ],
         attemptCount: 0,
       })
@@ -132,12 +132,12 @@ describe("tryFallbackRetry", () => {
       const result = await tryFallbackRetry(args)
 
       expect(result).toBe(true)
-      expect(args.task.model?.modelID).toBe("gpt-5.4-mini-fast")
+      expect(args.task.model?.modelID).toBe("gpt-5.4-fast")
     })
 
     test("returns false when every reachable rung is absent from the provider catalog", async () => {
       readProviderModelsCacheMock.mockReturnValue({
-        models: { openrouter: ["gpt-5.4-mini-fast"] },
+        models: { openrouter: ["gpt-5.4-fast"] },
         connected: ["openrouter"],
         updatedAt: new Date().toISOString(),
       })
