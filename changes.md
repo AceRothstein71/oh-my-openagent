@@ -26,10 +26,23 @@ the version check. These changes keep the smoke gate strict while matching the
 actual Windows home-directory and musl runtime contracts.
 
 The compiled OmO launcher now materializes its first-run Windows executable by
-copying it to a temporary non-executable path and renaming it into place. This
-avoids opening the final running `.exe` destination directly, which Windows can
-reject with `EBUSY`, while retaining hash-checked provisioning and cleaning the
-temporary path after the move.
+copying it directly with the platform file-copy API, because Windows rejects
+renaming a newly copied `.exe` into place with `EPERM` even when the
+destination did not previously exist. POSIX keeps the temporary-copy and
+atomic-rename path. Both branches retain hash-checked provisioning and cleanup.
+The compiled Windows child now identifies its launched executable from
+`process.argv[0]` rather than Bun's original compile path, preventing repeated
+self-provisioning and the resulting `AssignProcessToJobObject` loop. Windows
+first-run provisioning now continues in-process after materialization, while
+POSIX keeps the child reexec handoff.
+The dedicated Linux arm64 Alpine smoke lane now installs `libstdc++` before
+executing the musl binary, matching the x64 musl smoke contract.
+
+Windows CI now gives the Codex installer integration test and the seven-node
+DAG failure E2E their observed platform-specific execution budgets. The
+assertions and event-driven behavior remain unchanged; only the test harness
+deadlines are widened from the prior 60-second and 15-second ceilings that
+expired on the full Windows matrix.
 
 ## 2026-08-27 — Keep Windows LSP daemon stamping safe with spaced runtimes
 
