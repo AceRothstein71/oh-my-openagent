@@ -332,6 +332,7 @@ describe("resolveOmoConfigWatchTargets", () => {
       cwd,
       env: fixtureEnv(fixture),
       platform: "linux",
+      resolveFileSystemType: createDriveFileSystemTypeResolver([resolvedDriveRoot]),
     })
 
     expect(targetFor(resolution.targets, join(projectDir, ".omo"), "/omo.jsonc")).toBe(false)
@@ -367,6 +368,7 @@ describe("resolveOmoConfigWatchTargets", () => {
       cwd: nativeCwd,
       env,
       platform: "linux",
+      resolveFileSystemType: createDriveFileSystemTypeResolver([resolvedDriveRoot]),
     })
 
     for (const target of resolution.targets) {
@@ -387,6 +389,7 @@ describe("resolveOmoConfigWatchTargets", () => {
       cwd: fixture.cwd,
       env: fixtureEnv(fixture),
       platform: "linux",
+      resolveFileSystemType: createDriveFileSystemTypeResolver([]),
     })
 
     expect(targetFor(targets, userConfigDirectory, "/omo.jsonc")).toBe(true)
@@ -409,6 +412,7 @@ describe("resolveOmoConfigWatchTargets", () => {
       cwd: fixture.cwd,
       env: fixtureEnv(fixture),
       platform: "linux",
+      resolveFileSystemType: () => null,
     })
 
     expect(targetFor(targets, userConfigDirectory, "/omo.jsonc")).toBe(true)
