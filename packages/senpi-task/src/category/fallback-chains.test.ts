@@ -33,7 +33,8 @@ describe("CATEGORY_FALLBACK_CHAINS", () => {
         { providers: ["openai", "openai-codex", "github-copilot", "opencode"], model: "gpt-5.6-sol", variant: "medium" }
       ],
       architect: [
-        { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"], model: "claude-fable-5", variant: "xhigh" }
+        { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"], model: "claude-fable-5", variant: "xhigh" },
+        { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"], model: "claude-opus-5", variant: "xhigh" }
       ],
       ultrabrain: [
         { providers: ["openai", "openai-codex"], model: "gpt-5.6-sol", variant: "max" },

@@ -24,11 +24,11 @@ export const CATEGORY_FALLBACK_CHAINS: Readonly<Record<string, readonly Delegate
     }
   ],
   architect: [
-    { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode", "vercel"], model: "claude-fable-5", variant: "xhigh" },
+    { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"], model: "claude-fable-5", variant: "xhigh" },
     // Claude Pro plans do not include fable-5 (pay-as-you-go credits only), so a single-rung chain
     // died on the plan-gated 429 with no later rung to advance to. opus-5 stays inside the gated
     // category's own model family (issue 6426).
-    { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode", "vercel"], model: "claude-opus-5", variant: "xhigh" },
+    { providers: ["anthropic", "anthropic-api", "github-copilot", "opencode"], model: "claude-opus-5", variant: "xhigh" },
   ],
   ultrabrain: [
     { providers: ["openai", "openai-codex"], model: "gpt-5.6-sol", variant: "max" },
