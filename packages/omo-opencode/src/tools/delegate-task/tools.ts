@@ -15,7 +15,6 @@ import {
 } from "./executor"
 import { prepareDelegateTaskArgs } from "./tool-argument-preparation"
 import { createDelegateTaskPresentation } from "./tool-description"
-import { getSisyphusJuniorModelOverride, loadFreshConfigSnapshot } from "./fresh-config-snapshot"
 import type { AvailableSkill } from "../../agents/dynamic-agent-prompt-builder"
 import { mergeNativeSkillInfos, type NativeSkillEntry } from "../skill/native-skills"
 import type { SkillInfo } from "../skill/types"
@@ -89,38 +88,26 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       const ctx = toolContext as ToolContextWithMetadata
       const delegateTaskArgs = await prepareDelegateTaskArgs(args, ctx)
 
-      // Per-spawn omo.json re-read so config edits apply without restart (#7325);
-      // falls back to the boot snapshot when the fresh read fails or directory is unset.
-      const freshSnapshot = loadFreshConfigSnapshot(options.directory, options.configEnvironment)
-      const effectiveOptions = freshSnapshot
-        ? {
-            ...options,
-            agentOverrides: freshSnapshot.agentOverrides,
-            userCategories: freshSnapshot.userCategories,
-            sisyphusJuniorModel: getSisyphusJuniorModelOverride(freshSnapshot.agentOverrides?.["sisyphus-junior"]),
-          }
-        : options
-
       const runInBackground = delegateTaskArgs.run_in_background === true
 
       const { content: skillContent, contents: skillContents, error: skillError } = await resolveSkillContent(delegateTaskArgs.load_skills, {
-        gitMasterConfig: effectiveOptions.gitMasterConfig,
-        browserProvider: effectiveOptions.browserProvider,
-        disabledSkills: effectiveOptions.disabledSkills,
-        teamModeEnabled: effectiveOptions.teamModeEnabled,
-        directory: effectiveOptions.directory,
+        gitMasterConfig: options.gitMasterConfig,
+        browserProvider: options.browserProvider,
+        disabledSkills: options.disabledSkills,
+        teamModeEnabled: options.teamModeEnabled,
+        directory: options.directory,
         targetAgent: delegateTaskArgs.subagent_type,
-        nativeSkills: effectiveOptions.nativeSkills,
-        getLoadedSkills: effectiveOptions.getLoadedSkills,
+        nativeSkills: options.nativeSkills,
+        getLoadedSkills: options.getLoadedSkills,
       })
       if (skillError) {
         return skillError
       }
-      const nativeSkillEntries = await loadNativeSkillEntries(effectiveOptions.nativeSkills)
+      const nativeSkillEntries = await loadNativeSkillEntries(options.nativeSkills)
       const nativeSkillInfos = buildPromptNativeSkillInfos(
         availableSkills,
         nativeSkillEntries,
-        effectiveOptions.disabledSkills,
+        options.disabledSkills,
       )
 
       const continuationSystemContent = buildSystemContent({
@@ -131,13 +118,13 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
         nativeSkillInfos,
       })
 
-      const parentContext = await resolveParentContext(ctx, effectiveOptions.client)
+      const parentContext = await resolveParentContext(ctx, options.client)
 
       if (delegateTaskArgs.task_id) {
         if (runInBackground) {
-          return executeBackgroundContinuation(delegateTaskArgs, ctx, effectiveOptions, parentContext, continuationSystemContent)
+          return executeBackgroundContinuation(delegateTaskArgs, ctx, options, parentContext, continuationSystemContent)
         }
-        return executeSyncContinuation(delegateTaskArgs, ctx, effectiveOptions, parentContext, undefined, continuationSystemContent)
+        return executeSyncContinuation(delegateTaskArgs, ctx, options, parentContext, undefined, continuationSystemContent)
       }
 
       if (!delegateTaskArgs.category && !delegateTaskArgs.subagent_type) {
@@ -146,7 +133,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
 
       let systemDefaultModel: string | undefined
       try {
-        const openCodeConfig = await effectiveOptions.client.config.get()
+        const openCodeConfig = await options.client.config.get()
         systemDefaultModel = (openCodeConfig as { data?: { model?: string } })?.data?.model
       } catch (error) {
         if (!(error instanceof Error)) throw error
@@ -156,6 +143,11 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       const inheritedModel = parentContext.model
         ? `${parentContext.model.providerID}/${parentContext.model.modelID}`
         : undefined
+
+      const currentModelConfig = options.loadCurrentModelConfig?.()
+      const modelOptions = currentModelConfig === undefined
+        ? options
+        : { ...options, userCategories: currentModelConfig.categories, agentOverrides: currentModelConfig.agents }
 
       let agentToUse: string
       let categoryModel: DelegatedModelConfig | undefined
@@ -167,7 +159,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       let maxPromptTokens: number | undefined
 
       if (delegateTaskArgs.category) {
-        const resolution = await resolveCategoryExecution(delegateTaskArgs, effectiveOptions, inheritedModel, systemDefaultModel)
+        const resolution = await resolveCategoryExecution(delegateTaskArgs, modelOptions, inheritedModel, systemDefaultModel)
         if (resolution.error) {
           return resolution.error
         }
@@ -204,10 +196,10 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
             availableSkills,
             nativeSkillInfos,
           })
-          return executeUnstableAgentTask(delegateTaskArgs, ctx, effectiveOptions, parentContext, agentToUse, categoryModel, systemContent, actualModel)
+          return executeUnstableAgentTask(delegateTaskArgs, ctx, options, parentContext, agentToUse, categoryModel, systemContent, actualModel)
         }
       } else {
-        const resolution = await resolveSubagentExecution(delegateTaskArgs, effectiveOptions, parentContext.agent, categoryExamples)
+        const resolution = await resolveSubagentExecution(delegateTaskArgs, modelOptions, parentContext.agent, categoryExamples)
         if (resolution.error) {
           return resolution.error
         }
@@ -229,10 +221,10 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       })
 
       if (runInBackground) {
-        return executeBackgroundTask(delegateTaskArgs, ctx, effectiveOptions, parentContext, agentToUse, categoryModel, systemContent, fallbackChain)
+        return executeBackgroundTask(delegateTaskArgs, ctx, options, parentContext, agentToUse, categoryModel, systemContent, fallbackChain)
       }
 
-      return executeSyncTask(delegateTaskArgs, ctx, effectiveOptions, parentContext, agentToUse, categoryModel, systemContent, modelInfo, fallbackChain)
+      return executeSyncTask(delegateTaskArgs, ctx, options, parentContext, agentToUse, categoryModel, systemContent, modelInfo, fallbackChain)
     },
   })
 }
