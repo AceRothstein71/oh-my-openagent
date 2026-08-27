@@ -4,13 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-
 import {
 	applySpawnLedger,
+	applySpawnLedgerPostCompact,
+	runSpawnLedgerCli,
+	runSpawnLedgerPostCompactCli,
 	type SpawnLedgerPostToolUsePayload,
 } from "../src/spawn-ledger-hook.ts";
-import { applySpawnLedgerPostCompact } from "../src/spawn-ledger-hook.ts";
-import { runSpawnLedgerCli, runSpawnLedgerPostCompactCli } from "../src/spawn-ledger-hook.ts";
 
 let workDir: string;
 
@@ -38,11 +38,15 @@ function writeActivePlan(): void {
 	mkdirSync(sessionDir(), { recursive: true });
 	writeFileSync(
 		join(sessionDir(), "goals.json"),
-		JSON.stringify({ goals: [{ id: "g1", title: "research axis", status: "in_progress" }] }),
+		JSON.stringify({
+			goals: [{ id: "g1", title: "research axis", status: "in_progress" }],
+		}),
 	);
 }
 
-function postToolUsePayload(overrides: Partial<SpawnLedgerPostToolUsePayload> = {}): SpawnLedgerPostToolUsePayload {
+function postToolUsePayload(
+	overrides: Partial<SpawnLedgerPostToolUsePayload> = {},
+): SpawnLedgerPostToolUsePayload {
 	return {
 		hook_event_name: "PostToolUse",
 		session_id: "s1",
@@ -62,7 +66,13 @@ function readLines(path: string): Array<Record<string, unknown>> {
 		.map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
-async function runCli(runner: (stdin: NodeJS.ReadableStream, stdout: NodeJS.WritableStream) => Promise<void>, payload: unknown): Promise<string> {
+async function runCli(
+	runner: (
+		stdin: NodeJS.ReadableStream,
+		stdout: NodeJS.WritableStream,
+	) => Promise<void>,
+	payload: unknown,
+): Promise<string> {
 	const stdin = new PassThrough();
 	const stdout = new PassThrough();
 	stdin.write(JSON.stringify(payload));
@@ -102,7 +112,11 @@ describe("applySpawnLedger", () => {
 		// when
 		applySpawnLedger(
 			postToolUsePayload({
-				tool_input: { task_name: "axis_web", agent_type: "librarian", message: "TASK: web axis." },
+				tool_input: {
+					task_name: "axis_web",
+					agent_type: "librarian",
+					message: "TASK: web axis.",
+				},
 				tool_response: { agent_path: "/root/axis_web", status: "running" },
 			}),
 		);
@@ -120,7 +134,9 @@ describe("applySpawnLedger", () => {
 		writeActivePlan();
 
 		// when
-		applySpawnLedger(postToolUsePayload({ tool_response: '{"agentId":"ag-9"}' }));
+		applySpawnLedger(
+			postToolUsePayload({ tool_response: '{"agentId":"ag-9"}' }),
+		);
 
 		// then
 		expect(readLines(ledgerPath())[0]?.["workerId"]).toBe("ag-9");
@@ -145,7 +161,9 @@ describe("applySpawnLedger", () => {
 		expect(lines).toHaveLength(1);
 		expect(lines[0]?.["event"]).toBe("refused");
 		expect(lines[0]?.["toolUseId"]).toBe("tu-refused-1");
-		expect(JSON.stringify(lines[0]?.["toolInput"])).toContain("AXIS: swarm internals");
+		expect(JSON.stringify(lines[0]?.["toolInput"])).toContain(
+			"AXIS: swarm internals",
+		);
 	});
 
 	it("#given a thread-limit refusal #when the response is a plain error string #then the refusal is still detected", () => {
@@ -153,7 +171,11 @@ describe("applySpawnLedger", () => {
 		writeActivePlan();
 
 		// when
-		const output = applySpawnLedger(postToolUsePayload({ tool_response: "AgentLimitReached: too many running agents" }));
+		const output = applySpawnLedger(
+			postToolUsePayload({
+				tool_response: "AgentLimitReached: too many running agents",
+			}),
+		);
 
 		// then
 		expect(output).toContain("pending-spawns.jsonl");
@@ -185,7 +207,9 @@ describe("applySpawnLedger", () => {
 		// when
 		const output = applySpawnLedger(
 			postToolUsePayload({
-				tool_input: { message: "TASK: research agent thread limit reached errors." },
+				tool_input: {
+					message: "TASK: research agent thread limit reached errors.",
+				},
 				tool_response: { agent_id: "ag-ok" },
 			}),
 		);
@@ -201,7 +225,9 @@ describe("applySpawnLedger", () => {
 		writeActivePlan();
 
 		// when
-		const output = applySpawnLedger(postToolUsePayload({ tool_response: { error: "invalid schema" } }));
+		const output = applySpawnLedger(
+			postToolUsePayload({ tool_response: { error: "invalid schema" } }),
+		);
 
 		// then
 		expect(output).toBe("");
@@ -215,7 +241,9 @@ describe("applySpawnLedger", () => {
 
 		// when
 		const output = applySpawnLedger(
-			postToolUsePayload({ tool_response: { error: "agent thread limit reached" } }),
+			postToolUsePayload({
+				tool_response: { error: "agent thread limit reached" },
+			}),
 		);
 
 		// then
@@ -229,7 +257,10 @@ describe("applySpawnLedger", () => {
 
 		// when
 		const output = applySpawnLedger(
-			postToolUsePayload({ tool_name: "exec_command", tool_response: { ok: true } }),
+			postToolUsePayload({
+				tool_name: "exec_command",
+				tool_response: { ok: true },
+			}),
 		);
 
 		// then
@@ -240,7 +271,9 @@ describe("applySpawnLedger", () => {
 	it("#given an existing ledger #when another outcome lands #then the new line is appended without truncating history", () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-1" } }));
+		applySpawnLedger(
+			postToolUsePayload({ tool_response: { agent_id: "ag-1" } }),
+		);
 
 		// when
 		applySpawnLedger(
@@ -276,8 +309,12 @@ describe("spawnLedgerRehydrateContext", () => {
 	it("#given ledger and pending queue #when PostCompact fires #then the injected context carries both truths and the queue path", () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-1" } }));
-		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-2" } }));
+		applySpawnLedger(
+			postToolUsePayload({ tool_response: { agent_id: "ag-1" } }),
+		);
+		applySpawnLedger(
+			postToolUsePayload({ tool_response: { agent_id: "ag-2" } }),
+		);
 		applySpawnLedger(
 			postToolUsePayload({
 				tool_use_id: "tu-r",
@@ -303,7 +340,9 @@ describe("spawnLedgerRehydrateContext", () => {
 	it("#given only a spawn ledger #when PostCompact fires #then the context reports the spawned workers without a pending section", () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-solo" } }));
+		applySpawnLedger(
+			postToolUsePayload({ tool_response: { agent_id: "ag-solo" } }),
+		);
 
 		// when
 		const output = applySpawnLedgerPostCompact({
@@ -339,9 +378,12 @@ describe("spawn ledger CLI runners", () => {
 		writeActivePlan();
 
 		// when
-		const output = await runCli(runSpawnLedgerCli, postToolUsePayload({
-			tool_response: { error: "agent thread limit reached" },
-		}));
+		const output = await runCli(
+			runSpawnLedgerCli,
+			postToolUsePayload({
+				tool_response: { error: "agent thread limit reached" },
+			}),
+		);
 
 		// then
 		expect(readLines(pendingPath())).toHaveLength(1);
@@ -351,13 +393,17 @@ describe("spawn ledger CLI runners", () => {
 	it("#given a PostCompact payload on stdin #when the post-compact runner executes #then stdout carries the rehydrated swarm state", async () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-cli" } }));
+		applySpawnLedger(
+			postToolUsePayload({ tool_response: { agent_id: "ag-cli" } }),
+		);
 
 		// when
-		const output = await runCli(
-			runSpawnLedgerPostCompactCli,
-			{ hook_event_name: "PostCompact", session_id: "s1", cwd: workDir, trigger: "manual" },
-		);
+		const output = await runCli(runSpawnLedgerPostCompactCli, {
+			hook_event_name: "PostCompact",
+			session_id: "s1",
+			cwd: workDir,
+			trigger: "manual",
+		});
 
 		// then
 		expect(output).toContain("ag-cli");
