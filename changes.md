@@ -16,6 +16,45 @@ Focused regression coverage includes the real DAP fixture session, Windows
 drive-letter classification, atomic-write replacement with injected `EPERM`
 from `fsync`, mailbox persistence, and durable receipt lifecycle behavior.
 
+## 2026-08-27 — Keep platform smoke tests aligned with runtime requirements
+
+The release-binary smoke harness now exports `USERPROFILE` alongside the
+isolated Git Bash `HOME` on Windows so Node's `os.homedir()` resolves the same
+directory used by the provisioning assertion. Linux x64 musl smoke now installs
+the binary's required `libstdc++` runtime package inside Alpine before running
+the version check. These changes keep the smoke gate strict while matching the
+actual Windows home-directory and musl runtime contracts.
+
+The compiled OmO launcher now materializes its first-run Windows executable by
+copying it directly with the platform file-copy API, because Windows rejects
+renaming a newly copied `.exe` into place with `EPERM` even when the
+destination did not previously exist. POSIX keeps the temporary-copy and
+atomic-rename path. Both branches retain hash-checked provisioning and cleanup.
+
+Windows CI now gives the Codex installer integration test and the seven-node
+DAG failure E2E their observed platform-specific execution budgets. The
+assertions and event-driven behavior remain unchanged; only the test harness
+deadlines are widened from the prior 60-second and 15-second ceilings that
+expired on the full Windows matrix.
+
+## 2026-08-27 — Keep Windows LSP daemon stamping safe with spaced runtimes
+
+The LSP daemon build helper now disables shell execution when invoking an
+absolute runtime path such as `C:\Program Files\nodejs\node.exe`, while keeping
+shell lookup for bare `tsc` and `bun` commands on Windows. The release builder
+therefore reaches the version-stamping step instead of letting the shell split
+the runtime path at `C:\Program`. The command-policy regression tests cover
+absolute Windows paths, bare package commands, and POSIX execution.
+## 2026-08-27 — Record post-beta.23 merged follow-ups
+
+The root product changelog now records the pull requests merged after the
+beta.23 release note was authored: LSP formatting and resident-client caps
+(`#7428`), config-watch duplicate-load stand-down (`#7420`), the Codex GPT-5.6
+650k context-window contract (`#7429`), Windows portability and the beta.23
+source-state merge (`#7432`, `#7427`), and the Senpi daemon-first
+post-mutation pipeline (`#7430`). The entries include their merge commits so
+the release note remains traceable to the final `dev` history.
+
 ## 2026-08-27 — Release OmO Native beta.23 with Senpi 2026.8.27
 
 This release advances the OmO Native engine contract from Senpi `2026.8.26-2`
