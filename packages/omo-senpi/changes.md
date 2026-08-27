@@ -1,3 +1,34 @@
+## 2026-08-27 — Align the Senpi adapter with 2026.8.27
+
+`packages/omo-senpi/package.json` now requires the exact published
+`@code-yeongyu/senpi` `2026.8.27` release for both its optional peer and
+development dependency. Keep the peer, dev dependency, root patched-dependency
+key, and generated lockfile aligned with the native runtime pin.
+
+## 2026-08-27 — Keep thread persistence and DAP portable on Windows
+
+The thread mailbox and durable receipt stores now use the shared atomic-write
+implementation, which opens a writable temporary file, tolerates the Windows
+filesystem's allowed `fsync` limitations, and avoids directory `fsync` where
+Windows rejects directory handles. The DAP client now distinguishes a real
+`host:port` adapter endpoint from a Windows drive-letter script path, so the
+fixture adapter launches instead of attempting a socket connection to drive
+`C:`. The existing POSIX durability behavior remains unchanged.
+
+## 2026-08-26 — Normalize ULW CLI pointer paths across platforms
+
+The ulw-loop skill pointer now normalizes the resolved executable path to
+POSIX separators before embedding it in the machine-consumed command sentence.
+Windows Senpi compatibility therefore receives the same canonical path shape as
+POSIX while the actual executable path remains unchanged.
+
+## 2026-08-25 — Name the executable in the local-launcher brand profile
+
+The sibling-store local launcher now injects `command: "omo"` on the `SENPI_BRAND`
+profile it hands the engine, matching the published omo-ai launcher. Senpi can
+render resume hints with the real executable name instead of guessing; unknown
+fields stay ignored on older engines.
+
 ## 2026-08-22 — One exception-free keyword table for every ULW skill pointer
 
 The mass-ulw and ulw-skill-pointers components were the same mechanism written twice, and the
