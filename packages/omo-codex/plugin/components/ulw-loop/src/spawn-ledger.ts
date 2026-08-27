@@ -51,7 +51,13 @@ export function classifySpawnResponse(toolResponse: unknown): SpawnOutcome {
 	return { kind: "ignored" };
 }
 
-export function recordSpawned(cwd: string, sessionId: string, toolName: string, outcome: Extract<SpawnOutcome, { kind: "spawned" }>, input: SpawnLedgerEntryInput): void {
+export function recordSpawned(
+	cwd: string,
+	sessionId: string,
+	toolName: string,
+	outcome: Extract<SpawnOutcome, { kind: "spawned" }>,
+	input: SpawnLedgerEntryInput,
+): void {
 	appendLine(ulwLoopDir(cwd, { sessionId }), SPAWN_LEDGER_FILE, {
 		ts: new Date().toISOString(),
 		event: "spawned",
@@ -65,7 +71,13 @@ export function recordSpawned(cwd: string, sessionId: string, toolName: string, 
 	});
 }
 
-export function recordRefused(cwd: string, sessionId: string, toolName: string, reason: string, input: SpawnLedgerEntryInput): void {
+export function recordRefused(
+	cwd: string,
+	sessionId: string,
+	toolName: string,
+	reason: string,
+	input: SpawnLedgerEntryInput,
+): void {
 	appendLine(ulwLoopDir(cwd, { sessionId }), PENDING_SPAWNS_FILE, {
 		ts: new Date().toISOString(),
 		event: "refused",
@@ -159,9 +171,7 @@ function serializeResponse(toolResponse: unknown): string {
 }
 
 function refusalReason(serialized: string): string {
-	const matchingLine = serialized
-		.split(/\r?\n/)
-		.find((line) => SPAWN_REFUSAL_PATTERN.test(line));
+	const matchingLine = serialized.split(/\r?\n/).find((line) => SPAWN_REFUSAL_PATTERN.test(line));
 	const reason = matchingLine ?? serialized;
 	return reason.trim().slice(0, REASON_CHARS);
 }

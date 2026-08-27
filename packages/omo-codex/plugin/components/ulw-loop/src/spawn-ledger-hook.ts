@@ -73,7 +73,10 @@ export async function runSpawnLedgerCli(stdin: NodeJS.ReadableStream, stdout: No
 	}
 }
 
-export async function runSpawnLedgerPostCompactCli(stdin: NodeJS.ReadableStream, stdout: NodeJS.WritableStream): Promise<void> {
+export async function runSpawnLedgerPostCompactCli(
+	stdin: NodeJS.ReadableStream,
+	stdout: NodeJS.WritableStream,
+): Promise<void> {
 	try {
 		const parsed: unknown = JSON.parse(await readAll(stdin));
 		if (!isPostCompactPayload(parsed)) return;

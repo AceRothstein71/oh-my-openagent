@@ -44,9 +44,7 @@ function writeActivePlan(): void {
 	);
 }
 
-function postToolUsePayload(
-	overrides: Partial<SpawnLedgerPostToolUsePayload> = {},
-): SpawnLedgerPostToolUsePayload {
+function postToolUsePayload(overrides: Partial<SpawnLedgerPostToolUsePayload> = {}): SpawnLedgerPostToolUsePayload {
 	return {
 		hook_event_name: "PostToolUse",
 		session_id: "s1",
@@ -67,10 +65,7 @@ function readLines(path: string): Array<Record<string, unknown>> {
 }
 
 async function runCli(
-	runner: (
-		stdin: NodeJS.ReadableStream,
-		stdout: NodeJS.WritableStream,
-	) => Promise<void>,
+	runner: (stdin: NodeJS.ReadableStream, stdout: NodeJS.WritableStream) => Promise<void>,
 	payload: unknown,
 ): Promise<string> {
 	const stdin = new PassThrough();
@@ -91,9 +86,7 @@ describe("applySpawnLedger", () => {
 		writeActivePlan();
 
 		// when
-		const output = applySpawnLedger(
-			postToolUsePayload({ tool_response: { agent_id: "agent-7f2a" } }),
-		);
+		const output = applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "agent-7f2a" } }));
 
 		// then
 		expect(output).toBe("");
@@ -134,9 +127,7 @@ describe("applySpawnLedger", () => {
 		writeActivePlan();
 
 		// when
-		applySpawnLedger(
-			postToolUsePayload({ tool_response: '{"agentId":"ag-9"}' }),
-		);
+		applySpawnLedger(postToolUsePayload({ tool_response: '{"agentId":"ag-9"}' }));
 
 		// then
 		expect(readLines(ledgerPath())[0]?.["workerId"]).toBe("ag-9");
@@ -161,9 +152,7 @@ describe("applySpawnLedger", () => {
 		expect(lines).toHaveLength(1);
 		expect(lines[0]?.["event"]).toBe("refused");
 		expect(lines[0]?.["toolUseId"]).toBe("tu-refused-1");
-		expect(JSON.stringify(lines[0]?.["toolInput"])).toContain(
-			"AXIS: swarm internals",
-		);
+		expect(JSON.stringify(lines[0]?.["toolInput"])).toContain("AXIS: swarm internals");
 	});
 
 	it("#given a thread-limit refusal #when the response is a plain error string #then the refusal is still detected", () => {
@@ -225,9 +214,7 @@ describe("applySpawnLedger", () => {
 		writeActivePlan();
 
 		// when
-		const output = applySpawnLedger(
-			postToolUsePayload({ tool_response: { error: "invalid schema" } }),
-		);
+		const output = applySpawnLedger(postToolUsePayload({ tool_response: { error: "invalid schema" } }));
 
 		// then
 		expect(output).toBe("");
@@ -271,9 +258,7 @@ describe("applySpawnLedger", () => {
 	it("#given an existing ledger #when another outcome lands #then the new line is appended without truncating history", () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(
-			postToolUsePayload({ tool_response: { agent_id: "ag-1" } }),
-		);
+		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-1" } }));
 
 		// when
 		applySpawnLedger(
@@ -309,12 +294,8 @@ describe("spawnLedgerRehydrateContext", () => {
 	it("#given ledger and pending queue #when PostCompact fires #then the injected context carries both truths and the queue path", () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(
-			postToolUsePayload({ tool_response: { agent_id: "ag-1" } }),
-		);
-		applySpawnLedger(
-			postToolUsePayload({ tool_response: { agent_id: "ag-2" } }),
-		);
+		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-1" } }));
+		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-2" } }));
 		applySpawnLedger(
 			postToolUsePayload({
 				tool_use_id: "tu-r",
@@ -340,9 +321,7 @@ describe("spawnLedgerRehydrateContext", () => {
 	it("#given only a spawn ledger #when PostCompact fires #then the context reports the spawned workers without a pending section", () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(
-			postToolUsePayload({ tool_response: { agent_id: "ag-solo" } }),
-		);
+		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-solo" } }));
 
 		// when
 		const output = applySpawnLedgerPostCompact({
@@ -393,9 +372,7 @@ describe("spawn ledger CLI runners", () => {
 	it("#given a PostCompact payload on stdin #when the post-compact runner executes #then stdout carries the rehydrated swarm state", async () => {
 		// given
 		writeActivePlan();
-		applySpawnLedger(
-			postToolUsePayload({ tool_response: { agent_id: "ag-cli" } }),
-		);
+		applySpawnLedger(postToolUsePayload({ tool_response: { agent_id: "ag-cli" } }));
 
 		// when
 		const output = await runCli(runSpawnLedgerPostCompactCli, {
