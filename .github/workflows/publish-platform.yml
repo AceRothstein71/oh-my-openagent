@@ -271,13 +271,10 @@ jobs:
             export XDG_STATE_HOME="${SMOKE_ROOT}/xdg/state"
             export XDG_CACHE_HOME="${SMOKE_ROOT}/xdg/cache"
             export OMO_CODING_AGENT_DIR="${SMOKE_ROOT}/agent"
-            # Native Windows exes resolve os.homedir() through USERPROFILE and
-            # ignore HOME, and they cannot read MSYS POSIX spellings: hand them
-            # a Win32 path to the same sandbox so first-run provisioning does
-            # not land in the real runner profile.
-            if command -v cygpath >/dev/null 2>&1; then
-              export USERPROFILE="$(cygpath -w "${SMOKE_ROOT}/home")"
-              export OMO_CODING_AGENT_DIR="$(cygpath -w "${SMOKE_ROOT}/agent")"
+            # Node's Windows os.homedir() follows USERPROFILE; HOME alone is
+            # only the Git Bash shell view and does not control provisioning.
+            if [[ "$TARGET" == windows-* ]]; then
+              export USERPROFILE="${HOME}"
             fi
           }
 
@@ -315,11 +312,8 @@ jobs:
 
           musl_smoke() {
             # musl binaries cannot run on the glibc runner: alpine container.
-            # bun's musl compile keeps libstdc++ dynamically linked (NEEDED
-            # libstdc++.so.6), which bare alpine does not ship - install the
-            # runtime dependency first, exactly as real alpine users must.
             docker run --rm -v "${PWD}:/work" -w /work -e HOME=/tmp/omo-smoke-home \
-              alpine:3.21 sh -c "apk add -q --no-cache libstdc++ >/dev/null && ${BIN} --version" | grep -F "$EXPECTED_VERSION_LINE"
+              alpine:3.21 sh -c "apk add --no-cache libstdc++ >/dev/null && ${BIN} --version" | grep -F "$EXPECTED_VERSION_LINE"
           }
 
           verify_checksum_and_size_only() {
@@ -655,16 +649,6 @@ jobs:
             export XDG_STATE_HOME="${SMOKE_ROOT}/xdg/state"
             export XDG_CACHE_HOME="${SMOKE_ROOT}/xdg/cache"
             export OMO_CODING_AGENT_DIR="${SMOKE_ROOT}/agent"
-            # Native Windows exes resolve os.homedir() through USERPROFILE and
-            # ignore HOME, and they cannot read MSYS POSIX spellings: hand them
-            # a Win32 path to the same sandbox so first-run provisioning does
-            # not land in the real runner profile. Kept byte-identical with the
-            # build-job smoke's isolate(); cygpath is absent on this runner, so
-            # the guard is a no-op here.
-            if command -v cygpath >/dev/null 2>&1; then
-              export USERPROFILE="$(cygpath -w "${SMOKE_ROOT}/home")"
-              export OMO_CODING_AGENT_DIR="$(cygpath -w "${SMOKE_ROOT}/agent")"
-            fi
           }
 
           if [ "$GLIBC_EXISTS" != "true" ]; then
@@ -680,12 +664,9 @@ jobs:
           fi
 
           if [ "$MUSL_EXISTS" != "true" ]; then
-            # alpine container for the musl binary. bun's musl compile keeps
-            # libstdc++ dynamically linked (NEEDED libstdc++.so.6), which bare
-            # alpine does not ship - install the runtime dependency first,
-            # exactly as real alpine users must.
+            # alpine container for the musl binary.
             docker run --rm -v "${PWD}:/work" -w /work -e HOME=/tmp/omo-smoke-home \
-              alpine:3.21 sh -c "apk add -q --no-cache libstdc++ >/dev/null && chmod +x .omo/release-binaries/omo-linux-arm64-musl && .omo/release-binaries/omo-linux-arm64-musl --version" \
+              alpine:3.21 sh -c "chmod +x .omo/release-binaries/omo-linux-arm64-musl && .omo/release-binaries/omo-linux-arm64-musl --version" \
               | grep -F "$EXPECTED_VERSION_LINE"
           fi
 
