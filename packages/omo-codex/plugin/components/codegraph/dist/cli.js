@@ -5882,9 +5882,25 @@ var OmoTelemetrySettingsSchema = OmoTelemetrySettingsLayerSchema.extend({
   enabled: boolean2().default(true)
 }).strict();
 
+// ../../omo-config-core/src/schema/format-on-mutation.ts
+var mode = _enum(["off", "best-effort", "required"]);
+var languages = record(string2(), boolean2()).optional();
+var OmoFormatOnMutationLayerSchema = object({
+  mode: mode.optional(),
+  languages,
+  maxFileBytes: number2().int().positive().optional(),
+  timeoutMs: number2().int().positive().optional()
+}).strict();
+var OmoFormatOnMutationSchema = OmoFormatOnMutationLayerSchema.extend({
+  mode: mode.default("best-effort"),
+  maxFileBytes: number2().int().positive().default(1048576),
+  timeoutMs: number2().int().positive().default(3000)
+}).strict();
+
 // ../../omo-config-core/src/schema/config.ts
 var OmoOpenCodeHarnessConfigSchema = record(string2(), unknown());
 var OmoTypedHarnessConfigSchema = object({
+  formatOnMutation: OmoFormatOnMutationLayerSchema.optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
   codegraph: OmoCodegraphSettingsLayerSchema.optional(),
@@ -5896,6 +5912,7 @@ var OmoTypedHarnessConfigSchema = object({
   telemetry: OmoTelemetrySettingsLayerSchema.optional()
 }).strict();
 var OmoConfigProfileSchema = object({
+  formatOnMutation: OmoFormatOnMutationLayerSchema.optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
   codegraph: OmoCodegraphSettingsLayerSchema.optional(),
@@ -5910,6 +5927,7 @@ var OmoConfigProfileSchema = object({
   "[codex]": OmoTypedHarnessConfigSchema.optional()
 }).strict();
 var OmoConfigSchema = object({
+  formatOnMutation: OmoFormatOnMutationSchema.optional(),
   $schema: string2().optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
@@ -5928,6 +5946,7 @@ var OmoConfigSchema = object({
   legacy_migrations: record(string2(), unknown()).optional()
 }).strict();
 var OmoConfigLayerSchema = object({
+  formatOnMutation: OmoFormatOnMutationLayerSchema.optional(),
   $schema: string2().optional(),
   categories: OmoCategoriesConfigSchema.optional(),
   agents: OmoAgentsConfigSchema.optional(),
@@ -11774,8 +11793,8 @@ async function runBridgedCodegraphProcess(command, args, options) {
     destroyChildPipes();
     terminateCodegraphChild(child);
   });
-  const clientForwardingDone = forwardClientToCodegraph(options.input, childInput, pendingResponses, (mode) => {
-    defaultResponseMode = mode;
+  const clientForwardingDone = forwardClientToCodegraph(options.input, childInput, pendingResponses, (mode2) => {
+    defaultResponseMode = mode2;
   }, () => parentWatchdogFired);
   const responseForwardingDone = forwardCodegraphToClient(childOutput, options.output, pendingResponses, () => defaultResponseMode, () => parentWatchdogFired);
   const bridgeDone = Promise.all([clientForwardingDone, responseForwardingDone]);
