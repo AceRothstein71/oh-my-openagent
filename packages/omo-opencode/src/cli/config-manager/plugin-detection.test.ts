@@ -61,6 +61,37 @@ describe("detectCurrentConfig - single package detection", () => {
     expect(result.isInstalled).toBe(false)
   })
 
+  it("ignores tuple plugin entries that do not belong to OMO", () => {
+    // given
+    writeFileSync(
+      testConfigPath,
+      JSON.stringify({ plugin: [["./badge.tsx", { label: "custom" }]] }, null, 2) + "\n",
+      "utf-8",
+    )
+
+    // when
+    const result = detectCurrentConfig()
+
+    // then
+    expect(result.isInstalled).toBe(false)
+  })
+
+  it("detects OMO when its tuple plugin entry includes options", () => {
+    // given
+    writeFileSync(
+      testConfigPath,
+      JSON.stringify({ plugin: [["oh-my-openagent@3.11.0", { enabled: true }]] }, null, 2) + "\n",
+      "utf-8",
+    )
+
+    // when
+    const result = detectCurrentConfig()
+
+    // then
+    expect(result.isInstalled).toBe(true)
+    expect(result.installedVersion).toBe("3.11.0")
+  })
+
   it("detects OpenCode Go from the existing omo config", () => {
     // given
     writeFileSync(testConfigPath, JSON.stringify({ plugin: ["oh-my-opencode"] }, null, 2) + "\n", "utf-8")
@@ -172,6 +203,37 @@ describe("addPluginToOpenCodeConfig - single package writes", () => {
   it("removes stale legacy entry when canonical and legacy entries both exist", async () => {
     // given
     writeFileSync(testConfigPath, JSON.stringify({ plugin: ["oh-my-openagent", "oh-my-opencode"] }, null, 2) + "\n", "utf-8")
+
+    // when
+    const result = await addPluginToOpenCodeConfig("3.11.0")
+
+    // then
+    expect(result.success).toBe(true)
+    const savedConfig = JSON.parse(readFileSync(testConfigPath, "utf-8"))
+    expect(savedConfig.plugin).toEqual(["oh-my-openagent"])
+  })
+
+  it("preserves non-OMO tuple entries while adding the canonical plugin", async () => {
+    // given
+    const tupleEntry = ["./badge.tsx", { label: "custom" }]
+    writeFileSync(testConfigPath, JSON.stringify({ plugin: [tupleEntry] }, null, 2) + "\n", "utf-8")
+
+    // when
+    const result = await addPluginToOpenCodeConfig("3.11.0")
+
+    // then
+    expect(result.success).toBe(true)
+    const savedConfig = JSON.parse(readFileSync(testConfigPath, "utf-8"))
+    expect(savedConfig.plugin).toEqual([tupleEntry, "oh-my-openagent"])
+  })
+
+  it("replaces an OMO tuple entry without throwing", async () => {
+    // given
+    writeFileSync(
+      testConfigPath,
+      JSON.stringify({ plugin: [["oh-my-openagent@3.10.0", { enabled: true }]] }, null, 2) + "\n",
+      "utf-8",
+    )
 
     // when
     const result = await addPluginToOpenCodeConfig("3.11.0")

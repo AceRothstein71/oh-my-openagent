@@ -3,7 +3,10 @@ import { parseJsonc, LEGACY_PLUGIN_NAME, PLUGIN_NAME } from "../../shared"
 import type { DetectedConfig } from "../types"
 import { getOmoConfigPath } from "./config-context"
 import { detectConfigFormat } from "./opencode-config-format"
-import { parseOpenCodeConfigFileWithError } from "./parse-opencode-config-file"
+import {
+  parseOpenCodeConfigFileWithError,
+  type OpenCodePluginEntry,
+} from "./parse-opencode-config-file"
 import { extractVersionFromPluginEntry } from "./version-compatibility"
 
 function detectProvidersFromOmoConfig(): {
@@ -99,13 +102,21 @@ function detectProvidersFromOmoConfig(): {
   }
 }
 
-function isOurPlugin(plugin: string): boolean {
-  return plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`) ||
-         plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`)
+function entryName(plugin: unknown): string {
+  if (Array.isArray(plugin)) {
+    return typeof plugin[0] === "string" ? plugin[0] : ""
+  }
+  return typeof plugin === "string" ? plugin : ""
 }
 
-function findOurPluginEntry(plugins: string[]): string | null {
-  return plugins.find(isOurPlugin) ?? null
+function isOurPlugin(plugin: OpenCodePluginEntry): boolean {
+  const name = entryName(plugin)
+  return name === PLUGIN_NAME || name.startsWith(`${PLUGIN_NAME}@`) ||
+         name === LEGACY_PLUGIN_NAME || name.startsWith(`${LEGACY_PLUGIN_NAME}@`)
+}
+
+function findOurPluginEntry(plugins: readonly OpenCodePluginEntry[]): string | null {
+  return entryName(plugins.find(isOurPlugin)) || null
 }
 
 export function detectCurrentConfig(): DetectedConfig {
