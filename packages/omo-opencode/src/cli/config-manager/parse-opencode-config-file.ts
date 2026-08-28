@@ -8,9 +8,11 @@ interface ParseConfigResult {
 }
 
 export interface OpenCodeConfig {
-  plugin?: string[]
+  plugin?: OpenCodePluginEntry[]
   [key: string]: unknown
 }
+
+export type OpenCodePluginEntry = string | readonly [string, unknown]
 
 function isEmptyOrWhitespace(content: string): boolean {
   return content.trim().length === 0

@@ -7,7 +7,11 @@ import { getConfigDir } from "./config-context"
 import { ensureConfigDirectoryExists } from "./ensure-config-directory-exists"
 import { formatErrorWithSuggestion } from "./format-error-with-suggestion"
 import { detectConfigFormat, type ConfigFormat } from "./opencode-config-format"
-import { parseOpenCodeConfigFileWithError, type OpenCodeConfig } from "./parse-opencode-config-file"
+import {
+  parseOpenCodeConfigFileWithError,
+  type OpenCodeConfig,
+  type OpenCodePluginEntry,
+} from "./parse-opencode-config-file"
 import { getPluginNameWithVersion } from "./plugin-name-with-version"
 import { checkVersionCompatibility, extractVersionFromPluginEntry } from "./version-compatibility"
 
@@ -68,24 +72,32 @@ function getConfigTargets(): ConfigTarget[] {
   })
 }
 
-function isSourceOmoPluginEntry(plugin: string): boolean {
-  const normalized = plugin.toLowerCase().replaceAll("\\", "/")
+function entryName(plugin: unknown): string {
+  if (Array.isArray(plugin)) {
+    return typeof plugin[0] === "string" ? plugin[0] : ""
+  }
+  return typeof plugin === "string" ? plugin : ""
+}
+
+function isSourceOmoPluginEntry(plugin: OpenCodePluginEntry): boolean {
+  const normalized = entryName(plugin).toLowerCase().replaceAll("\\", "/")
   if (!normalized.startsWith("file://")) return false
 
   return /\/(omo(?:-[^/]*)?|oh-my-opencode|oh-my-openagent)\/(src|dist)\/index\.(ts|js)$/.test(normalized)
 }
 
-function isPackageOmoPluginEntry(plugin: string): boolean {
-  return plugin === PLUGIN_NAME || plugin.startsWith(`${PLUGIN_NAME}@`) ||
-    plugin === LEGACY_PLUGIN_NAME || plugin.startsWith(`${LEGACY_PLUGIN_NAME}@`)
+function isPackageOmoPluginEntry(plugin: OpenCodePluginEntry): boolean {
+  const name = entryName(plugin)
+  return name === PLUGIN_NAME || name.startsWith(`${PLUGIN_NAME}@`) ||
+    name === LEGACY_PLUGIN_NAME || name.startsWith(`${LEGACY_PLUGIN_NAME}@`)
 }
 
-function isOurPlugin(plugin: string): boolean {
+function isOurPlugin(plugin: OpenCodePluginEntry): boolean {
   return isPackageOmoPluginEntry(plugin) || isSourceOmoPluginEntry(plugin)
 }
 
-function findOurPluginEntry(plugins: readonly string[]): string | undefined {
-  return plugins.find(isOurPlugin)
+function findOurPluginEntry(plugins: readonly OpenCodePluginEntry[]): string | undefined {
+  return entryName(plugins.find(isOurPlugin)) || undefined
 }
 
 function findSourcePluginEntryInTarget(target: ConfigTarget): string | null {
@@ -93,7 +105,7 @@ function findSourcePluginEntryInTarget(target: ConfigTarget): string | null {
 
   const parseResult = parseOpenCodeConfigFileWithError(target.path)
   const plugins = parseResult.config?.plugin ?? []
-  return plugins.find(isSourceOmoPluginEntry) ?? null
+  return entryName(plugins.find(isSourceOmoPluginEntry)) || null
 }
 
 function choosePluginEntry(params: {
@@ -181,7 +193,7 @@ function writePluginEntryToTarget(params: {
       const match = content.match(pluginArrayRegex)
 
       if (match) {
-        const formattedPlugins = normalizedPlugins.map((p) => `"${p}"`).join(",\n    ")
+        const formattedPlugins = normalizedPlugins.map((p) => JSON.stringify(p)).join(",\n    ")
         const newContent = content.replace(pluginArrayRegex, `$1[\n    ${formattedPlugins}\n  ]`)
         writeFileSync(target.path, newContent)
       } else {
