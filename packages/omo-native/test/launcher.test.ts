@@ -186,6 +186,7 @@ describe("omo launcher", () => {
         expect(environment.OMO_AGENT_TOOLKIT_BIN).toBe(join(fixture.packageRoot, "bin", "omo-agent-toolkit.js"))
         expect(environment.OMO_CODING_AGENT_DIR).toBe(join(home, ".omo", "agent"))
         expect(environment.SENPI_CODING_AGENT_DIR).toBe(join(home, ".omo", "agent"))
+        expect(environment.OMO_DISABLE_SHARED_HOST).toBe("1")
         // An inherited value must never survive; it is replaced by this launcher's own entry so
         // anything resolving the product by name re-enters here instead of the bare engine.
         // Windows reports this path in its long form while the fixture root may be the 8.3 short
@@ -193,6 +194,13 @@ describe("omo launcher", () => {
         expect(existsSync(environment.OMO_BIN ?? "")).toBe(true)
         expect((environment.OMO_BIN ?? "").replace(/\\/g, "/")).toMatch(/\/bin\/omo\.js$/)
         expect(environment.OMO_BIN).not.toBe(environment.SENPI_BIN)
+      })
+
+      test("#then an explicit shared-host opt-in survives environment remapping", () => {
+        const fixture = createFixture()
+        const result = run(fixture, ["say", "hi"], { OMO_DISABLE_SHARED_HOST: "0" })
+        expect(result.status).toBe(0)
+        expect(capture(fixture).env.OMO_DISABLE_SHARED_HOST).toBe("0")
       })
 
       test("#then SENPI_BIN stays absent when no shim exists", () => {

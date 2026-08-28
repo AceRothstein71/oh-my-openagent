@@ -117,6 +117,7 @@ export function remapSenpiEnvironment(source: NodeJS.ProcessEnv = process.env, e
   env.SENPI_CODING_AGENT_DIR = agentDir
   env.OMO_NATIVE = "1"
   env.SENPI_RUNTIME = process.versions.bun ? "bun" : "node"
+  env.OMO_DISABLE_SHARED_HOST ??= "1"
   let displayVersion = "unknown"
   try { displayVersion = readJson(join(execDir, "package.json")).version } catch { /* test fixtures may omit the sibling manifest */ }
   env.SENPI_BRAND = JSON.stringify({

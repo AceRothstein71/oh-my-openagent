@@ -67,6 +67,13 @@ describe("compiled omo entry launcher parity", () => {
     expect(env.OMO_AGENT_TOOLKIT_BIN).toBe(join("/provisioned", "plugin", "runtime", "agent-toolkit", process.platform === "win32" ? "omo-agent-toolkit.cmd" : "omo-agent-toolkit"))
     expect(env.OMO_BIN).toBe(join("/provisioned", process.platform === "win32" ? "omo.exe" : "omo"))
     expect(env.OMO_CODING_AGENT_DIR).toBeDefined()
+    expect(env.OMO_DISABLE_SHARED_HOST).toBe("1")
+  })
+
+  test("preserves an explicit shared-host opt-in", () => {
+    const env = remapSenpiEnvironment({ OMO_DISABLE_SHARED_HOST: "0", PATH: "/bin" }, "/provisioned")
+
+    expect(env.OMO_DISABLE_SHARED_HOST).toBe("0")
   })
 })
 

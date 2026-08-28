@@ -74,6 +74,7 @@ function senpiEnvironment(senpiRoot) {
   // under bun. Handing that answer down stops the engine from making its own, conflicting choice.
   env.SENPI_RUNTIME = process.versions.bun ? "bun" : "node"
   env.SENPI_BRAND = JSON.stringify(brandProfile())
+  env.OMO_DISABLE_SHARED_HOST ??= "1"
 
   const binDir = nearestNodeBin(senpiRoot)
   if (binDir) {
