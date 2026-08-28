@@ -78,6 +78,7 @@ identity instead of impersonating the product.
 | `displayVersion` | the omo-ai version | `omo --version` and the TUI header; the engine version stays internal for update comparisons |
 | `configDir` + `flatLayout` | `.omo`, nested | agent state lives at `~/.omo/agent` - the one directory every omo entry point resolves through `bin/lib/agent-dir.js`; the launcher pins it for the engine with `OMO_CODING_AGENT_DIR` plus the legacy `SENPI_CODING_AGENT_DIR` |
 | `envPrefix` | `OMO` | `OMO_*` variables are read first, then the legacy `SENPI_*` and `PI_*` names |
+| shared interactive host | `OMO_DISABLE_SHARED_HOST=1` by default | keeps the local interactive runtime, whose TUI exposes usage, cache-hit, cost, Goal, and resumed-state data; set `OMO_DISABLE_SHARED_HOST=0` to opt into the shared host |
 | `userAgent` / `originator` | `omo` | outgoing request identity |
 | `update` | `omo-ai`, `beta`, `npm i -g omo-ai@beta` | the update banner checks the beta dist-tag of omo-ai and prints the product's own command |
 
@@ -86,6 +87,11 @@ session filenames, debug-log filenames, and opt-in provider attribution headers
 use `OmO`. Machine contracts remain explicitly pinned by the other fields:
 `.omo`, `OMO_*`, the `omo` User-Agent/originator, and the lowercase `omo`
 command/package names do not derive from the display spelling.
+
+The shared interactive host remains opt-in while its proxy catches up with the local TUI's usage and
+extension-status surfaces. The launcher uses the brand-prefixed `OMO_DISABLE_SHARED_HOST` variable;
+the bare `DISABLE_SHARED_HOST` spelling is not read by the branded engine. An explicit value such as
+`0` is preserved for users who want to test the shared host.
 
 The update channel matters: omo-ai's `latest` tag is pinned to the deprecated bootstrap
 placeholder forever, so a `latest` lookup would never see a release. The engine therefore reads
