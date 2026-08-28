@@ -70,6 +70,7 @@ const env = {
   OMO_NATIVE: "1",
   OMO_CODING_AGENT_DIR: agentDir,
   SENPI_CODING_AGENT_DIR: agentDir,
+  OMO_DISABLE_SHARED_HOST: process.env.OMO_DISABLE_SHARED_HOST ?? "1",
 }
 // Anything resolving the product by name must re-enter through this launcher, never the engine.
 env.OMO_BIN = process.argv[1]

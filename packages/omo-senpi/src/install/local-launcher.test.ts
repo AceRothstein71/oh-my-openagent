@@ -39,6 +39,7 @@ describe("local omo launcher", () => {
         expect(source).toContain("OMO_PLUGIN_ROOT")
         expect(source).toContain("OMO_CODING_AGENT_DIR")
         expect(source).toContain("SENPI_CODING_AGENT_DIR")
+        expect(source).toContain('OMO_DISABLE_SHARED_HOST: process.env.OMO_DISABLE_SHARED_HOST ?? "1"')
         expect(source).toContain('join(homedir(), ".omo", "agent")')
       })
     })
