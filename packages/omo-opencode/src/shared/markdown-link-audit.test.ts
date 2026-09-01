@@ -18,7 +18,6 @@ function collectMarkdownFiles(): string[] {
     .trim()
     .split("\n")
     .filter(Boolean)
-    .filter((filePath) => !filePath.startsWith(".omo/") && !filePath.startsWith(".opencode/"))
     .map((filePath) => resolve(WORKSPACE_ROOT, filePath))
 }
 

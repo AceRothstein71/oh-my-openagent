@@ -511,11 +511,13 @@ function admissionTaskManager(
 }
 
 function stoppedAdmission(runId: DagRunId): Promise<OwnedStartResult> {
-  // A latched (paused) run identifier must SETTLE, never hang: both consumers of startOwned - the
-  // scheduler wave loop and recovery's reconcileNodes - already defer a residency_denied result, so
-  // a denial here parks the pipeline cleanly instead of pinning it on an unresolvable promise.
+  // A latched (paused) run identifier must SETTLE, never hang. It must NOT reuse residency_denied:
+  // that outcome means transient resident-cap pressure, and the scheduler terminalizes it once no
+  // attached task can free a slot - which is always true during a shutdown pause, so the run would
+  // fail instead of suspending. admission_paused parks the nodes back to pending and leaves the run
+  // resumable.
   return Promise.resolve({
-    kind: "residency_denied",
+    kind: "admission_paused",
     reason: `dag run "${runId}" is paused; admission stays stopped until the run is resumed or retried`,
   })
 }
