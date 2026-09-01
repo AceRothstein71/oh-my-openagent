@@ -56,6 +56,7 @@ export interface MessageInfo {
   model?: { providerID: string; modelID: string; variant?: string }
   providerID?: string
   modelID?: string
+  variant?: string
   tools?: Record<string, ToolPermission>
 }
 
