@@ -7,6 +7,7 @@ type EmittingSessionControls = {
   readonly lastText: { value: string | undefined }
   emit(event: ChildSessionEvent): void
   resolvePrompt(): void
+  resolvePromptAt(index: number): void
 }
 
 // Controllable ChildSession that also emits subscribed events, so turn outcomes can be driven the
@@ -14,12 +15,14 @@ type EmittingSessionControls = {
 function createEmittingSession(sessionId = "child-session-1"): EmittingSessionControls {
   const listeners = new Set<ChildSessionListener>()
   const lastText = { value: undefined as string | undefined }
-  let settle: (() => void) | undefined
+  // Every prompt's resolver is retained so a test can resolve an EARLIER turn late, which is the
+  // cross-turn race a single shared resolver cannot reproduce.
+  const settles: Array<() => void> = []
   const session: ChildSession = {
     sessionId,
     prompt() {
       return new Promise<void>((resolve) => {
-        settle = resolve
+        settles.push(resolve)
       })
     },
     async steer() {},
@@ -40,7 +43,8 @@ function createEmittingSession(sessionId = "child-session-1"): EmittingSessionCo
     emit: (event) => {
       for (const listener of listeners) listener(event)
     },
-    resolvePrompt: () => settle?.(),
+    resolvePrompt: () => settles[settles.length - 1]?.(),
+    resolvePromptAt: (index) => settles[index]?.(),
   }
 }
 
@@ -130,7 +134,7 @@ describe("createChildHandle turn outcomes", () => {
 
     // when the child emits its final assistant message and exits its loop WITHOUT resolving prompt()
     fake.emit(assistantEnd("plan verdict: ship it", "stop"))
-    fake.emit(agentEnd())
+    fake.emit(agentEnd({ willRetry: false }))
 
     // then waitForIdle must settle from the event stream, never hang
     expect(await handle.waitForIdle()).toEqual({ status: "completed", finalResponse: "plan verdict: ship it" })
@@ -142,7 +146,7 @@ describe("createChildHandle turn outcomes", () => {
     const handle = createChildHandle({ taskId: "task-1", session: fake.session, promptText: "read the plan file" })
 
     // when the loop exits silently
-    fake.emit(agentEnd())
+    fake.emit(agentEnd({ willRetry: false }))
 
     // then
     const outcome = await handle.waitForIdle()
@@ -158,11 +162,17 @@ describe("createChildHandle turn outcomes", () => {
 
     // when the parent aborts and the loop exits without prompt() resolving
     await handle.abort()
-    fake.emit(agentEnd())
+    fake.emit(agentEnd({ willRetry: false }))
 
     // then
     expect(await handle.waitForIdle()).toEqual({ status: "cancelled" })
   })
+
+  // Deterministic replacement for a wall-clock race: settlement would resolve waitForIdle within a
+  // microtask, so draining the queue proves non-settlement without depending on machine speed.
+  async function flushMicrotasks(): Promise<void> {
+    for (let index = 0; index < 10; index += 1) await Promise.resolve()
+  }
 
   test("#given an agent_end that will be retried by the runtime fallback #when it arrives mid-turn #then the turn does NOT settle early", async () => {
     // given
@@ -170,17 +180,67 @@ describe("createChildHandle turn outcomes", () => {
     const handle = createChildHandle({ taskId: "task-1", session: fake.session, promptText: "retryable work" })
 
     // when a willRetry agent_end arrives (the loop keeps running this turn)
+    let settledEarly = false
+    void handle.waitForIdle().then(() => {
+      settledEarly = true
+    })
     fake.emit(agentEnd({ willRetry: true }))
-    const settledEarly = await Promise.race([
-      handle.waitForIdle().then(() => true),
-      new Promise<false>((resolve) => setTimeout(() => resolve(false), 25)),
-    ])
+    await flushMicrotasks()
 
     // then the turn is still pending; only the real settlement path may resolve it
     expect(settledEarly).toBe(false)
     fake.emit(assistantEnd("final after retry", "stop"))
     fake.resolvePrompt()
     expect(await handle.waitForIdle()).toEqual({ status: "completed", finalResponse: "final after retry" })
+  })
+
+  test("#given an agent_end whose willRetry flag is absent #when it arrives mid-turn #then it is not treated as terminal", async () => {
+    // given
+    const fake = createEmittingSession()
+    const handle = createChildHandle({ taskId: "task-1", session: fake.session, promptText: "work" })
+
+    // when a malformed/partial agent_end arrives with no willRetry at all
+    let settledEarly = false
+    void handle.waitForIdle().then(() => {
+      settledEarly = true
+    })
+    fake.emit(agentEnd())
+    await flushMicrotasks()
+
+    // then it is NOT terminal: only an explicit willRetry === false ends a turn, matching the RPC
+    // runner, so a partial event cannot destructively settle a turn that is still running
+    expect(settledEarly).toBe(false)
+    fake.emit(assistantEnd("real completion", "stop"))
+    fake.resolvePrompt()
+    expect(await handle.waitForIdle()).toEqual({ status: "completed", finalResponse: "real completion" })
+  })
+
+  test("#given a revived turn #when the PREVIOUS turn's prompt resolves late #then the stale settlement cannot settle or deactivate the live turn", async () => {
+    // given a first turn settled by its agent_end while its prompt() is still pending
+    const fake = createEmittingSession()
+    const handle = createChildHandle({ taskId: "task-1", session: fake.session, promptText: "first run" })
+    fake.emit(assistantEnd("first verdict", "stop"))
+    fake.emit(agentEnd({ willRetry: false }))
+    expect(await handle.waitForIdle()).toEqual({ status: "completed", finalResponse: "first verdict" })
+    fake.lastText.value = "first verdict"
+
+    // when a follow-up revives the child and only THEN the first turn's prompt resolves
+    await handle.followUp("second run")
+    let settledByStaleTurn = false
+    void handle.waitForIdle().then(() => {
+      settledByStaleTurn = true
+    })
+    fake.resolvePromptAt(0)
+    await flushMicrotasks()
+
+    // then the superseded turn's settlement is a no-op: the live turn is still running AND still
+    // armed. Settling it through the EVENT path proves the stale settle did not disarm the live
+    // turn's cell or drop its subscription, which a shared settler would have done.
+    expect(settledByStaleTurn).toBe(false)
+    fake.emit(assistantEnd("second verdict", "stop"))
+    fake.lastText.value = "second verdict"
+    fake.emit(agentEnd({ willRetry: false }))
+    expect(await handle.waitForIdle()).toEqual({ status: "completed", finalResponse: "second verdict" })
   })
 
   test("#given a turn already settled by prompt resolution #when a stray agent_end arrives afterwards #then the first outcome wins and a follow-up still revives", async () => {
@@ -192,7 +252,7 @@ describe("createChildHandle turn outcomes", () => {
     expect(await handle.waitForIdle()).toEqual({ status: "completed", finalResponse: "first verdict" })
 
     // when a stray agent_end arrives after settlement
-    fake.emit(agentEnd())
+    fake.emit(agentEnd({ willRetry: false }))
 
     // then the completed record is untouched and the handle can still revive
     fake.lastText.value = "first verdict"
