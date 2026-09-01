@@ -32,15 +32,15 @@ describe("planRescueCompaction", () => {
 
   test("#given a branch whose full suffix exceeds the budget but a user-turn boundary fits #when planning #then the earliest safe fitting boundary wins so retention stays maximal", () => {
     // given
-    const big = "x".repeat(2400) // ~800+ tokens at bytes/3
+    const big = "x".repeat(2400) // ~2400+ tokens: one token per serialized byte
     const entries = [
       messageEntry("e0", "user", big),
       messageEntry("e1", "assistant", big),
       messageEntry("e2", "user", "fresh turn"),
       messageEntry("e3", "assistant", "fresh answer"),
     ]
-    // Budget fits e1..e3 but not e0..e3.
-    const reserveTokens = 272000 - 1700
+    // Budget fits e1..e3 (~2600 + summary reserve) but not e0..e3 (~5100).
+    const reserveTokens = 272000 - 4000
 
     // when
     const plan = planRescueCompaction({ entries, usage, reserveTokens })

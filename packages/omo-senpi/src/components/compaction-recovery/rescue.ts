@@ -21,17 +21,20 @@ export interface RescueCompactionPlan {
 /** Headroom for the checkpoint summary itself plus estimator slack. */
 const SUMMARY_RESERVE_TOKENS = 512
 
-/** Conservative inflation: ~3 bytes per token is deliberately >= real token counts. */
-const BYTES_PER_TOKEN = 3
+// One token can never encode more than one UTF-8 byte, so serialized byte length is the only
+// ratio that is a guaranteed upper bound. A /3 divisor holds for prose but not for token-dense
+// text (CJK, base64, minified JSON), where it UNDER-counts and lets the planner hand the engine a
+// suffix its own validation then rejects - leaving the deadlock this component exists to break.
+const BYTES_PER_TOKEN = 1
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
 }
 
 /**
- * Conservative per-entry token estimate: serialized UTF-8 byte length divided by a
- * low bytes-per-token ratio, so estimates stay >= the engine's own token counts and
- * a plan that fits here also fits the engine's would-overflow validation.
+ * Conservative per-entry token estimate: the serialized UTF-8 byte length, matching the engine's
+ * own floor of at least one byte per token. Estimates therefore stay >= the engine's token counts,
+ * so a plan that fits here also fits the engine's would-overflow validation.
  */
 export function estimateEntryTokens(entry: unknown): number {
   if (!isRecord(entry)) return Number.POSITIVE_INFINITY

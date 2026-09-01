@@ -71,21 +71,30 @@ export function asRejectedRequiredCompaction(payload: unknown): RejectedRequired
 export function extractRecoveryEventContext(ctx: unknown): RecoveryEventContext | undefined {
   if (!isRecord(ctx)) return undefined
 
+  // Each port keeps its ORIGINAL receiver. The host exposes these as object methods, so lifting a
+  // bare reference onto this synthetic `ports` object would rebind `this` and make any method that
+  // reads host state throw or silently operate on nothing - leaving the deadlock unrecovered.
   const ports: RecoveryEventContext = {}
   const usage = ctx["getContextUsage"]
-  if (typeof usage === "function") ports.getContextUsage = usage as RecoveryEventContext["getContextUsage"]
+  if (typeof usage === "function") {
+    ports.getContextUsage = usage.bind(ctx) as RecoveryEventContext["getContextUsage"]
+  }
   const settings = ctx["getCompactionSettings"]
   if (typeof settings === "function") {
-    ports.getCompactionSettings = settings as RecoveryEventContext["getCompactionSettings"]
+    ports.getCompactionSettings = settings.bind(ctx) as RecoveryEventContext["getCompactionSettings"]
   }
   const compacting = ctx["isCompacting"]
-  if (typeof compacting === "function") ports.isCompacting = compacting as RecoveryEventContext["isCompacting"]
+  if (typeof compacting === "function") {
+    ports.isCompacting = compacting.bind(ctx) as RecoveryEventContext["isCompacting"]
+  }
   const apply = ctx["applyCompaction"]
-  if (typeof apply === "function") ports.applyCompaction = apply as RecoveryEventContext["applyCompaction"]
+  if (typeof apply === "function") {
+    ports.applyCompaction = apply.bind(ctx) as RecoveryEventContext["applyCompaction"]
+  }
   const sessionManager = ctx["sessionManager"]
   if (isRecord(sessionManager) && typeof sessionManager["getBranch"] === "function") {
     const getBranch = sessionManager["getBranch"]
-    ports.sessionManager = { getBranch: getBranch as () => readonly unknown[] }
+    ports.sessionManager = { getBranch: getBranch.bind(sessionManager) as () => readonly unknown[] }
   }
   return ports
 }

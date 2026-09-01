@@ -131,4 +131,104 @@ describe("createCompactionRecoveryComponent", () => {
     expect(pi.messages).toHaveLength(0)
     expect(logger.entries.some((entry) => entry.level === "error")).toBe(false)
   })
+
+  function bareComponent() {
+    const pi = new FakeExtensionAPI()
+    const logger = createRecordingLogger()
+    const component = createCompactionRecoveryComponent({ schedule: (fn) => fn(), resolveAgentHomeDir: () => undefined })
+    component.register(pi, { logger, config: { getFlag: () => undefined } })
+    return { pi, logger }
+  }
+
+  const branch = () => [messageEntry("e0", "user", "old context"), messageEntry("e1", "assistant", "answer")]
+
+  test("#given a host exposing its recovery APIs as object methods that read `this` #when the rescue runs #then every port keeps its original receiver", async () => {
+    // given
+    const { pi } = bareComponent()
+    const applied: unknown[] = []
+    const host = {
+      usage: { tokens: 236744, contextWindow: 272000, percent: null },
+      settings: { enabled: true, reserveTokens: 40000, keepRecentTokens: 20000 },
+      applied,
+      getContextUsage() {
+        return this.usage
+      },
+      getCompactionSettings() {
+        return this.settings
+      },
+      isCompacting() {
+        return false
+      },
+      async applyCompaction(precomputed: unknown) {
+        this.applied.push(precomputed)
+        return { applied: true, reason: "ok" }
+      },
+      sessionManager: {
+        entries: branch(),
+        getBranch() {
+          return this.entries
+        },
+      },
+    }
+
+    // when
+    await pi.dispatch("session_compact", buildRejectedCompactionEvent(), host)
+    await Bun.sleep(0)
+
+    // then lifting bare references onto the ports object would rebind `this`, so getContextUsage
+    // returns undefined and the rescue silently never runs
+    expect(applied).toHaveLength(1)
+  })
+
+  test("#given a rescue already in flight #when a second rejection is deferred before it settles #then only one compaction is applied", async () => {
+    // given an applyCompaction held open, so the first rescue is provably still running
+    const { pi } = bareComponent()
+    const release = Promise.withResolvers<void>()
+    const applyCalls: unknown[] = []
+    const eventCtx = {
+      getContextUsage: () => ({ tokens: 236744, contextWindow: 272000, percent: null }),
+      getCompactionSettings: () => ({ enabled: true, reserveTokens: 40000, keepRecentTokens: 20000 }),
+      isCompacting: () => false,
+      applyCompaction: async (precomputed: unknown) => {
+        applyCalls.push(precomputed)
+        await release.promise
+        return { applied: true, reason: "ok" }
+      },
+      sessionManager: { getBranch: () => branch() },
+    }
+
+    // when
+    await pi.dispatch("session_compact", buildRejectedCompactionEvent(), eventCtx)
+    await pi.dispatch("session_compact", buildRejectedCompactionEvent(), eventCtx)
+    await Bun.sleep(0)
+
+    // then the second rejection is suppressed; both would otherwise compact the same branch
+    expect(applyCalls).toHaveLength(1)
+    release.resolve()
+  })
+
+  test("#given applyCompaction rejects #when the deferred rescue fails #then the error is logged and guidance is emitted rather than escaping", async () => {
+    // given
+    const { pi, logger } = bareComponent()
+    const eventCtx = {
+      getContextUsage: () => ({ tokens: 236744, contextWindow: 272000, percent: null }),
+      getCompactionSettings: () => ({ enabled: true, reserveTokens: 40000, keepRecentTokens: 20000 }),
+      isCompacting: () => false,
+      applyCompaction: async () => {
+        throw new Error("engine refused the precomputed plan")
+      },
+      sessionManager: { getBranch: () => branch() },
+    }
+
+    // when
+    await pi.dispatch("session_compact", buildRejectedCompactionEvent(), eventCtx)
+    await Bun.sleep(0)
+
+    // then a surrounding try cannot catch an async rejection, so it must be caught on the promise
+    expect(logger.entries.some((entry) => entry.level === "error")).toBe(true)
+    const guidance = pi.messages.filter(
+      (call) => call.message["customType"] === "omo-compaction-recovery:guidance",
+    )
+    expect(guidance).toHaveLength(1)
+  })
 })

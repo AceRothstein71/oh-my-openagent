@@ -45,7 +45,7 @@ function defaultSchedule(fn: () => void): void {
 
 function defaultResolveAgentHomeDir(): string | undefined {
   try {
-    return resolveAgentHome({ env: process.env, homeDir: process.env["HOME"] ?? "", exists: () => false })
+    return resolveAgentHome({ env: process.env })
   } catch {
     return undefined
   }
@@ -79,6 +79,10 @@ export function createCompactionRecoveryComponent(
     name: "compaction-recovery",
     register(pi: SenpiExtensionAPI, ctx: ComponentContext): void {
       let guidanceEmitted = false
+      // Component-owned: two rejections can be deferred before the first rescue resolves, and both
+      // would otherwise call applyCompaction against the same branch. isCompacting() only covers
+      // compactions the host already owns, not one this component is about to start.
+      let rescueInFlight = false
 
       const emitGuidanceOnce = (): void => {
         if (guidanceEmitted) return
@@ -119,11 +123,18 @@ export function createCompactionRecoveryComponent(
         // Defer past the failing compaction pipeline so applyCompaction never runs
         // nested inside the rejection stack it is recovering from.
         schedule(() => {
-          try {
-            void runRescue(rejected)
-          } catch (error) {
-            ctx.logger.error("omo-senpi compaction-recovery rescue failed", { error })
-          }
+          if (rescueInFlight) return
+          rescueInFlight = true
+          // runRescue is async, so a rejection from applyCompaction escapes a surrounding try.
+          // It has to be caught on the promise, and the user still needs the guidance message.
+          void runRescue(rejected)
+            .catch((error: unknown) => {
+              ctx.logger.error("omo-senpi compaction-recovery rescue failed", { error })
+              emitGuidanceOnce()
+            })
+            .finally(() => {
+              rescueInFlight = false
+            })
         })
 
         async function runRescue(rejection: RejectedRequiredCompaction): Promise<void> {
