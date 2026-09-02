@@ -14,7 +14,7 @@
 - `tsgo --noEmit -p packages/senpi-task/tsconfig.json`
 - `tsgo --noEmit -p packages/omo-senpi/tsconfig.json`
 - Two independent `build-extension.mjs --check` runs.
-- Real Senpi 2026.9.2 `task-e2e.mjs` runs on the repaired branch and exact clean base `716adb407`.
+- Real Senpi 2026.9.2 `task-e2e.mjs` runs on the rebased branch and exact clean base `4480fd41a`.
 
 ## What was observed
 
@@ -25,9 +25,9 @@
   canonicalization regression failed before the fix. Runtime probes showed identical Bun inputs
   producing two byte variants that differed only in hoisted top-level function declaration order.
 - Focused completion, coordinator, parent, and cmux tests: 106 pass, 0 fail.
-- Senpi task package: 1,793 pass, 1 skip, 0 fail, 5,951 expectations.
-- Full Senpi gate: 2,545 pass, 7 skip, 0 fail, 8,081 expectations across 337 files; evidence resolver
-  10 pass, 0 fail.
+- Senpi task package: 1,806 pass, 1 skip, 0 fail, 5,906 expectations across 255 files.
+- Full Senpi gate: 2,555 pass, 7 skip, 0 fail, 8,122 expectations across 337 files; evidence resolver
+  10 pass, 0 fail, 31 expectations.
 - Both package typechecks exited 0. Generated extension checks passed twice independently.
 - Real Senpi completion, batching, error routing, cancellation, cleanup, and isolation checks passed.
   Six lifecycle assertions failed identically on the branch and exact clean base. Both runs reported
